@@ -40,13 +40,39 @@ class PEG(BehaviorModel):
             self._cur_state = "Generate"
 
 
+class MsgRecv (BehaviorModel):
+    def __init__(self, instance_time, destruct_time, name, engine_name):
+        BehaviorModel.__init__(self, name)
+
+        self.init_state("Wait")
+        self.insert_state("Wait", Infinite)
+        self.insert_input_port("recv")
+
+    def ext_trans(self,port, msg):
+        if port == "recv":
+            print(f"[MsgRecv][IN]: {datetime.datetime.now()}")
+            data = msg.retrieve()
+            print(data[0])
+            self._cur_state = "Wait"
+
+    def output(self):
+        return None
+        
+    def int_trans(self):
+        if self._cur_state == "Wait":
+            self._cur_state = "Wait"
+
 # System Simulator Initialization
-ss = SysExecutor(0.1)
+ss = SysExecutor(1, _sim_mode="REAL_TIME")
 #ss.register_engine("first", "REAL_TIME", 1)
 ss.insert_input_port("start")
 gen = PEG(0, Infinite, "Gen", "first")
 ss.register_entity(gen)
+
+proc = MsgRecv(0, Infinite, "Proc", "first")
+ss.register_entity(proc)
+
 ss.coupling_relation(None, "start", gen, "start")
-#ss.coupling_relation(gen, "process", proc, "recv")
+ss.coupling_relation(gen, "process", proc, "recv")
 ss.insert_external_event("start", None)
 ss.simulate()

@@ -4,7 +4,7 @@ from core_model import CoreModel
 
 class BehaviorModel(CoreModel):
     def __init__(self, _name=""):
-        CoreModel.__init__(self, _name)
+        super(BehaviorModel, self).__init__(_name)
         self._states = {}
 
         self.external_transition_map_tuple = {}
@@ -14,6 +14,8 @@ class BehaviorModel(CoreModel):
         
         # added by cbchoi 2023.09.26
         self._cancel_reschedule_f = False
+
+        self._cur_state = "" # rename as active_state?
 
     def insert_state(self, name, deadline="inf"):
         # TODO: Exception Handling
@@ -32,6 +34,7 @@ class BehaviorModel(CoreModel):
         
     def init_state(self, state):
         self._cur_state = state
+    
     # added by jylee 2023.09.26
     @abstractmethod
     def ext_trans(self, port, msg):

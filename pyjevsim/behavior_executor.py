@@ -1,16 +1,13 @@
 from abc import abstractmethod
-from behavior_model import BehaviorModel
+#from core_model import CoreModel
+#from behavior_model import BehaviorModel
 from definition import *
 
 class BehaviorExecutor:
-    def __init__(self, instantiate_time=Infinite, destruct_time=Infinite, name=".", engine_name="default", behavior_model = ""):
+    def __init__(self, instantiate_time=Infinite, destruct_time=Infinite, engine_name="default", behavior_model = None):
         self.engine_name = engine_name
-        if behavior_model:
-            self._instance_t = behavior_model.get_instance_time()
-            self._destruct_t = behavior_model.get_destruct_time()
-        else:
-            self._instance_t = instantiate_time
-            self._destruct_t = destruct_time
+        self._instance_t = instantiate_time
+        self._destruct_t = destruct_time
             
         self._next_event_t = 0
         self._cur_state = ""
@@ -29,6 +26,7 @@ class BehaviorExecutor:
 # removed by jylee 2023.09.26
 #    def cancel_rescheduling(self):
 #       self._cancel_reschedule_f = True
+
     def get_name(self) : 
         return self.bm.get_name()
 
@@ -43,6 +41,9 @@ class BehaviorExecutor:
 
     def get_destruct_time(self):
         return self._destruct_t
+
+    def get_obj_id(self):
+        return self.bm.get_obj_id()
 
     # state management
     def get_cur_state(self):
@@ -69,9 +70,9 @@ class BehaviorExecutor:
         return self.bm.output()
 
     # Time Advanced Function
-    def time_advance(self):       
-        if self._cur_state in self.bm._states:    
-            return self.bm._states[self._cur_state]
+    def time_advance(self):   
+        if self.bm._cur_state in self.bm._states:    
+            return self.bm._states[self.bm._cur_state]
         else:
             return -1
 

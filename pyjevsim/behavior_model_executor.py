@@ -17,13 +17,8 @@ class BehaviorModelExecutor(BehaviorExecutor):
 
     # Output Function
     def output(self):
-        super.int_trans()
-        pass
+        return super().output()
 
     # Time Advanced Function
     def time_advance(self):
         return super().time_advance()
-
-test_bm = BehaviorModel("nametest")
-test = BehaviorExecutor(0, Infinite, "default", test_bm)
-print(test.bm.name())

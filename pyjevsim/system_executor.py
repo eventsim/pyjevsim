@@ -13,7 +13,7 @@ import threading
 from definition import *
 from core_model import CoreModel
 from default_message_catcher import *
-#from .behavior_model import *
+#from behavior_model import *
 from system_object import *
 
 import functools
@@ -21,6 +21,7 @@ import operator
 import math
 
 from termination_manager import TerminationManager
+from executor_factory import ExecutorFactory
 
 class SysExecutor(CoreModel):
 
@@ -30,7 +31,7 @@ class SysExecutor(CoreModel):
     def __init__(self, _time_step, _sim_name='default', _sim_mode='VIRTUAL_TIME'):
         CoreModel.__init__(self, _sim_name)
         self.lock = threading.Lock()
-        self.thread_flag = False
+        #self.thread_flag = False
 
         self.global_time = 0
         self.target_time = 0
@@ -40,7 +41,9 @@ class SysExecutor(CoreModel):
         self.waiting_obj_map = {}
         # dictionary for active simulation objects
         self.active_obj_map = {}
+
         # dictionary for object to ports
+        self.product_port_map = {}
         self.port_map = {}
         
         # added by cbchoi 2020.01.20
@@ -54,8 +57,10 @@ class SysExecutor(CoreModel):
         self.sim_init_time = datetime.datetime.now()
 
 #       self.eval_time = 0
-        #self.dmc = DefaultMessageCatcher(0, Infinite, "dc", "default")
-        #self.register_entity(self.dmc)
+        self.execFactory = ExecutorFactory()
+
+        self.dmc = DefaultMessageCatcher("dc")
+        self.register_entity(self.dmc)
 
         self.simulation_mode = SimulationMode.SIMULATION_IDLE
 
@@ -74,12 +79,11 @@ class SysExecutor(CoreModel):
         return self.global_time
 
 
-    def register_entity(self, sim_obj):
+    def register_entity(self, _obj):
         #sim object에서 behavior executor
-        print(type(sim_obj))
-        sim_obj = BehaviorModelExecutor(0, Infinite, "default", sim_obj)
-        
-        print(type(sim_obj))
+        sim_obj = self.execFactory.create_executor(_obj, 0, Infinite, "default")
+        self.product_port_map[_obj] = sim_obj
+
         if not sim_obj.get_create_time() in self.waiting_obj_map:
             self.waiting_obj_map[sim_obj.get_create_time()] = list()
 
@@ -175,13 +179,33 @@ class SysExecutor(CoreModel):
                 if agent in self.min_schedule_item:
                     self.min_schedule_item.remove(agent)
             
-    def coupling_relation(self, src_obj, out_port, dst_obj, in_port):
+    def coupling_relation(self, _obj, out_port, dst_obj, in_port):
+        if _obj :
+            src_obj = self.product_port_map[_obj]
+        else:
+            src_obj = None
+        
+        if dst_obj:
+            dst_obj = self.product_port_map[dst_obj]
+        else:
+            dst_obj = None
+
         if (src_obj, out_port) in self.port_map:
             self.port_map[(src_obj, out_port)].append((dst_obj, in_port))
         else:
             self.port_map[(src_obj, out_port)] = [(dst_obj, in_port)]
 
-    def _coupling_relation(self, src, dst):
+    def _coupling_relation(self, _src, dst):
+        if _src:
+            src = self.product_port_map[_src]
+        else:
+            src = None
+
+        if dst:
+            dst = self.product_port_map[dst]
+        else:
+            dst = None
+
         if src in self.port_map:
             self.port_map[src].append(dst)
         else:
@@ -189,11 +213,11 @@ class SysExecutor(CoreModel):
 
     def single_output_handling(self, obj, msg):
         pair = (obj, msg[1].get_dst())
-
         if pair not in self.port_map:
             self.port_map[pair] = [(self.active_obj_map[self.dmc.get_obj_id()], "uncaught")]
 
         for port_pair in self.port_map[pair]:
+            #print(port_pair)
             destination = port_pair
             if destination is None:
                 print("Destination Not Found")
@@ -208,9 +232,10 @@ class SysExecutor(CoreModel):
                 # Receiver Scheduling
                 # wrong : destination[0].set_req_time(self.global_time + destination[0].time_advance())
 
-                while self.thread_flag:
-                    time.sleep(0.001)
+#                while self.thread_flag:
+#                    time.sleep(0.001)
 
+                #print(type(destination[0]))
                 destination[0].set_req_time(self.global_time)
 
     def output_handling(self, obj, msg):
@@ -265,8 +290,9 @@ class SysExecutor(CoreModel):
         _del_coupling = []
         for model_lst in self.waiting_obj_map.values():
             for model in model_lst:
-                if model.get_type() == ModelType.STRUCTURAL:
-                    self.flattening(model, _del_model, _del_coupling)
+                pass
+                #if model.get_type() == ModelType.STRUCTURAL:
+                #    self.flattening(model, _del_model, _del_coupling)
 
         for target, _model in _del_model:
             if _model in self.waiting_obj_map[target]:
@@ -371,7 +397,7 @@ class SysExecutor(CoreModel):
         sm = SysMessage("SRC", _port)
         sm.insert(_msg)
 
-        if _port in self._input_ports:
+        if _port in self.external_input_ports:
             self.lock.acquire()
             heapq.heappush(self.input_event_queue, (scheduled_time + self.global_time, sm))
             self.lock.release()
@@ -384,7 +410,7 @@ class SysExecutor(CoreModel):
         sm = SysMessage("SRC", _port)
         sm.extend(_bodylist)
 
-        if _port in self._input_ports:
+        if _port in self.external_input_ports:
             self.lock.acquire()
             heapq.heappush(self.input_event_queue, (scheduled_time + self.global_time, sm))
             self.lock.release()

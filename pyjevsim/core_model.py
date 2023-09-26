@@ -2,6 +2,7 @@ from system_object import SystemObject
 
 class CoreModel(SystemObject):  
     def __init__(self, _name):
+        super(CoreModel, self).__init__()
         # Model Type
         self._name = _name
         
