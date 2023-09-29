@@ -1,9 +1,11 @@
+from definition import ModelType
 from system_object import SystemObject
 
 class CoreModel(SystemObject):  
-    def __init__(self, _name):
+    def __init__(self, _name, _type):
         super(CoreModel, self).__init__()
         # Model Type
+        self.model_type = _type
         self._name = _name
         
         # Input Ports Declaration
@@ -20,6 +22,10 @@ class CoreModel(SystemObject):
     # 2023.09.26 added by Jaiyun Lee 
     def get_unique_name(self):
         pass
+
+    # 2023.09.29 added by Changbeom Choi
+    def get_model_type(self):
+        return self.model_type
 
     def insert_input_port(self, port):
         setattr(self, port, port)
