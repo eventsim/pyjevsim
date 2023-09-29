@@ -1,6 +1,6 @@
 from abc import abstractmethod
 from collections import OrderedDict
-from definiton import ModelType
+from definition import ModelType
 from core_model import CoreModel
 
 class BehaviorModel(CoreModel):
