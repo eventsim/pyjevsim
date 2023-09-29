@@ -4,10 +4,10 @@ from abc import abstractmethod
 from definition import *
 
 class BehaviorExecutor:
-    def __init__(self, instantiate_time=Infinite, destruct_time=Infinite, engine_name="default", behavior_model = None):
-        self.engine_name = engine_name
-        self._instance_t = instantiate_time
-        self._destruct_t = destruct_time
+    def __init__(self, itime=Infinite, dtime=Infinite, ename="default", behavior_model = None):
+        self.engine_name = ename
+        self._instance_t = itime
+        self._destruct_t = dtime
             
         self._next_event_t = 0
         self._cur_state = ""

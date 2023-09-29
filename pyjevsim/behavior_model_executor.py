@@ -4,8 +4,8 @@ from behavior_executor import BehaviorExecutor
 from definition import *
 
 class BehaviorModelExecutor(BehaviorExecutor):
-    def __init__(self, instantiate_time=Infinite, destruct_time=Infinite, engine_name="default", behavior_model = ""):
-        super().__init__(instantiate_time, destruct_time, engine_name, behavior_model)
+    def __init__(self, itime=Infinite, dtime=Infinite, ename="default", behavior_model = ""):
+        super().__init__(itime, dtime, ename, behavior_model)
         
     def ext_trans(self, port, msg):
         super().ext_trans(port, msg)

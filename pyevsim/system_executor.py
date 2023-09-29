@@ -370,7 +370,7 @@ class SysExecutor(SysObject, CoreModel):
             self.lock.release()
         else:
             # TODO Exception Handling
-            print("[ERROR][INSERT_EXTERNAL_EVNT] Port Not Found")
+            print("[INSERT_EXTERNAL_EVNT] Port Not Found")
             pass
 
     def insert_custom_external_event(self, _port, _bodylist, scheduled_time=0):
@@ -383,7 +383,7 @@ class SysExecutor(SysObject, CoreModel):
             self.lock.release()
         else:
             # TODO Exception Handling
-            print("[ERROR][INSERT_EXTERNAL_EVNT] Port Not Found")
+            print("[INSERT_EXTERNAL_EVNT] Port Not Found")
             pass
 
     def get_generated_event(self):
