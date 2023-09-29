@@ -1,12 +1,16 @@
-from system_executor import SysExecutor
-from system_message import SysMessage
-from definition import *
+from pyjevsim.system_executor import SysExecutor
+from pyjevsim.system_message import SysMessage
+from pyjevsim.definition import *
+from pyjevsim.behavior_model import BehaviorModel
+from pyjevsim.behavior_model_executor import BehaviorModelExecutor
+
 import datetime
-from behavior_model import BehaviorModel
-from behavior_model_executor import BehaviorModelExecutor
 
 class PEG(BehaviorModel):
-    def __init__(self, name):
+    def __init__(self, instance_time, destruct_time, name, engine_name):
+        self.instance_time = instance_time
+        self.destruct_time = destruct_time
+        
         BehaviorModel.__init__(self, name)
         self.init_state("Wait")
         self.insert_state("Wait", Infinite)
@@ -14,6 +18,13 @@ class PEG(BehaviorModel):
 
         self.insert_input_port("start")
         self.insert_output_port("process")
+
+    def get_instance_time(self):
+        return self.instance_time
+    
+    def get_destruct_time(self):
+        return self.destruct_time
+    
     
     def ext_trans(self,port, msg):
         if port == "start":
@@ -31,7 +42,7 @@ class PEG(BehaviorModel):
 
 
 class MsgRecv (BehaviorModel):
-    def __init__(self, name):
+    def __init__(self, instance_time, destruct_time, name, engine_name):
         BehaviorModel.__init__(self, name)
 
         self.init_state("Wait")
@@ -56,10 +67,10 @@ class MsgRecv (BehaviorModel):
 ss = SysExecutor(1, _sim_mode="REAL_TIME")
 #ss.register_engine("first", "REAL_TIME", 1)
 ss.insert_input_port("start")
-gen = PEG("Gen")
+gen = PEG(0, Infinite, "Gen", "first")
 ss.register_entity(gen)
 
-proc = MsgRecv("Proc")
+proc = MsgRecv(0, Infinite, "Proc", "first")
 ss.register_entity(proc)
 
 ss.coupling_relation(None, "start", gen, "start")

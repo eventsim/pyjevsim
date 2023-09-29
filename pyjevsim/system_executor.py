@@ -71,18 +71,15 @@ class SysExecutor(CoreModel):
         # TIME Handling
         self.sim_mode = _sim_mode
 
-        # Learning Module
-        self.learn_module = None
-
     # retrieve global time
     def get_global_time(self):
         return self.global_time
 
 
-    def register_entity(self, _obj):
+    def register_entity(self, entity, inst_t=0, dest_t=Infinite, ename="default"):
         #sim object에서 behavior executor
-        sim_obj = self.execFactory.create_executor(0, Infinite, "default", _obj)
-        self.product_port_map[_obj] = sim_obj
+        sim_obj = self.execFactory.create_executor(self.global_time, inst_t, dest_t, ename, entity)
+        self.product_port_map[entity] = sim_obj
 
         if not sim_obj.get_create_time() in self.waiting_obj_map:
             self.waiting_obj_map[sim_obj.get_create_time()] = list()
@@ -179,16 +176,16 @@ class SysExecutor(CoreModel):
                 if agent in self.min_schedule_item:
                     self.min_schedule_item.remove(agent)
             
-    def coupling_relation(self, _obj, out_port, dst_obj, in_port):
-        if _obj :
-            src_obj = self.product_port_map[_obj]
+    def coupling_relation(self, src_obj, out_port, dst_obj, in_port):
+        if src_obj and src_obj != self:
+            src_obj = self.product_port_map[src_obj]
         else:
-            src_obj = None
+            src_obj = self
         
-        if dst_obj:
+        if dst_obj and dst_obj != self:
             dst_obj = self.product_port_map[dst_obj]
         else:
-            dst_obj = None
+            dst_obj = self
 
         if (src_obj, out_port) in self.port_map:
             self.port_map[(src_obj, out_port)].append((dst_obj, in_port))
@@ -323,7 +320,6 @@ class SysExecutor(CoreModel):
         self.handle_external_input_event()
 
         tuple_obj = self.min_schedule_item.popleft()
-
         before = time.perf_counter() # TODO: consider decorator
 
         while math.isclose(tuple_obj.get_req_time(), self.global_time, rel_tol=1e-9):
@@ -426,7 +422,7 @@ class SysExecutor(CoreModel):
     def handle_external_input_event(self):
         event_list = [ev for ev in self.input_event_queue if ev[0] <= self.global_time]
         for event in event_list:
-            self.output_handling(None, event)
+            self.output_handling(self, event)
             self.lock.acquire()
             heapq.heappop(self.input_event_queue)
             self.lock.release()

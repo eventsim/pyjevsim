@@ -20,6 +20,9 @@ class BehaviorExecutor:
         # 2021.10.16 cbchoi
         self._cancel_reschedule_f = False
 
+    def get_core_model(self):
+        return self.bm
+
     def __str__(self):
         return "[N]:{0}, [S]:{1}".format(self.get_name(), self._cur_state)
 
