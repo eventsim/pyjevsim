@@ -28,14 +28,14 @@ class SysExecutor(CoreModel):
     EXTERNAL_SRC = "SRC"
     EXTERNAL_DST = "DST"
 
-    def __init__(self, _time_step, _sim_name='default', _sim_mode='VIRTUAL_TIME'):
-        CoreModel.__init__(self, _sim_name)
+    def __init__(self, _time_resolution, _sim_name='default', _sim_mode='VIRTUAL_TIME'):
+        CoreModel.__init__(self, _sim_name, ModelType.UTILITY)
         self.lock = threading.Lock()
         #self.thread_flag = False
 
         self.global_time = 0
         self.target_time = 0
-        self.time_step = _time_step  # time_step may changed? - cbchoi
+        self.time_resolution = _time_resolution  # time_resolution may changed? - cbchoi
 
         # dictionary for waiting simulation objects
         self.waiting_obj_map = {}
@@ -81,7 +81,7 @@ class SysExecutor(CoreModel):
 
     def register_entity(self, _obj):
         #sim object에서 behavior executor
-        sim_obj = self.execFactory.create_executor(_obj, 0, Infinite, "default")
+        sim_obj = self.execFactory.create_executor(0, Infinite, "default", _obj)
         self.product_port_map[_obj] = sim_obj
 
         if not sim_obj.get_create_time() in self.waiting_obj_map:
@@ -319,6 +319,7 @@ class SysExecutor(CoreModel):
     def schedule(self):
         # Agent Creation
         self.create_entity()
+        # TODO: consider event handling after time pass
         self.handle_external_input_event()
 
         tuple_obj = self.min_schedule_item.popleft()
@@ -345,10 +346,10 @@ class SysExecutor(CoreModel):
 
         after = time.perf_counter()
         if self.sim_mode == "REAL_TIME":
-            time.sleep((lambda x: x if x > 0 else 0)(float(self.time_step) - float(after-before)))
+            time.sleep((lambda x: x if x > 0 else 0)(float(self.time_resolution) - float(after-before)))
 
         # update Global Time
-        self.global_time += self.time_step
+        self.global_time += self.time_resolution
 
         # Agent Deletion
         self.destroy_entity()
@@ -376,7 +377,7 @@ class SysExecutor(CoreModel):
         # may buggy?
         self.global_time = 0
         self.target_time = 0
-        self.time_step = 1  # time_step may changed? - cbchoi
+        self.time_resolution = 1  # time_resolution may changed? - cbchoi
 
         # dictionary for waiting simulation objects
         self.waiting_obj_map = {}
@@ -403,7 +404,7 @@ class SysExecutor(CoreModel):
             self.lock.release()
         else:
             # TODO Exception Handling
-            print("[ERROR][INSERT_EXTERNAL_EVNT] Port Not Found")
+            print("[INSERT_EXTERNAL_EVNT] Port Not Found")
             pass
 
     def insert_custom_external_event(self, _port, _bodylist, scheduled_time=0):
@@ -416,7 +417,7 @@ class SysExecutor(CoreModel):
             self.lock.release()
         else:
             # TODO Exception Handling
-            print("[ERROR][INSERT_EXTERNAL_EVNT] Port Not Found")
+            print("[INSERT_EXTERNAL_EVNT] Port Not Found")
             pass
 
     def get_generated_event(self):
