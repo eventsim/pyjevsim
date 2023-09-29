@@ -1,10 +1,11 @@
 from abc import abstractmethod
 from collections import OrderedDict
+from definiton import ModelType
 from core_model import CoreModel
 
 class BehaviorModel(CoreModel):
     def __init__(self, _name=""):
-        super(BehaviorModel, self).__init__(_name)
+        super(BehaviorModel, self).__init__(_name, ModelType.BEHAVIORAL)
         self._states = {}
 
         self.external_transition_map_tuple = {}
