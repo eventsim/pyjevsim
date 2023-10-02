@@ -1,36 +1,37 @@
-'''
+"""
  Author: Changbeom Choi (@cbchoi)
  Copyright (c) 2014-2020 Handong Global University
  Copyright (c) 2014-2020 Hanbat National University
  License: MIT.  The full license text is available at:
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
-'''
+"""
 
-from collections import deque
-import heapq
 import copy
-import time
 import datetime
-import threading
+import heapq
 import math
+import threading
+import time
+from collections import deque
 
-from .definition import ExecutionType, Infinite, ModelType, SimulationMode
 from .core_model import CoreModel
 from .default_message_catcher import DefaultMessageCatcher
-from .system_message import SysMessage
-
-from .termination_manager import TerminationManager
+from .definition import ExecutionType, Infinite, ModelType, SimulationMode
 from .executor_factory import ExecutorFactory
+from .system_message import SysMessage
+from .termination_manager import TerminationManager
+
 
 class SysExecutor(CoreModel):
-
     EXTERNAL_SRC = "SRC"
     EXTERNAL_DST = "DST"
 
-    def __init__(self, _time_resolution, _sim_name='default', ex_mode=ExecutionType.V_TIME):
+    def __init__(
+        self, _time_resolution, _sim_name="default", ex_mode=ExecutionType.V_TIME
+    ):
         CoreModel.__init__(self, _sim_name, ModelType.UTILITY)
         self.lock = threading.Lock()
-        #self.thread_flag = False
+        # self.thread_flag = False
 
         self.global_time = 0
         self.target_time = 0
@@ -73,10 +74,11 @@ class SysExecutor(CoreModel):
     def get_global_time(self):
         return self.global_time
 
-
     def register_entity(self, entity, inst_t=0, dest_t=Infinite, ename="default"):
-        #sim object에서 behavior executor
-        sim_obj = self.exec_factory.create_executor(self.global_time, inst_t, dest_t, ename, entity)
+        # sim object에서 behavior executor
+        sim_obj = self.exec_factory.create_executor(
+            self.global_time, inst_t, dest_t, ename, entity
+        )
         self.product_port_map[entity] = sim_obj
 
         if not sim_obj.get_create_time() in self.waiting_obj_map:
@@ -113,18 +115,21 @@ class SysExecutor(CoreModel):
                 del self.waiting_obj_map[key]
 
                 # select object that requested minimum time
-                self.min_schedule_item = sorted(self.min_schedule_item, key=lambda bm: (bm.get_req_time(), bm.get_obj_id()))
+                self.min_schedule_item = sorted(
+                    self.min_schedule_item,
+                    key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
+                )
 
     def destory_entity(self, delete_lst):
         for agent in delete_lst:
-            del(self.active_obj_map[agent.get_obj_id()])
-                
+            del self.active_obj_map[agent.get_obj_id()]
+
             port_del_map = {}
             for key, value in self.port_map.items():
                 # Sender
                 if key[0] == agent:
                     port_del_map[key] = True
-                
+
                 # Receiver
                 if value:
                     del_items = []
@@ -149,13 +154,13 @@ class SysExecutor(CoreModel):
                     delete_lst.append(agent)
 
             self.destory_entity(delete_lst)
-            
+
     def coupling_relation(self, src_obj, out_port, dst_obj, in_port):
         if src_obj and src_obj != self:
             src_obj = self.product_port_map[src_obj]
         else:
             src_obj = self
-        
+
         if dst_obj and dst_obj != self:
             dst_obj = self.product_port_map[dst_obj]
         else:
@@ -169,14 +174,16 @@ class SysExecutor(CoreModel):
     def single_output_handling(self, obj, msg):
         pair = (obj, msg[1].get_dst())
         if pair not in self.port_map:
-            self.port_map[pair] = [(self.active_obj_map[self.dmc.get_obj_id()], "uncaught")]
+            self.port_map[pair] = [
+                (self.active_obj_map[self.dmc.get_obj_id()], "uncaught")
+            ]
 
         for port_pair in self.port_map[pair]:
-            #print(port_pair)
+            # print(port_pair)
             destination = port_pair
             if destination is None:
                 print("Destination Not Found")
-                print(self.port_map)               
+                print(self.port_map)
                 raise AssertionError
 
             if destination[0] is None:
@@ -200,30 +207,30 @@ class SysExecutor(CoreModel):
         self.simulation_mode = SimulationMode.SIMULATION_RUNNING
 
         # Flattening
-        #_del_model = []
-        #_del_coupling = []
-        #for model_lst in self.waiting_obj_map.values():
+        # _del_model = []
+        # _del_coupling = []
+        # for model_lst in self.waiting_obj_map.values():
         #    for model in model_lst:
         #        pass
-                #if model.get_type() == ModelType.STRUCTURAL:
-                #    self.flattening(model, _del_model, _del_coupling)
+        # if model.get_type() == ModelType.STRUCTURAL:
+        #    self.flattening(model, _del_model, _del_coupling)
 
-        #for target, _model in _del_model:
+        # for target, _model in _del_model:
         #    if _model in self.waiting_obj_map[target]:
         #        self.waiting_obj_map[target].remove(_model)
 
-        #for target, _model in _del_coupling:
+        # for target, _model in _del_coupling:
         #    if _model in self.port_map[target]:
         #        self.port_map[target].remove(_model)
 
-        # setup inital time        
+        # setup inital time
         if self.active_obj_map is None:
             self.global_time = min(self.waiting_obj_map)
 
         # search min_scedule_item after first init_sim call
         if not self.min_schedule_item:
             for obj in self.active_obj_map.items():
-                if obj[1].time_advance() < 0: # exception handling for parent instance
+                if obj[1].time_advance() < 0:  # exception handling for parent instance
                     print("You should give positive real number for the deadline")
                     raise AssertionError
 
@@ -237,13 +244,13 @@ class SysExecutor(CoreModel):
         self.handle_external_input_event()
 
         tuple_obj = self.min_schedule_item.popleft()
-        before = time.perf_counter() # TODO: consider decorator
+        before = time.perf_counter()  # TODO: consider decorator
 
         while math.isclose(tuple_obj.get_req_time(), self.global_time, rel_tol=1e-9):
             msg = tuple_obj.output()
-            if msg is not None: 
+            if msg is not None:
                 self.output_handling(tuple_obj, (self.global_time, msg))
-            
+
             # Sender Scheduling
             tuple_obj.int_trans()
             req_t = tuple_obj.get_req_time()
@@ -251,8 +258,13 @@ class SysExecutor(CoreModel):
             tuple_obj.set_req_time(req_t)
             self.min_schedule_item.append(tuple_obj)
 
-            self.min_schedule_item = deque(sorted(self.min_schedule_item, key=lambda bm: (bm.get_req_time(), bm.get_obj_id())))
-            
+            self.min_schedule_item = deque(
+                sorted(
+                    self.min_schedule_item,
+                    key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
+                )
+            )
+
             tuple_obj = self.min_schedule_item.popleft()
 
         self.min_schedule_item.appendleft(tuple_obj)
@@ -264,9 +276,8 @@ class SysExecutor(CoreModel):
         self.destroy_active_entity()
 
         after = time.perf_counter()
-        if self.ex_mode == ExecutionType.R_TIME: # Realtime Constraints?
-            time.sleep(max(float(self.time_resolution) - float(after-before), 0))
-
+        if self.ex_mode == ExecutionType.R_TIME:  # Realtime Constraints?
+            time.sleep(max(float(self.time_resolution) - float(after - before), 0))
 
     def simulate(self, _time=Infinite, _tm=True):
         if _tm:
@@ -280,7 +291,10 @@ class SysExecutor(CoreModel):
 
         while self.global_time < self.target_time:
             if not self.waiting_obj_map:
-                if self.min_schedule_item[0].get_req_time() == Infinite and self.ex_mode == 'VIRTUAL_TIME' :
+                if (
+                    self.min_schedule_item[0].get_req_time() == Infinite
+                    and self.ex_mode == "VIRTUAL_TIME"
+                ):
                     self.simulation_mode = SimulationMode.SIMULATION_TERMINATED
                     break
 
@@ -313,7 +327,9 @@ class SysExecutor(CoreModel):
 
         if _port in self.external_input_ports:
             with self.lock:
-                heapq.heappush(self.input_event_queue, (scheduled_time + self.global_time, sys_msg))
+                heapq.heappush(
+                    self.input_event_queue, (scheduled_time + self.global_time, sys_msg)
+                )
         else:
             # TODO Exception Handling
             print("[INSERT_EXTERNAL_EVNT] Port Not Found")
@@ -324,7 +340,9 @@ class SysExecutor(CoreModel):
 
         if _port in self.external_input_ports:
             with self.lock:
-                heapq.heappush(self.input_event_queue, (scheduled_time + self.global_time, sys_msg))
+                heapq.heappush(
+                    self.input_event_queue, (scheduled_time + self.global_time, sys_msg)
+                )
         else:
             # TODO Exception Handling
             print("[INSERT_EXTERNAL_EVNT] Port Not Found")
@@ -338,9 +356,13 @@ class SysExecutor(CoreModel):
             self.output_handling(self, event)
             with self.lock:
                 heapq.heappop(self.input_event_queue)
-            
-        self.min_schedule_item = deque(sorted(self.min_schedule_item, \
-                                     key=lambda bm: (bm.get_req_time(), bm.get_obj_id())))
+
+        self.min_schedule_item = deque(
+            sorted(
+                self.min_schedule_item,
+                key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
+            )
+        )
 
     def handle_external_output_event(self):
         event_lists = copy.deepcopy(self.output_event_queue)

@@ -1,19 +1,23 @@
-'''
+"""
  Author: Changbeom Choi (@cbchoi)
  Copyright (c) 2014-2020 Handong Global University
  Copyright (c) 2014-2020 Hanbat National University
  License: MIT.  The full license text is available at:
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
-'''
+"""
 
-from .structural_executor import StructuralExecutor
 from .definition import Infinite
+from .structural_executor import StructuralExecutor
+
 
 class StructuralModelExecutor(StructuralExecutor):
-    def __init__(self, itime=Infinite, dtime=Infinite, ename="default", structural_model = None):
+    def __init__(
+        self, itime=Infinite, dtime=Infinite, ename="default", structural_model=None
+    ):
         pass
-        
-'''
+
+
+"""
     def flattening(self, _model, _del_model, _del_coupling):
         # handle external output coupling
         for k, v in _model.retrieve_external_output_coupling().items():
@@ -63,4 +67,4 @@ class StructuralModelExecutor(StructuralExecutor):
             self.port_map[src].append(dst)
         else:
             self.port_map[src] = [dst]
-'''
+"""

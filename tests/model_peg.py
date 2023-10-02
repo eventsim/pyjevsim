@@ -1,6 +1,7 @@
-from pyjevsim.system_message import SysMessage
-from pyjevsim.definition import *
 from pyjevsim.behavior_model import BehaviorModel
+from pyjevsim.definition import *
+from pyjevsim.system_message import SysMessage
+
 
 class PEG(BehaviorModel):
     def __init__(self, name):
@@ -14,7 +15,7 @@ class PEG(BehaviorModel):
 
         self.msg_no = 0
 
-    def ext_trans(self,port, msg):
+    def ext_trans(self, port, msg):
         if port == "start":
             print(f"[Gen][IN]: started")
             self._cur_state = "Generate"
@@ -24,7 +25,7 @@ class PEG(BehaviorModel):
         msg.insert(f"{self.msg_no}")
         print(f"[Gen][OUT]: {self.msg_no}")
         return msg
-        
+
     def int_trans(self):
         if self._cur_state == "Generate":
             self._cur_state = "Generate"

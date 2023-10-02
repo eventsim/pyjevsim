@@ -6,12 +6,14 @@
 # License: MIT.  The full license text is available at:
 #  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
-import time
 import math
+import time
+
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
-from .model_peg import PEG
+
 from .model_msg_recv import MsgRecv
+from .model_peg import PEG
 
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
@@ -37,17 +39,21 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     for _ in range(3):
         se.simulate(1)
 
+
 # Test Suite
 def test_casual_order1(capsys):
     execute_simulation(1, ExecutionType.V_TIME)
     captured = capsys.readouterr()
-    desired_output = "[Gen][IN]: started\n[Gen][OUT]: 0\n"\
-                     + "[MsgRecv][IN]: 0\n[Gen][OUT]: 1\n[MsgRecv][IN]: 1\n"
+    desired_output = (
+        "[Gen][IN]: started\n[Gen][OUT]: 0\n"
+        + "[MsgRecv][IN]: 0\n[Gen][OUT]: 1\n[MsgRecv][IN]: 1\n"
+    )
     assert captured.out == desired_output
+
 
 def test_execution_mode():
     before = time.perf_counter()
     execute_simulation(1, ExecutionType.R_TIME)
     after = time.perf_counter()
-    diff = (after - before)
+    diff = after - before
     assert math.isclose(diff, 3, rel_tol=0.05)

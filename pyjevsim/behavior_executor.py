@@ -1,19 +1,19 @@
-'''
+"""
  Author: Changbeom Choi (@cbchoi)
  Copyright (c) 2014-2020 Handong Global University
  Copyright (c) 2014-2020 Hanbat National University
  License: MIT.  The full license text is available at:
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
-'''
+"""
 
-"""
-A library that provides a Modeling & Simulation Environment for Discrete Event System Formalism
-"""
 from .definition import Infinite
 from .executor import Executor
 
+
 class BehaviorExecutor(Executor):
-    def __init__(self, itime=Infinite, dtime=Infinite, ename="default", behavior_model = None):
+    def __init__(
+        self, itime=Infinite, dtime=Infinite, ename="default", behavior_model=None
+    ):
         super().__init__(itime, dtime, ename)
 
         self._next_event_t = 0
@@ -31,9 +31,9 @@ class BehaviorExecutor(Executor):
     def __str__(self):
         return f"[N]:{self.get_name()}, [S]:{self._cur_state}"
 
-# removed by jylee 2023.09.26
-#    def cancel_rescheduling(self):
-#       self._cancel_reschedule_f = True
+    # removed by jylee 2023.09.26
+    #    def cancel_rescheduling(self):
+    #       self._cancel_reschedule_f = True
 
     def get_name(self):
         return self.behavior_model.get_name()
@@ -62,7 +62,7 @@ class BehaviorExecutor(Executor):
 
     # External Transition
     def ext_trans(self, port, msg):
-        if self.behavior_model.get_cancel_flag() :
+        if self.behavior_model.get_cancel_flag():
             self._cancel_reschedule_f = True
 
         self.behavior_model.ext_trans(port, msg)
@@ -88,7 +88,9 @@ class BehaviorExecutor(Executor):
             self.request_time = Infinite
         else:
             if self._cancel_reschedule_f:
-                self.request_time = min(self._next_event_t, global_time + self.time_advance())
+                self.request_time = min(
+                    self._next_event_t, global_time + self.time_advance()
+                )
             else:
                 self.request_time = global_time + self.time_advance()
 

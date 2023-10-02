@@ -1,14 +1,15 @@
-'''
+"""
  Author: Changbeom Choi (@cbchoi)
  Copyright (c) 2014-2020 Handong Global University
  Copyright (c) 2014-2020 Hanbat National University
  License: MIT.  The full license text is available at:
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
-'''
+"""
 
-import signal
-import os
 import datetime
+import os
+import signal
+
 
 class TerminationManager:
     def __init__(self):
@@ -17,7 +18,7 @@ class TerminationManager:
     @staticmethod
     def __set_terminate_handler():
         signal.signal(signal.SIGTERM, TerminationManager.__handler)
-        signal.signal(signal.SIGINT,  TerminationManager.__handler)
+        signal.signal(signal.SIGINT, TerminationManager.__handler)
 
     @staticmethod
     def __handler(sig, frame):

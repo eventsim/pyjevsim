@@ -8,12 +8,14 @@
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
+
 from .model_stm import STM
+
 
 def test_f():
     se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
     se.insert_input_port("start")
- 
+
     gen = STM("Gen")
     se.register_entity(gen, inst_t=3)
 
@@ -22,4 +24,3 @@ def test_f():
     se.simulate(5)
 
     gen = se.get_entity("Gen")
-    

@@ -1,15 +1,17 @@
-'''
+"""
  Author: Changbeom Choi (@cbchoi)
  Copyright (c) 2014-2020 Handong Global University
  Copyright (c) 2014-2020 Hanbat National University
  License: MIT.  The full license text is available at:
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
-'''
+"""
 
 from abc import abstractmethod
 from collections import OrderedDict
-from .definition import ModelType
+
 from .core_model import CoreModel
+from .definition import ModelType
+
 
 class BehaviorModel(CoreModel):
     def __init__(self, _name=""):
@@ -20,11 +22,11 @@ class BehaviorModel(CoreModel):
         self.external_transition_map_state = {}
         self.internal_transition_map_tuple = {}
         self.internal_transition_map_state = {}
-        
+
         # added by cbchoi 2023.09.26
         self._cancel_reschedule_f = False
 
-        self._cur_state = "" # rename as active_state?
+        self._cur_state = ""  # rename as active_state?
 
     def insert_state(self, name, deadline="inf"):
         # TODO: Exception Handling
@@ -40,29 +42,29 @@ class BehaviorModel(CoreModel):
     # added by jylee 2023.09.26
     def cancel_rescheduling(self):
         self._cancel_reschedule_f = True
-        
+
     def init_state(self, state):
         self._cur_state = state
-    
+
     # added by jylee 2023.09.26
     @abstractmethod
     def ext_trans(self, port, msg):
         pass
-    
+
     @abstractmethod
     def int_trans(self):
         pass
-    
+
     @abstractmethod
     def ouput(self):
         pass
-    
+
     def get_cancel_flag(self):
         return self._cancel_reschedule_f
-    
+
     def reset_cancel_flag(self):
         self._cancel_reschedule_f = False
-        
+
     def retrieve_states(self):
         return self._states
 
@@ -133,4 +135,3 @@ class BehaviorModel(CoreModel):
         for key, value in json["internal_trans"].items():
             for ns in value:
                 self.insert_internal_transition(key, ns[0], ns[1])
-
