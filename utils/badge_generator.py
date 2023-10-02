@@ -8,4 +8,4 @@ with subprocess.Popen(["pylint","pyjevsim"], stdout=subprocess.PIPE) as proc:
     
     print(f"pylint score:{score[-1]}")
 
-subprocess.Popen(["anybadge", f"--value={score}", "-o", "--file=utils/pylint.svg", "pylint"], stdout=subprocess.PIPE)
+subprocess.Popen(["anybadge", f"--value={score[-1]}", "-o", "--file=utils/pylint.svg", "pylint"], stdout=subprocess.PIPE)
