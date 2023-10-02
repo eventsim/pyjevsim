@@ -1,6 +1,6 @@
-from behavior_model_executor import BehaviorModelExecutor
-from structural_executor import StructuralExecutor
-from definition import ModelType
+from .behavior_model_executor import BehaviorModelExecutor
+from .structural_executor import StructuralExecutor
+from .definition import ModelType
 
 class ExecutorFactory:
 	def __init__(self):

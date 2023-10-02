@@ -1,7 +1,7 @@
 from abc import abstractmethod
-from behavior_model import BehaviorModel
-from behavior_executor import BehaviorExecutor
-from definition import *
+from .behavior_model import BehaviorModel
+from .behavior_executor import BehaviorExecutor
+from .definition import *
 
 class BehaviorModelExecutor(BehaviorExecutor):
     def __init__(self, itime=Infinite, dtime=Infinite, ename="default", behavior_model = ""):

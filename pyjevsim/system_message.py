@@ -1,9 +1,8 @@
-from system_object import  SystemObject
-
+from .system_object import  SystemObject
 
 class SysMessage(SystemObject):
     def __init__(self, src_name="", dst_name=""):
-        super(SysMessage, self).__init__()
+        super().__init__()
         self._src = src_name
         self._dst = dst_name
         self._msg_time = -1

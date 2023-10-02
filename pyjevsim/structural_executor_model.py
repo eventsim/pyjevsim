@@ -11,9 +11,9 @@ Module to manage structural model and its components
 """
 
 from abc import abstractmethod
-from structural_model import StructuralModel
-from structural_executor import StructuralExecutor
-from definition import *
+from .structural_model import StructuralModel
+from .structural_executor import StructuralExecutor
+from .definition import *
 
 class StructuralModelExecutor(BehaviorExecutor):
     def __init__(self, itime=Infinite, dtime=Infinite, ename="default", structural_model = None):

@@ -1,10 +1,9 @@
-from core_model import CoreModel
-from definition import ModelType
-from collections import OrderedDict
+from .core_model import CoreModel
+from .definition import ModelType
 
 class StructuralModel(CoreModel):
     def __init__(self, _name=""):
-        super(StructuralModel, self).__init__(_name, ModelType.STRUCTURAL)
+        super().__init__(_name, ModelType.STRUCTURAL)
 
         self._models = []
 

@@ -1,9 +1,9 @@
-from definition import ModelType
-from system_object import SystemObject
+from .definition import ModelType
+from .system_object import SystemObject
 
 class CoreModel(SystemObject):  
     def __init__(self, _name, _type):
-        super(CoreModel, self).__init__()
+        super().__init__()
         # Model Type
         self.model_type = _type
         self._name = _name

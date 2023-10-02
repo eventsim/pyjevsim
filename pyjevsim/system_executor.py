@@ -2,7 +2,6 @@
     Light-weighted Simulation Engine
 """
 
-
 from collections import deque
 import heapq
 import copy
@@ -10,18 +9,17 @@ import time
 import datetime
 import threading
 
-from definition import *
-from core_model import CoreModel
-from default_message_catcher import *
-#from behavior_model import *
-from system_object import *
+from .definition import *
+from .core_model import CoreModel
+from .default_message_catcher import *
+from .system_object import *
 
 import functools
 import operator
 import math
 
-from termination_manager import TerminationManager
-from executor_factory import ExecutorFactory
+from .termination_manager import TerminationManager
+from .executor_factory import ExecutorFactory
 
 class SysExecutor(CoreModel):
 

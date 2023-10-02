@@ -12,17 +12,14 @@ Module to manage structural model and its components
 
 from collections import deque
 from abc import abstractmethod
-from definition import *
+from .definition import *
+from .executor import Executor
 
-class StructuralExecutor:
+class StructuralExecutor(Executor):
     def __init__(self, global_time, itime=Infinite, dtime=Infinite, ename="default", structural_model = None, creator_f=None):
-        self.engine_name = ename
-        self._instance_t = itime
-        self._destruct_t = dtime
-            
+        super().__init__(itime, dtime, ename)
         self._next_event_t = 0
-        self.RequestedTime = float("inf")
-        self._not_available = None
+        self.request_time = float("inf")
 
         # 2023.09.30 cbchoi
         self.sm = structural_model
@@ -46,8 +43,8 @@ class StructuralExecutor:
             self.min_schedule_item.append(executor)
 
         self.min_schedule_item = deque(sorted(self.min_schedule_item, key=lambda bm: (bm.get_req_time(), bm.get_obj_id())))
-        self.RequestedTime = self.min_schedule_item[0].get_req_time()
-        self._next_event_t = self.RequestedTime
+        self.request_time = self.min_schedule_item[0].get_req_time()
+        self._next_event_t = self.request_time
         pass
 
     def __str__(self):
@@ -92,7 +89,7 @@ class StructuralExecutor:
                 destination = port_pair
                 if destination is None:
                     print("Destination Not Found")
-                    print(self.port_map)               
+                    #print(self.port_map)               
                     raise AssertionError
 
                 if self.model_product_map[destination[0]] is None:
@@ -103,9 +100,6 @@ class StructuralExecutor:
                     self.model_product_map[destination[0]].ext_trans(destination[1], msg)
                     # Receiver Scheduling
                     # wrong : destination[0].set_req_time(self.global_time + destination[0].time_advance())
-
-    #                while self.thread_flag:
-    #                    time.sleep(0.001)
 
                     #print(type(destination[0]))
                     self.model_product_map[destination[0]].set_req_time(self.global_time)
@@ -128,11 +122,11 @@ class StructuralExecutor:
         else:
             return None
 
-    def set_req_time(self, global_time, elapsed_time=0):
+    def set_req_time(self, global_time):
         self.global_time = global_time
-        self.min_schedule_item[0].set_req_time(global_time, elapsed_time)
+        self.min_schedule_item[0].set_req_time(global_time)
         self.min_schedule_item = deque(sorted(self.min_schedule_item, key=lambda bm: (bm.get_req_time(), bm.get_obj_id())))
-        self.RequestedTime = global_time + self.min_schedule_item[0].time_advance()
+        self.request_time = global_time + self.min_schedule_item[0].time_advance()
         
     def get_req_time(self):    
-        return self.RequestedTime
+        return self.request_time
