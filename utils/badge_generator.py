@@ -6,6 +6,6 @@ with subprocess.Popen(["pylint","pyjevsim"], stdout=subprocess.PIPE) as proc:
     tokens = str(proc.stdout.read()).split(':')
     score = tokens[-1].split(',')[0][1:-8].split()
     
-    print(f"pylint score:{score[-1]}")
+    print(f"pylint score:{score[-1][-1]}")
 
 subprocess.Popen(["anybadge", f"--value={score}", "-o", "--file=utils/pylint.svg", "pylint"], stdout=subprocess.PIPE)
