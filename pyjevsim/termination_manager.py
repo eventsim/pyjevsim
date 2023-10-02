@@ -17,15 +17,16 @@ class TerminationManager:
 
     @staticmethod
     def __set_terminate_handler():
-        signal.signal(signal.SIGTERM, TerminationManager.__handler)
-        signal.signal(signal.SIGINT, TerminationManager.__handler)
+        signal.signal(signal.SIGTERM, TerminationManager.signal_handler)
+        signal.signal(signal.SIGINT, TerminationManager.signal_handler)
 
     @staticmethod
-    def __handler(sig, frame):
+    def signal_handler(sig, frame):
         try:
+            print(sig, frame)
             print(f"{datetime.datetime.now()} Simulation Engine Terminated Gracefully")
-        except Exception as e:
-            print(e)
+        except Exception as exception:
+            print(exception)
             raise
         finally:
             os._exit(0)
