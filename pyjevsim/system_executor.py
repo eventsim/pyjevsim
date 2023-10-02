@@ -26,7 +26,7 @@ class SysExecutor(CoreModel):
     EXTERNAL_SRC = "SRC"
     EXTERNAL_DST = "DST"
 
-    def __init__(self, _time_resolution, _sim_name='default', _sim_mode='VIRTUAL_TIME'):
+    def __init__(self, _time_resolution, _sim_name='default', ex_mode=ExecutionType.V_TIME):
         CoreModel.__init__(self, _sim_name, ModelType.UTILITY)
         self.lock = threading.Lock()
         #self.thread_flag = False
@@ -43,7 +43,7 @@ class SysExecutor(CoreModel):
         # dictionary for object to ports
         self.product_port_map = {}
         self.port_map = {}
-        
+
         # added by cbchoi 2020.01.20
         self.hierarchical_structure = {}
 
@@ -54,7 +54,6 @@ class SysExecutor(CoreModel):
 
         self.sim_init_time = datetime.datetime.now()
 
-#       self.eval_time = 0
         self.execFactory = ExecutorFactory()
 
         self.dmc = DefaultMessageCatcher("dc")
@@ -67,7 +66,7 @@ class SysExecutor(CoreModel):
         self.output_event_queue = deque()
 
         # TIME Handling
-        self.sim_mode = _sim_mode
+        self.ex_mode = ex_mode
 
     # retrieve global time
     def get_global_time(self):
@@ -83,7 +82,7 @@ class SysExecutor(CoreModel):
             self.waiting_obj_map[sim_obj.get_create_time()] = list()
 
         self.waiting_obj_map[sim_obj.get_create_time()].append(sim_obj)
-        
+
         # added by cbchoi 2022.08.06
         if sim_obj.get_name() in self.model_map:
             self.model_map[sim_obj.get_name()].append(sim_obj)
@@ -96,18 +95,17 @@ class SysExecutor(CoreModel):
             return self.model_map[model_name]
         else:
             return []
-    
+
     def remove_entity(self, model_name):
         if model_name in self.model_map:
             for agent in self.model_map[model_name]:
-                del(self.active_obj_map[agent.get_obj_id()])
-                
+                del self.active_obj_map[agent.get_obj_id()]
                 port_del_map = {}
                 for key, value in self.port_map.items():
                     # Sender
                     if key[0] == agent:
                         port_del_map[key] = True
-                    
+
                     # Receiver
                     if value:
                         del_items = []
@@ -119,12 +117,12 @@ class SysExecutor(CoreModel):
                             value.remove(item)
 
                 for key in port_del_map.keys():
-                    del(self.port_map[key])
+                    del self.port_map[key]
 
                 if agent in self.min_schedule_item:
                     self.min_schedule_item.remove(agent)
                 print("deleted")
-                del(self.model_map[model_name])
+                del self.model_map[model_name]
         else:
             return None
 
@@ -140,7 +138,7 @@ class SysExecutor(CoreModel):
                 del self.waiting_obj_map[key]
 
                 # select object that requested minimum time
-                self.min_schedule_item = deque(sorted(self.min_schedule_item, key=lambda bm: (bm.get_req_time(), bm.get_obj_id())))
+                self.min_schedule_item = sorted(self.min_schedule_item, key=lambda bm: (bm.get_req_time(), bm.get_obj_id()))
 
     def destroy_entity(self):
         if len(self.active_obj_map.keys()) != 0:
@@ -338,15 +336,15 @@ class SysExecutor(CoreModel):
 
         self.min_schedule_item.appendleft(tuple_obj)
 
-        after = time.perf_counter()
-        if self.sim_mode == "REAL_TIME":
-            time.sleep((lambda x: x if x > 0 else 0)(float(self.time_resolution) - float(after-before)))
-
         # update Global Time
         self.global_time += self.time_resolution
 
         # Agent Deletion
         self.destroy_entity()
+
+        after = time.perf_counter()
+        if self.ex_mode == ExecutionType.R_TIME: # Realtime Constraints?
+            time.sleep((lambda x: x if x > 0 else 0)(float(self.time_resolution) - float(after-before)))
 
 
     def simulate(self, _time=Infinite, _tm=True):
@@ -361,7 +359,7 @@ class SysExecutor(CoreModel):
 
         while self.global_time < self.target_time:
             if not self.waiting_obj_map:
-                if self.min_schedule_item[0].get_req_time() == Infinite and self.sim_mode == 'VIRTUAL_TIME' :
+                if self.min_schedule_item[0].get_req_time() == Infinite and self.ex_mode == 'VIRTUAL_TIME' :
                     self.simulation_mode = SimulationMode.SIMULATION_TERMINATED
                     break
 

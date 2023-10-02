@@ -105,8 +105,8 @@ class BehaviorModel(CoreModel):
 
     def deserialize(self, json):
         self._name = json["name"]
-        for k, v in json["states"].items():
-            self.insert_state(k, v)
+        for key, value in json["states"].items():
+            self.insert_state(key, value)
 
         # Handle In ports
         for port in json["input_ports"]:
@@ -117,12 +117,12 @@ class BehaviorModel(CoreModel):
             self.insert_output_port(port)
 
         # Handle External Transition
-        for k, v in json["external_trans"].items():
-            for ns in v:
-                self.insert_external_transition(k, ns[0], ns[1])
+        for key, value in json["external_trans"].items():
+            for ns in value:
+                self.insert_external_transition(key, ns[0], ns[1])
 
         # Handle Internal Transition
-        for k, v in json["internal_trans"].items():
-            for ns in v:
-                self.insert_internal_transition(k, ns[0], ns[1])
+        for key, value in json["internal_trans"].items():
+            for ns in value:
+                self.insert_internal_transition(key, ns[0], ns[1])
 

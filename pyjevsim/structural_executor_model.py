@@ -13,11 +13,11 @@ Module to manage structural model and its components
 from abc import abstractmethod
 from .structural_model import StructuralModel
 from .structural_executor import StructuralExecutor
-from .definition import *
+from .definition import Infinite
 
-class StructuralModelExecutor(BehaviorExecutor):
+class StructuralModelExecutor(StructuralExecutor):
     def __init__(self, itime=Infinite, dtime=Infinite, ename="default", structural_model = None):
-        super().__init__(instantiate_time, destruct_time, engine_name, structural_model)
+        pass
         
     def ext_trans(self, port, msg):
         super().ext_trans(port, msg)

@@ -41,6 +41,10 @@ class ModelType(Enum):
     STRUCTURAL  = 1
     UTILITY     = 2
 
+# 2023.10.01 added by cbchoi
+class ExecutionType(Enum):
+    R_TIME  = 0
+    V_TIME  = 1
 
 class SingletonType(object):
     def __call__(self, cls, *args, **kwargs):

@@ -1,11 +1,21 @@
+#!/usr/bin/env python
+
+# Author: Changbeom Choi (@cbchoi)
+# Copyright (c) 2014-2020 Handong Global University
+# Copyright (c) 2014-2020 Hanbat National University
+# License: MIT.  The full license text is available at:
+#  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
+from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
+
 from .model_stm import STM
 from .model_peg import PEG
 from .model_msg_recv import MsgRecv
 
 def execute_simulation():
     # System Simulator Initialization
-    se = SysExecutor(1, _sim_mode="VIRTUAL_TIME")
+    se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
     #se.register_engine("first", "REAL_TIME", 1)
     se.insert_input_port("start")
     #gen = PEG(0, Infinite, "Gen", "first")
