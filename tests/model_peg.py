@@ -21,7 +21,7 @@ class PEG(BehaviorModel):
 
     def output(self):
         msg = SysMessage(self.get_name(), "process")
-        msg.insert(f"[Gen][OUT]: {self.msg_no}")
+        msg.insert(f"{self.msg_no}")
         print(f"[Gen][OUT]: {self.msg_no}")
         return msg
         

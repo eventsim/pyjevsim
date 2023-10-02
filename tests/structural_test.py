@@ -10,7 +10,7 @@ def test_f():
 
     se.coupling_relation(se, "start", gen, "start")
     se.insert_external_event("start", None)
-    se.simulate(15)
+    se.simulate(5)
 
     gen = se.get_entity("Gen")
     
