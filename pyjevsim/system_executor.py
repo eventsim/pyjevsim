@@ -1,6 +1,8 @@
-"""
-    Light-weighted Simulation Engine
-"""
+# Author: Changbeom Choi (@cbchoi)
+# Copyright (c) 2014-2020 Handong Global University
+# Copyright (c) 2014-2020 Hanbat National University
+# License: MIT.  The full license text is available at:
+#  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 from collections import deque
 import heapq
@@ -8,15 +10,12 @@ import copy
 import time
 import datetime
 import threading
-
-from .definition import *
-from .core_model import CoreModel
-from .default_message_catcher import *
-from .system_object import *
-
-import functools
-import operator
 import math
+
+from .definition import ExecutionType, Infinite, ModelType, SimulationMode
+from .core_model import CoreModel
+from .default_message_catcher import DefaultMessageCatcher
+from .system_message import SysMessage
 
 from .termination_manager import TerminationManager
 from .executor_factory import ExecutorFactory
@@ -54,7 +53,7 @@ class SysExecutor(CoreModel):
 
         self.sim_init_time = datetime.datetime.now()
 
-        self.execFactory = ExecutorFactory()
+        self.exec_factory = ExecutorFactory()
 
         self.dmc = DefaultMessageCatcher("dc")
         self.register_entity(self.dmc)
@@ -75,11 +74,11 @@ class SysExecutor(CoreModel):
 
     def register_entity(self, entity, inst_t=0, dest_t=Infinite, ename="default"):
         #sim object에서 behavior executor
-        sim_obj = self.execFactory.create_executor(self.global_time, inst_t, dest_t, ename, entity)
+        sim_obj = self.exec_factory.create_executor(self.global_time, inst_t, dest_t, ename, entity)
         self.product_port_map[entity] = sim_obj
 
         if not sim_obj.get_create_time() in self.waiting_obj_map:
-            self.waiting_obj_map[sim_obj.get_create_time()] = list()
+            self.waiting_obj_map[sim_obj.get_create_time()] = []
 
         self.waiting_obj_map[sim_obj.get_create_time()].append(sim_obj)
 
@@ -93,38 +92,12 @@ class SysExecutor(CoreModel):
     def get_entity(self, model_name):
         if model_name in self.model_map:
             return self.model_map[model_name]
-        else:
-            return []
+        return []
 
     def remove_entity(self, model_name):
         if model_name in self.model_map:
-            for agent in self.model_map[model_name]:
-                del self.active_obj_map[agent.get_obj_id()]
-                port_del_map = {}
-                for key, value in self.port_map.items():
-                    # Sender
-                    if key[0] == agent:
-                        port_del_map[key] = True
-
-                    # Receiver
-                    if value:
-                        del_items = []
-                        for src_port in value:
-                            src, _ = src_port
-                            if src == agent:
-                                del_items.append(src_port)
-                        for item in del_items:
-                            value.remove(item)
-
-                for key in port_del_map.keys():
-                    del self.port_map[key]
-
-                if agent in self.min_schedule_item:
-                    self.min_schedule_item.remove(agent)
-                print("deleted")
-                del self.model_map[model_name]
-        else:
-            return None
+            self.destory_entity(self.model_map[model_name])
+            del self.model_map[model_name]
 
     def create_entity(self):
         if len(self.waiting_obj_map.keys()) != 0:
@@ -140,37 +113,40 @@ class SysExecutor(CoreModel):
                 # select object that requested minimum time
                 self.min_schedule_item = sorted(self.min_schedule_item, key=lambda bm: (bm.get_req_time(), bm.get_obj_id()))
 
-    def destroy_entity(self):
+    def destory_entity(self, delete_lst):
+        for agent in delete_lst:
+            del(self.active_obj_map[agent.get_obj_id()])
+                
+            port_del_map = {}
+            for key, value in self.port_map.items():
+                # Sender
+                if key[0] == agent:
+                    port_del_map[key] = True
+                
+                # Receiver
+                if value:
+                    del_items = []
+                    for src_port in value:
+                        src, _ = src_port
+                        if src == agent:
+                            del_items.append(src_port)
+                    for item in del_items:
+                        value.remove(item)
+
+            for key in port_del_map:
+                del self.port_map[key]
+
+            if agent in self.min_schedule_item:
+                self.min_schedule_item.remove(agent)
+
+    def destroy_active_entity(self):
         if len(self.active_obj_map.keys()) != 0:
             delete_lst = []
-            for agent_name, agent in self.active_obj_map.items():
+            for _, agent in self.active_obj_map.items():
                 if agent.get_destruct_time() <= self.global_time:
                     delete_lst.append(agent)
 
-            for agent in delete_lst:
-                del(self.active_obj_map[agent.get_obj_id()])
-                
-                port_del_map = {}
-                for key, value in self.port_map.items():
-                    # Sender
-                    if key[0] == agent:
-                        port_del_map[key] = True
-                    
-                    # Receiver
-                    if value:
-                        del_items = []
-                        for src_port in value:
-                            src, _ = src_port
-                            if src == agent:
-                                del_items.append(src_port)
-                        for item in del_items:
-                            value.remove(item)
-
-                for key in port_del_map.keys():
-                    del(self.port_map[key])
-
-                if agent in self.min_schedule_item:
-                    self.min_schedule_item.remove(agent)
+            self.destory_entity(delete_lst)
             
     def coupling_relation(self, src_obj, out_port, dst_obj, in_port):
         if src_obj and src_obj != self:
@@ -187,22 +163,6 @@ class SysExecutor(CoreModel):
             self.port_map[(src_obj, out_port)].append((dst_obj, in_port))
         else:
             self.port_map[(src_obj, out_port)] = [(dst_obj, in_port)]
-
-    def _coupling_relation(self, _src, dst):
-        if _src:
-            src = self.product_port_map[_src]
-        else:
-            src = None
-
-        if dst:
-            dst = self.product_port_map[dst]
-        else:
-            dst = None
-
-        if src in self.port_map:
-            self.port_map[src].append(dst)
-        else:
-            self.port_map[src] = [dst]
 
     def single_output_handling(self, obj, msg):
         pair = (obj, msg[1].get_dst())
@@ -223,12 +183,6 @@ class SysExecutor(CoreModel):
                 # Receiver Message Handling
                 destination[0].ext_trans(destination[1], msg[1])
                 # Receiver Scheduling
-                # wrong : destination[0].set_req_time(self.global_time + destination[0].time_advance())
-
-#                while self.thread_flag:
-#                    time.sleep(0.001)
-
-                #print(type(destination[0]))
                 destination[0].set_req_time(self.global_time)
 
     def output_handling(self, obj, msg):
@@ -239,61 +193,26 @@ class SysExecutor(CoreModel):
                     self.single_output_handling(obj, copy.deepcopy(pair))
             else:
                 self.single_output_handling(obj, msg)
-                
-
-    def flattening(self, _model, _del_model, _del_coupling):
-        # handle external output coupling
-        for k, v in _model.retrieve_external_output_coupling().items():
-            if v in self.port_map:
-                for coupling in self.port_map[v]:
-                    self._coupling_relation(k, coupling)
-                    _del_coupling.append((v,coupling))
-        
-        # handle external input coupling
-        for k, v in _model.retrieve_external_input_coupling().items():
-            port_key_lst = []
-            for sk, sv in self.port_map.items():
-                if k in sv:
-                    port_key_lst.append(sk)
-                    _del_coupling.append((sk, k))
-            for key in port_key_lst:
-                self.port_map[key].extend(v)
-        
-        # handle internal coupling
-        for k, v, in _model.retrieve_internal_coupling().items():
-            for dst in v:
-                self._coupling_relation(k, dst)
-        
-        # manage model hierarchical 
-        for m in _model.retrieve_models():
-            if m.get_type() == ModelType.STRUCTURAL:
-                self.flattening(m, _del_model, _del_coupling)
-            else:
-                self.register_entity(m)
-
-        for k, model_lst in self.waiting_obj_map.items():
-            if _model in model_lst:
-                _del_model.append((k, _model))
 
     def init_sim(self):
         self.simulation_mode = SimulationMode.SIMULATION_RUNNING
 
         # Flattening
-        _del_model = []
-        _del_coupling = []
-        for model_lst in self.waiting_obj_map.values():
-            for model in model_lst:
-                pass
+        #_del_model = []
+        #_del_coupling = []
+        #for model_lst in self.waiting_obj_map.values():
+        #    for model in model_lst:
+        #        pass
                 #if model.get_type() == ModelType.STRUCTURAL:
                 #    self.flattening(model, _del_model, _del_coupling)
 
-        for target, _model in _del_model:
-            if _model in self.waiting_obj_map[target]:
-                self.waiting_obj_map[target].remove(_model)
+        #for target, _model in _del_model:
+        #    if _model in self.waiting_obj_map[target]:
+        #        self.waiting_obj_map[target].remove(_model)
 
-        for target, _model in _del_coupling:
-            if _model in self.port_map[target]:
-                self.port_map[target].remove(_model)
+        #for target, _model in _del_coupling:
+        #    if _model in self.port_map[target]:
+        #        self.port_map[target].remove(_model)
 
         # setup inital time        
         if self.active_obj_map is None:
@@ -340,11 +259,11 @@ class SysExecutor(CoreModel):
         self.global_time += self.time_resolution
 
         # Agent Deletion
-        self.destroy_entity()
+        self.destroy_active_entity()
 
         after = time.perf_counter()
         if self.ex_mode == ExecutionType.R_TIME: # Realtime Constraints?
-            time.sleep((lambda x: x if x > 0 else 0)(float(self.time_resolution) - float(after-before)))
+            time.sleep(max(float(self.time_resolution) - float(after-before), 0))
 
 
     def simulate(self, _time=Infinite, _tm=True):
@@ -382,35 +301,31 @@ class SysExecutor(CoreModel):
 
         self.sim_init_time = datetime.datetime.now()
 
-        self.dmc = DefaultMessageCatcher(0, Infinite, "dc", "default")
+        self.dmc = DefaultMessageCatcher("dc")
         self.register_entity(self.dmc)
 
     # External Event Handling - by cbchoi
     def insert_external_event(self, _port, _msg, scheduled_time=0):
-        sm = SysMessage("SRC", _port)
-        sm.insert(_msg)
+        sys_msg = SysMessage("SRC", _port)
+        sys_msg.insert(_msg)
 
         if _port in self.external_input_ports:
-            self.lock.acquire()
-            heapq.heappush(self.input_event_queue, (scheduled_time + self.global_time, sm))
-            self.lock.release()
+            with self.lock:
+                heapq.heappush(self.input_event_queue, (scheduled_time + self.global_time, sys_msg))
         else:
             # TODO Exception Handling
             print("[INSERT_EXTERNAL_EVNT] Port Not Found")
-            pass
 
     def insert_custom_external_event(self, _port, _bodylist, scheduled_time=0):
-        sm = SysMessage("SRC", _port)
-        sm.extend(_bodylist)
+        sys_msg = SysMessage("SRC", _port)
+        sys_msg.extend(_bodylist)
 
         if _port in self.external_input_ports:
-            self.lock.acquire()
-            heapq.heappush(self.input_event_queue, (scheduled_time + self.global_time, sm))
-            self.lock.release()
+            with self.lock:
+                heapq.heappush(self.input_event_queue, (scheduled_time + self.global_time, sys_msg))
         else:
             # TODO Exception Handling
             print("[INSERT_EXTERNAL_EVNT] Port Not Found")
-            pass
 
     def get_generated_event(self):
         return self.output_event_queue
@@ -419,12 +334,11 @@ class SysExecutor(CoreModel):
         event_list = [ev for ev in self.input_event_queue if ev[0] <= self.global_time]
         for event in event_list:
             self.output_handling(self, event)
-            self.lock.acquire()
-            heapq.heappop(self.input_event_queue)
-            self.lock.release()
+            with self.lock:
+                heapq.heappop(self.input_event_queue)
             
-        self.min_schedule_item = deque(sorted(self.min_schedule_item, key=lambda bm: (bm.get_req_time(), bm.get_obj_id())))
-        pass
+        self.min_schedule_item = deque(sorted(self.min_schedule_item, \
+                                     key=lambda bm: (bm.get_req_time(), bm.get_obj_id())))
 
     def handle_external_output_event(self):
         event_lists = copy.deepcopy(self.output_event_queue)

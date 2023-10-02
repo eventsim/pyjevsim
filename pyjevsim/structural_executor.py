@@ -10,9 +10,9 @@
 Module to manage structural model and its components
 """
 
+import copy
 from collections import deque
-from abc import abstractmethod
-from .definition import *
+from .definition import Infinite
 from .executor import Executor
 
 class StructuralExecutor(Executor):
@@ -45,10 +45,9 @@ class StructuralExecutor(Executor):
         self.min_schedule_item = deque(sorted(self.min_schedule_item, key=lambda bm: (bm.get_req_time(), bm.get_obj_id())))
         self.request_time = self.min_schedule_item[0].get_req_time()
         self._next_event_t = self.request_time
-        pass
 
-    def __str__(self):
-        return "[N]:{0}, [S]:{1}".format(self.get_name(), self._cur_state)
+    #def __str__(self):
+    #    return "[N]:{0}, [S]:{1}".format(self.get_name(), self._cur_state)
 
     def get_name(self) : 
         return self.sm.get_name()
@@ -70,13 +69,11 @@ class StructuralExecutor(Executor):
 
     # External Transition
     def ext_trans(self, port, msg):
-        self.output_evnt_handling(self, msg)
-        pass
+        self.output_event_handling(self, msg)
 
     # Internal Transition
     def int_trans(self):
         self.min_schedule_item[0].int_trans()
-        pass
 
     def message_handling(self, obj, msg):
         if obj in self.product_model_map:
@@ -106,11 +103,11 @@ class StructuralExecutor(Executor):
         else:
             pass # TODO: uncaught Message Handling
 
-    def output_evnt_handling(self, obj, msg):
+    def output_event_handling(self, obj, msg):
         if msg is not None:
             if isinstance(msg, list):
                 for ith_msg in msg:
-                    self.message_handling(obj, copy.deepcopy(msg))
+                    self.message_handling(obj, copy.deepcopy(ith_msg))
             else:
                 self.message_handling(obj, msg)
 
@@ -118,7 +115,8 @@ class StructuralExecutor(Executor):
     def output(self):
         msg = self.min_schedule_item[0].output()
         if msg is not None: 
-            self.output_evnt_handling(self.min_schedule_item[0], msg)
+            self.output_event_handling(self.min_schedule_item[0], msg) ## TODO: Output Handling Bugfix
+            return None # Temporarily
         else:
             return None
 

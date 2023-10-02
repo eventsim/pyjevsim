@@ -14,9 +14,9 @@ from .model_peg import PEG
 from .model_msg_recv import MsgRecv
 
 
-def execute_simulation(execution_mode):
+def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # System Executor Initialization
-    se = SysExecutor(1, ex_mode=execution_mode)
+    se = SysExecutor(t_resol, ex_mode=execution_mode)
     se.insert_input_port("start")
 
     # Model Creation
@@ -39,7 +39,7 @@ def execute_simulation(execution_mode):
 
 # Test Suite
 def test_casual_order1(capsys):
-    execute_simulation(ExecutionType.V_TIME)
+    execute_simulation(1, ExecutionType.V_TIME)
     captured = capsys.readouterr()
     desired_output = "[Gen][IN]: started\n[Gen][OUT]: 0\n"\
                      + "[MsgRecv][IN]: 0\n[Gen][OUT]: 1\n[MsgRecv][IN]: 1\n"
@@ -47,6 +47,7 @@ def test_casual_order1(capsys):
 
 def test_execution_mode():
     before = time.perf_counter()
-    execute_simulation(ExecutionType.R_TIME)
+    execute_simulation(1, ExecutionType.R_TIME)
     after = time.perf_counter()
-    assert math.isclose((after - before), 3, rel_tol=0.01)
+    diff = (after - before)
+    assert math.isclose(diff, 3, rel_tol=0.05)

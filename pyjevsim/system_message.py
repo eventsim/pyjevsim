@@ -1,3 +1,9 @@
+# Author: Changbeom Choi (@cbchoi)
+# Copyright (c) 2014-2020 Handong Global University
+# Copyright (c) 2014-2020 Hanbat National University
+# License: MIT.  The full license text is available at:
+#  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
 from .system_object import  SystemObject
 
 class SysMessage(SystemObject):
@@ -9,7 +15,7 @@ class SysMessage(SystemObject):
         self._msg_list = []
 
     def __str__(self):
-        return super(SysMessage, self).__str__() + \
+        return super().__str__() + \
                 f"\tSRC:{self._src}\t DST:{self._dst}"
 
     def insert(self, msg):
@@ -27,8 +33,8 @@ class SysMessage(SystemObject):
     def get_dst(self):
         return self._dst
 
-    def set_msg_time(self, t):
-        self._msg_time = t
+    def set_msg_time(self, _time):
+        self._msg_time = _time
 
     def get_msg_time(self):
         return self._msg_time

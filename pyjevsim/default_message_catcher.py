@@ -1,3 +1,9 @@
+# Author: Changbeom Choi (@cbchoi)
+# Copyright (c) 2014-2020 Handong Global University
+# Copyright (c) 2014-2020 Hanbat National University
+# License: MIT.  The full license text is available at:
+#  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
 from .behavior_model import BehaviorModel
 from .system_message import SysMessage
 from .definition import *

@@ -1,3 +1,9 @@
+# Author: Changbeom Choi (@cbchoi)
+# Copyright (c) 2014-2020 Handong Global University
+# Copyright (c) 2014-2020 Hanbat National University
+# License: MIT.  The full license text is available at:
+#  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
 from .core_model import CoreModel
 from .definition import ModelType
 
@@ -20,7 +26,7 @@ class StructuralModel(CoreModel):
         return self._models
 
     def coupling_relation(self, src_obj, src_port, dst_obj, dst_port):
-        if src_obj == self :
+        if src_obj == self:
             if (self, src_port) not in self.external_input_coupling_map:
                 self.port_map[(self, src_port)] = [(dst_obj, dst_port)]
             else:
@@ -30,5 +36,5 @@ class StructuralModel(CoreModel):
         else:# TODO: check redundant port pairs.
             if (src_obj, src_port) not in self.internal_coupling_map:
                 self.port_map[(src_obj, src_port)] = [(dst_obj, dst_port)]
-            else: 
+            else:
                 self.port_map[(src_obj, src_port)].append((dst_obj, dst_port))
