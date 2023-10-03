@@ -199,9 +199,10 @@ class SysExecutor(CoreModel):
                 self.output_event_queue.append((self.global_time, msg[1].retrieve()))
             else:
                 # Receiver Message Handling
-                destination[0].ext_trans(destination[1], msg[1])
-                # Receiver Scheduling
-                destination[0].set_req_time(self.global_time)
+                if destination[0].get_obj_id() in self.active_obj_map:
+                    destination[0].ext_trans(destination[1], msg[1])
+                    # Receiver Scheduling
+                    destination[0].set_req_time(self.global_time)
 
     def output_handling(self, obj, msg):
         if msg is not None:
