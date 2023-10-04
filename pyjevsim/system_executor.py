@@ -23,6 +23,7 @@ from .system_message import SysMessage
 from .termination_manager import TerminationManager
 from dill import loads
 
+from abc import abstractmethod
 
 class SysExecutor(CoreModel):
     EXTERNAL_SRC = "SRC"
@@ -253,7 +254,7 @@ class SysExecutor(CoreModel):
         # TODO: consider event handling after time pass
         self.handle_external_input_event()
         
-        self.snapshot_manager() ## snapshot manger
+        self.snapshot_manger() ## snapshot manger
 
         tuple_obj = self.min_schedule_item.popleft()
         before = time.perf_counter()  # TODO: consider decorator
@@ -397,13 +398,14 @@ class SysExecutor(CoreModel):
     
     def snapshot_manger(self) :
         #snapshot expression, load expression
-        if self.snapshot_dump_type :
-            pass    
-        if self.snapshot_load_type : 
-            ## shotmodel list
-            model = self.model_laod(shotmodel) 
-            self.register_entity(model)
-        pass
+        print(self.global_time)
+        #if self.snapshot_dump_type :
+        #    pass    
+        #if self.snapshot_load_type : 
+        #    ## shotmodel list
+        #    model = self.model_laod(shotmodel) 
+        #    self.register_entity(model)
+        #pass
         
     def model_load(shotmodel, name = None) :
         model_info = loads(shotmodel) #shotmodel : binary data of model info 

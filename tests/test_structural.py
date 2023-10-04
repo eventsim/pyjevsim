@@ -7,13 +7,23 @@
 #  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 from pyjevsim.definition import *
+from pyjevsim.definition import ExecutionType
 from pyjevsim.system_executor import SysExecutor
-
+from pyjevsim.system_executor import SysExecutor
 from .model_stm import STM
+
+class SnapshotExecutor(SysExecutor) :
+    def __init__(self, _time_resolution, _sim_name="default", ex_mode=ExecutionType.V_TIME):
+        super().__init__(_time_resolution, _sim_name, ex_mode)
+    
+    def snapshot_manger(self, shotmodel=None):
+        if self.global_time >= 3 :
+            print(self.get_entity("Gen"))
+            
 
 
 def test_f():
-    se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
+    se = SnapshotExecutor(1, ex_mode=ExecutionType.V_TIME)
     se.insert_input_port("start")
 
     gen = STM("Gen")
@@ -24,3 +34,4 @@ def test_f():
     se.simulate(5)
 
     gen = se.get_entity("Gen")
+
