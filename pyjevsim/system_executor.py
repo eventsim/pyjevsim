@@ -21,8 +21,7 @@ from .definition import ExecutionType, Infinite, ModelType, SimulationMode
 from .executor_factory import ExecutorFactory
 from .system_message import SysMessage
 from .termination_manager import TerminationManager
-from dill import loads
-
+from .snapshot_manager import SnapshotManager
 
 class SysExecutor(CoreModel):
     EXTERNAL_SRC = "SRC"
@@ -74,10 +73,7 @@ class SysExecutor(CoreModel):
         
         #Available pyjevsim Versions
         self.SYSTEM_VERSION = ["1.0"] 
-        
-        ##snapshot type
-        self.snapshot_dump_type = False
-        self.snapshot_laod_type = False
+        self.use_snapshot = False
         
     # retrieve global time
     def get_global_time(self):
@@ -253,8 +249,9 @@ class SysExecutor(CoreModel):
         # TODO: consider event handling after time pass
         self.handle_external_input_event()
         
-        self.snapshot_manager() ## snapshot manger
-
+        if self.use_snapshot : 
+            self.snapshot()
+        
         tuple_obj = self.min_schedule_item.popleft()
         before = time.perf_counter()  # TODO: consider decorator
 
@@ -382,43 +379,23 @@ class SysExecutor(CoreModel):
         return event_lists
 
     def is_terminated(self):
-        return self.simulation_mode == SimulationMode.SIMULATION_TERMINATED
+        return self.simulation_mode == SimulationMode.SIMULATION_TERMINATED   
 
-    def set_dump_condition(self, dump_condition = True):
-        ## snapshot condition define
-        ## Define condition type and select a type?
-        ## snapshot type?
-        self.snapshot_dump_type = dump_condition
-        pass
-    
-    def set_load_condition(self, load_condition = True):
-        self.snapshot_load_type = load_condition
-        pass
-    
-    def snapshot_manger(self) :
-        #snapshot expression, load expression
-        if self.snapshot_dump_type :
-            pass    
-        if self.snapshot_load_type : 
-            ## shotmodel list
-            model = self.model_laod(shotmodel) 
-            self.register_entity(model)
-        pass
+    def set_snapshot(self, snapshot_condition) :
+        self.use_snapshot = True
+        self.snapshot_manger = SnapshotManager(snapshot_condition)
+        self.snapshot_data = []
         
-    def model_load(shotmodel, name = None) :
-        model_info = loads(shotmodel) #shotmodel : binary data of model info 
-    
-        if model_info["version"] not in self.SYSTEM_VERSION :
-            raise Exception(f"{model_info['model_name']} model type does not match pyjevsim version")
+    def snapshot(self) :
         
-        model = model_info["model_data"]
+        name_list = self.snapshot_manger.get_snapshot_model_name(self.get_global_time())
+        if name_list == None : 
+            return 
         
-        if  not isinstance(model, BehaviorModel) :
-            raise Exception(f"{model_info['model_name']} is not of BehaviorModel type")
-            
-        if name != None : 
-            model.set_name(name)
+        for name in name_list : 
+            model = self.get_entity(name)
+            self.snapshot_data.append({name : self.snapshot_manger.model_dump(model[0]), "global_time" : self.get_global_time()}) 
+            #get_entity type : list?
         
-        return model    
-    
-    
+    def get_snapshot_data(self) :
+        return self.snapshot_data
