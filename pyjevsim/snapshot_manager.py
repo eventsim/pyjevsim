@@ -1,20 +1,19 @@
-from dill import loads
-from .behavior_model import BehaviorModel
+from abc import abstractmethod
 
 class SnapshotManager :
-    def __init__(self, snapshot_condition) :
-        self.SYSTEM_VERSION = ["1.0"]
-
-        self.snapshot_condition = snapshot_condition
+    def __init__(self) :
         pass
-        
-    def get_snapshot_model_name(self, global_time) :
-        model_name = self.snapshot_condition(global_time) 
-        return model_name
     
-    def model_dump(self, model_executor) :
-        return model_executor.get_core_model().model_snapshot()
-                
+    @abstractmethod
+    def get_condition(self, name) :
+        if name == "" :
+            return self.snapshot_condition
+    
+    @abstractmethod
+    def snapshot_condition(dump_info) : 
+        return True
+        
+    """
     def model_load(self, shotmodel, name = None) :
         model_info = loads(shotmodel) #shotmodel : binary data of model info 
     
@@ -30,3 +29,4 @@ class SnapshotManager :
             model.set_name(name)
         
         return model    
+    """

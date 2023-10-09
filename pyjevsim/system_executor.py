@@ -21,14 +21,14 @@ from .definition import ExecutionType, Infinite, ModelType, SimulationMode
 from .executor_factory import ExecutorFactory
 from .system_message import SysMessage
 from .termination_manager import TerminationManager
-from .snapshot_manager import SnapshotManager
+from .snapshot_behavior_executor import SnapshotBehaviorExecutor
 
 class SysExecutor(CoreModel):
     EXTERNAL_SRC = "SRC"
     EXTERNAL_DST = "DST"
 
     def __init__(
-        self, _time_resolution, _sim_name="default", ex_mode=ExecutionType.V_TIME
+        self, _time_resolution, _sim_name="default", ex_mode=ExecutionType.V_TIME, snapshot_manager = ""
     ):
         CoreModel.__init__(self, _sim_name, ModelType.UTILITY)
         self.lock = threading.Lock()
@@ -70,10 +70,7 @@ class SysExecutor(CoreModel):
 
         # TIME Handling
         self.ex_mode = ex_mode
-        
-        #Available pyjevsim Versions
-        self.SYSTEM_VERSION = ["1.0"] 
-        self.use_snapshot = False
+        self.snapshot_manager = snapshot_manager
         
     # retrieve global time
     def get_global_time(self):
@@ -81,9 +78,14 @@ class SysExecutor(CoreModel):
 
     def register_entity(self, entity, inst_t=0, dest_t=Infinite, ename="default"):
         # sim object에서 behavior executor
+        snapshot_info = None
+        if self.snapshot_manager != "": 
+            snapshot_info = self.snapshot_manager.get_condition(entity.get_name())
+        
         sim_obj = self.exec_factory.create_executor(
-            self.global_time, inst_t, dest_t, ename, entity
+            self.global_time, inst_t, dest_t, ename, entity, snapshot_info
         )
+        
         self.product_port_map[entity] = sim_obj
 
         if not sim_obj.get_create_time() in self.waiting_obj_map:
@@ -248,11 +250,12 @@ class SysExecutor(CoreModel):
         self.create_entity()
         # TODO: consider event handling after time pass
         self.handle_external_input_event()
-        
-        if self.use_snapshot : 
-            self.snapshot()
-        
+                
         tuple_obj = self.min_schedule_item.popleft()
+        
+        snap = False
+        if isinstance(tuple_obj, SnapshotBehaviorExecutor) : 
+            snap = True
         before = time.perf_counter()  # TODO: consider decorator
 
         while math.isclose(tuple_obj.get_req_time(), self.global_time, rel_tol=1e-9):
@@ -273,6 +276,9 @@ class SysExecutor(CoreModel):
                     key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
                 )
             )
+    
+            if snap :
+                tuple_obj.snapshot()
 
             tuple_obj = self.min_schedule_item.popleft()
 

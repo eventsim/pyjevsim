@@ -11,6 +11,7 @@ from enum import Enum
 # TODO-01 Define Error Type or Exception cbchoi
 Infinite = float("inf")  # hug value
 
+SYSTEM_VERSION = "1.0"
 
 class AttributeType(Enum):
     # BEHAVIOR = 0

@@ -49,6 +49,6 @@ class CoreModel(SystemObject):
     def retrieve_output_ports(self):
         return self.external_output_ports
 
-    def model_snapshot(self) :
-        model_info = {"version" : "1.0", "model_name" : self._name, "model_data" : self}
+    def model_snapshot(self, version) :
+        model_info = {"version" : version, "model_name" : self._name, "model_data" : self}
         return dumps(model_info)

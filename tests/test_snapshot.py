@@ -9,22 +9,29 @@
 from pyjevsim.definition import *
 from pyjevsim.definition import ExecutionType
 from pyjevsim.system_executor import SysExecutor
-from pyjevsim.snapshot_manager import SnapshotManager
 from .model_stm import STM
- 
-def snapshot_condition(global_time) : 
-    if global_time : 
-        return ["Gen"]
-    else :
-        return None 
+from pyjevsim.snapshot_manager import SnapshotManager
+
+class SnapshotTest(SnapshotManager) :
+    def __init__(self):
+        super().__init__()
+        
+    def get_condition(self, name):
+        if name == "Gen" :
+            return self.snapshot_condition
+    
+    def snapshot_condition(dump_info):
+        return True
+
+
     
 def test_f():
+
+    snapshot_manager = SnapshotTest()
 
     se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
     se.insert_input_port("start")
 
-    se.set_snapshot(snapshot_condition)
-    
     gen = STM("Gen")
     se.register_entity(gen, inst_t=3)
 
