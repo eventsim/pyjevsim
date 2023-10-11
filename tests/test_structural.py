@@ -13,7 +13,7 @@ from .model_stm import STM
 
 
 def test_f():
-    se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
+    se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
     se.insert_input_port("start")
 
     gen = STM("Gen")

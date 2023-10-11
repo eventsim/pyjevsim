@@ -1,18 +1,19 @@
-from abc import abstractmethod
+from abc import abstractstaticmethod
 
 class SnapshotManager :
     def __init__(self) :
+        self.snapshot_executor_map = {}
         pass
     
-    @abstractmethod
-    def get_condition(self, name) :
-        if name == "" :
-            return self.snapshot_condition
+    def register_entity(self, name, snapshot_executor_generator):
+        self.snapshot_executor_map[name] = snapshot_executor_generator
     
-    @abstractmethod
-    def snapshot_condition(dump_info) : 
-        return True
-        
+    def check_snapshot_executor(self, name) :
+        return name in self.snapshot_executor_map
+    
+    def create_snapshot_executor(self, behavior_executor):
+        return self.snapshot_executor_map[behavior_executor.get_name()](behavior_executor)
+    
     """
     def model_load(self, shotmodel, name = None) :
         model_info = loads(shotmodel) #shotmodel : binary data of model info 

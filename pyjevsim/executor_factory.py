@@ -10,6 +10,7 @@ from .behavior_model_executor import BehaviorModelExecutor
 from .definition import ModelType
 from .structural_executor import StructuralExecutor
 from .snapshot_behavior_executor import SnapshotBehaviorExecutor
+from .snapshot_structural_executor import SnapshotStructuralExecutor
 
 class ExecutorFactory:
     def __init__(self):
@@ -22,20 +23,7 @@ class ExecutorFactory:
         des_t,
         en_name,
         model,
-        snapshot,
     ):
-        if snapshot :
-            if model.get_model_type() == ModelType.BEHAVIORAL:
-                return self.create_snapshot_executor(
-                global_time, ins_t, des_t, en_name, model, snapshot
-            )
-            elif model.get_model_type() == ModelType.STRUCTURAL:
-                return self.create_structural_executor( ##snapshot modification 
-                global_time, ins_t, des_t, en_name, model, snapshot
-            )
-            else : 
-                return None    
-
         if model.get_model_type() == ModelType.BEHAVIORAL:
             return self.create_behavior_executor(
                 global_time, ins_t, des_t, en_name, model
@@ -55,5 +43,9 @@ class ExecutorFactory:
             global_time, ins_t, des_t, en_name, model, self.create_behavior_executor
         )
 
-    def create_snapshot_executor(self, _, ins_t, des_t, en_name, model, snapshot) :
-        return SnapshotBehaviorExecutor(ins_t, des_t, en_name, model, snapshot)
+    def create_snapshot_behavior_executor(self, _, ins_t, des_t, en_name, model,snapshot_condition) :
+        return SnapshotBehaviorExecutor(ins_t, des_t, en_name, model,snapshot_condition)
+    
+    
+    def create_snapshot_structural_executor(self, _, ins_t, des_t, en_name, model, snapshot_condition) :
+        return SnapshotStructuralExecutor(ins_t, des_t, en_name, model,snapshot_condition)

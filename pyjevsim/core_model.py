@@ -6,8 +6,6 @@
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 """
 from .system_object import SystemObject
-from dill import dumps
-
 
 class CoreModel(SystemObject):
     def __init__(self, _name, _type):
@@ -51,4 +49,4 @@ class CoreModel(SystemObject):
 
     def model_snapshot(self, version) :
         model_info = {"version" : version, "model_name" : self._name, "model_data" : self}
-        return dumps(model_info)
+        return model_info

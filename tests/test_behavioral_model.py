@@ -18,7 +18,7 @@ from .model_peg import PEG
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # System Executor Initialization
-    se = SysExecutor(t_resol, ex_mode=execution_mode)
+    se = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
     se.insert_input_port("start")
 
     # Model Creation

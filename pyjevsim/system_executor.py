@@ -28,7 +28,7 @@ class SysExecutor(CoreModel):
     EXTERNAL_DST = "DST"
 
     def __init__(
-        self, _time_resolution, _sim_name="default", ex_mode=ExecutionType.V_TIME, snapshot_manager = ""
+        self, _time_resolution, _sim_name="default", ex_mode=ExecutionType.V_TIME, snapshot_manager = None
     ):
         CoreModel.__init__(self, _sim_name, ModelType.UTILITY)
         self.lock = threading.Lock()
@@ -57,11 +57,6 @@ class SysExecutor(CoreModel):
 
         self.sim_init_time = datetime.datetime.now()
 
-        self.exec_factory = ExecutorFactory()
-
-        self.dmc = DefaultMessageCatcher("dc")
-        self.register_entity(self.dmc)
-
         self.simulation_mode = SimulationMode.SIMULATION_IDLE
 
         # External Interface
@@ -72,19 +67,23 @@ class SysExecutor(CoreModel):
         self.ex_mode = ex_mode
         self.snapshot_manager = snapshot_manager
         
+        self.exec_factory = ExecutorFactory()
+
+        self.dmc = DefaultMessageCatcher("dc")
+        self.register_entity(self.dmc)
+        
     # retrieve global time
     def get_global_time(self):
         return self.global_time
 
     def register_entity(self, entity, inst_t=0, dest_t=Infinite, ename="default"):
         # sim object에서 behavior executor
-        snapshot_info = None
-        if self.snapshot_manager != "": 
-            snapshot_info = self.snapshot_manager.get_condition(entity.get_name())
         
         sim_obj = self.exec_factory.create_executor(
-            self.global_time, inst_t, dest_t, ename, entity, snapshot_info
+            self.global_time, inst_t, dest_t, ename, entity
         )
+        if self.snapshot_manager.check_snapshot_executor(entity.get_name()) :
+            sim_obj = self.snapshot_manager.create_snapshot_executor(sim_obj)
         
         self.product_port_map[entity] = sim_obj
 
@@ -276,9 +275,6 @@ class SysExecutor(CoreModel):
                     key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
                 )
             )
-    
-            if snap :
-                tuple_obj.snapshot()
 
             tuple_obj = self.min_schedule_item.popleft()
 
@@ -386,22 +382,3 @@ class SysExecutor(CoreModel):
 
     def is_terminated(self):
         return self.simulation_mode == SimulationMode.SIMULATION_TERMINATED   
-
-    def set_snapshot(self, snapshot_condition) :
-        self.use_snapshot = True
-        self.snapshot_manger = SnapshotManager(snapshot_condition)
-        self.snapshot_data = []
-        
-    def snapshot(self) :
-        
-        name_list = self.snapshot_manger.get_snapshot_model_name(self.get_global_time())
-        if name_list == None : 
-            return 
-        
-        for name in name_list : 
-            model = self.get_entity(name)
-            self.snapshot_data.append({name : self.snapshot_manger.model_dump(model[0]), "global_time" : self.get_global_time()}) 
-            #get_entity type : list?
-        
-    def get_snapshot_data(self) :
-        return self.snapshot_data
