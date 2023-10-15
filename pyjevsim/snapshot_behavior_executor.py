@@ -4,16 +4,7 @@ from .executor import Executor
 from abc import abstractmethod, abstractstaticmethod
 import dill
 
-#snapshot_manager.register_entity("PEx", SnapshotBehaviorExecutor.create_executor)
-
-# SysExecutor 
-# if snapshot_manager.get_snapshot_executor(bm.get_name()):
-#   snapshot_manager.create_executor(be)
-#      return executor_map[be.get_name()].create_executor(be)
-
 class SnapshotBehaviorExecutor(Executor):
-    #object가 생성 
-    #등록시 fuction object를 부여
     @abstractstaticmethod
     def create_executor(cls, behavior_exeuctor):
         return SnapshotBehaviorExecutor(behavior_exeuctor) ##class create
@@ -91,8 +82,6 @@ class SnapshotBehaviorExecutor(Executor):
     
     @abstractmethod
     def snapshot_time_condition(self, global_time):
-        if int(global_time) % 2 == 1:
-            self.snapshot(global_time)  
         pass
     
     @abstractmethod
@@ -118,8 +107,6 @@ class SnapshotBehaviorExecutor(Executor):
     @abstractmethod
     def snapshot_post_condition_out(self, msg, cur_state):
         pass
-    #어떻게 사용할지 
-    #snapshot 
     
     @abstractmethod
     def snapshot(self, name) :
@@ -127,3 +114,4 @@ class SnapshotBehaviorExecutor(Executor):
                     
     def model_dump(self) : 
         return dill.dumps(self.behavior_executor.get_core_model().model_snapshot())
+    

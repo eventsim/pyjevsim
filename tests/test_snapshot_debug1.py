@@ -18,7 +18,14 @@ from .model_peg import PEG
 from pyjevsim.snapshot_behavior_executor import SnapshotBehaviorExecutor
 from pyjevsim.snapshot_manager import SnapshotManager
 
-      
+import dill
+
+def debug(engine, global_time, snapshot_cycle) :
+    if int(global_time) % snapshot_cycle == 0 :
+        engine_info = engine.model_snapshot()
+        return dill.dumps(engine_info)
+    return None
+
 class DebugingSnapshotBehaviorExecutor(SnapshotBehaviorExecutor) :
     @staticmethod
     def create_executor(behavior_executor) :
@@ -29,12 +36,12 @@ class DebugingSnapshotBehaviorExecutor(SnapshotBehaviorExecutor) :
     
     def snapshot_time_condition(self, global_time):
         if int(global_time) % 10 == 1 :
-            self.snapshot(f"debug{int(global_time)}")
+            self.snapshot(f"{self.behavior_executor.get_name()}{int(global_time)}")
         pass
 
     def snapshot(self, name):
         model_data = self.model_dump()
-            
+        
         if model_data :
             with open(f"./snapshot/{name}.simx", "wb") as f :
                 f.write(model_data)
@@ -44,6 +51,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     
     snapshot_manager = SnapshotManager()
     snapshot_manager.register_entity("Gen", DebugingSnapshotBehaviorExecutor.create_executor)
+    snapshot_manager.register_entity("Proc", DebugingSnapshotBehaviorExecutor.create_executor)
     
     se = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
     se.insert_input_port("start")
@@ -63,18 +71,22 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # Inject External Event to Engine
     se.insert_external_event("start", None)
 
-    for _ in range(1000):
+    for i in range(100):
         se.simulate(1)
-
+        test = debug(se, se.get_global_time(), 10)
+        if test != None :
+            with open(f"./snapshot/debug/engine_{i}.simx", "wb") as f :
+                f.write(test)
 
 # Test Suite
 def test_execution_mode(capsys):
     execute_simulation(1, ExecutionType.V_TIME)
-    captured = capsys.readouterr()
+    #captured = capsys.readouterr()
     desired_output = (
         "[Gen][IN]: started\n[Gen][OUT]: 0\n"
         + "[MsgRecv][IN]: 0\n[Gen][OUT]: 1\n[MsgRecv][IN]: 1\n"
     )
+    print(capsys)
     #assert captured.out == desired_output
 
 

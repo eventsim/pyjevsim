@@ -75,15 +75,16 @@ class SysExecutor(CoreModel):
     # retrieve global time
     def get_global_time(self):
         return self.global_time
-
+    
     def register_entity(self, entity, inst_t=0, dest_t=Infinite, ename="default"):
         # sim object에서 behavior executor
         
         sim_obj = self.exec_factory.create_executor(
             self.global_time, inst_t, dest_t, ename, entity
         )
-        if self.snapshot_manager.check_snapshot_executor(entity.get_name()) :
-            sim_obj = self.snapshot_manager.create_snapshot_executor(sim_obj)
+        if self.snapshot_manager != None : 
+            if self.snapshot_manager.check_snapshot_executor(entity.get_name()) :
+                sim_obj = self.snapshot_manager.create_snapshot_executor(sim_obj)
         
         self.product_port_map[entity] = sim_obj
 
@@ -185,7 +186,6 @@ class SysExecutor(CoreModel):
             ]
 
         for port_pair in self.port_map[pair]:
-            # print(port_pair)
             destination = port_pair
             if destination is None:
                 print("Destination Not Found")
@@ -249,14 +249,11 @@ class SysExecutor(CoreModel):
         self.create_entity()
         # TODO: consider event handling after time pass
         self.handle_external_input_event()
-                
+        
         tuple_obj = self.min_schedule_item.popleft()
         
-        snap = False
-        if isinstance(tuple_obj, SnapshotBehaviorExecutor) : 
-            snap = True
         before = time.perf_counter()  # TODO: consider decorator
-
+        
         while math.isclose(tuple_obj.get_req_time(), self.global_time, rel_tol=1e-9):
             msg = tuple_obj.output()
             if msg is not None:

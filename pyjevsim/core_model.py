@@ -48,7 +48,5 @@ class CoreModel(SystemObject):
         return self.external_output_ports
 
     def model_snapshot(self) :
-        model_info = {"model_name" : self._name, "unique_object_id" : self.get_obj_id(), "model_data" : self}
-        ##model name, unique object-id도 추가하기
-        ##중요한건 상대방과 비교하기 위해서는 어떻게 사용할지 
+        model_info = {"type" : self.model_type, "name" : self._name, "data" : self}
         return model_info
