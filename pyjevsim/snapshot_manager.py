@@ -1,4 +1,6 @@
 from abc import abstractstaticmethod
+from dill import loads
+from .behavior_model import BehaviorModel
 
 class SnapshotManager :
     def __init__(self) :
@@ -14,13 +16,10 @@ class SnapshotManager :
     def create_snapshot_executor(self, behavior_executor):
         return self.snapshot_executor_map[behavior_executor.get_name()](behavior_executor)
     
-    """
+    
     def model_load(self, shotmodel, name = None) :
         model_info = loads(shotmodel) #shotmodel : binary data of model info 
     
-        if model_info["version"] not in self.SYSTEM_VERSION :
-            raise Exception(f"{model_info['model_name']} model type does not match pyjevsim version")
-        
         model = model_info["model_data"]
         
         if  not isinstance(model, BehaviorModel) :
@@ -30,4 +29,4 @@ class SnapshotManager :
             model.set_name(name)
         
         return model    
-    """
+    

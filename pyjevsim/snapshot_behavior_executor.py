@@ -1,5 +1,5 @@
 
-from .definition import Infinite, SYSTEM_VERSION
+from .definition import Infinite
 from .executor import Executor
 from abc import abstractmethod, abstractstaticmethod
 import dill
@@ -92,7 +92,8 @@ class SnapshotBehaviorExecutor(Executor):
     @abstractmethod
     def snapshot_time_condition(self, global_time):
         if int(global_time) % 2 == 1:
-            self.snapshot(global_time)
+            self.snapshot(global_time)  
+        pass
     
     @abstractmethod
     def snapshot_pre_condition_ext(self, port, msg, cur_state):
@@ -117,11 +118,12 @@ class SnapshotBehaviorExecutor(Executor):
     @abstractmethod
     def snapshot_post_condition_out(self, msg, cur_state):
         pass
+    #어떻게 사용할지 
+    #snapshot 
     
     @abstractmethod
     def snapshot(self, name) :
-        model_data = self.behavior_executor.get_core_model().model_snapshot(SYSTEM_VERSION)
-            
-        if model_data :
-            with open(f"dump_test{name}.simx", "wb") as f :
-                dill.dump(model_data, f)
+        pass
+                    
+    def model_dump(self) : 
+        return dill.dumps(self.behavior_executor.get_core_model().model_snapshot())

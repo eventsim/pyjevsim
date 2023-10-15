@@ -47,6 +47,8 @@ class CoreModel(SystemObject):
     def retrieve_output_ports(self):
         return self.external_output_ports
 
-    def model_snapshot(self, version) :
-        model_info = {"version" : version, "model_name" : self._name, "model_data" : self}
+    def model_snapshot(self) :
+        model_info = {"model_name" : self._name, "unique_object_id" : self.get_obj_id(), "model_data" : self}
+        ##model name, unique object-id도 추가하기
+        ##중요한건 상대방과 비교하기 위해서는 어떻게 사용할지 
         return model_info

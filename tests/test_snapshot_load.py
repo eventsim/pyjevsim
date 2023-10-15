@@ -15,41 +15,20 @@ from pyjevsim.system_executor import SysExecutor
 from .model_msg_recv import MsgRecv
 from .model_peg import PEG
 
-from pyjevsim.snapshot_behavior_executor import SnapshotBehaviorExecutor
 from pyjevsim.snapshot_manager import SnapshotManager
-
-      
-class DebugingSnapshotBehaviorExecutor(SnapshotBehaviorExecutor) :
-    @staticmethod
-    def create_executor(behavior_executor) :
-        return DebugingSnapshotBehaviorExecutor(behavior_executor)
-    
-    def __init__(self, behavior_executor):
-        super().__init__(behavior_executor)
-    
-    def snapshot_time_condition(self, global_time):
-        if int(global_time) % 100 == 1 :
-            self.snapshot(f"debug{int(global_time)}")
-        pass
-
-    def snapshot(self, name):
-        model_data = self.model_dump()
-            
-        if model_data :
-            with open(f"./snapshot/{name}.simx", "wb") as f :
-                f.write(model_data)
-    
+  
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # System Executor Initialization
     
     snapshot_manager = SnapshotManager()
-    snapshot_manager.register_entity("Gen", DebugingSnapshotBehaviorExecutor.create_executor)
-    
+    with open("dump_test.simx", "rb") as f :
+        model_data = f.read()
+        gen = snapshot_manager.model_load(model_data)
+        
     se = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
     se.insert_input_port("start")
 
     # Model Creation
-    gen = PEG("Gen")
     proc = MsgRecv("Proc")
 
     # Register Model to Engine
@@ -63,7 +42,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # Inject External Event to Engine
     se.insert_external_event("start", None)
 
-    for _ in range(25):
+    for _ in range(3):
         se.simulate(1)
 
 
@@ -83,4 +62,4 @@ def test_execution_mode():
     execute_simulation(1, ExecutionType.R_TIME)
     after = time.perf_counter()
     diff = after - before
-    assert math.isclose(diff, 3, rel_tol = 0.05)
+    assert math.isclose(diff, 3, rel_tol=0.05)

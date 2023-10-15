@@ -1,7 +1,7 @@
 import copy
 from collections import deque
 
-from .definition import Infinite, SYSTEM_VERSION
+from .definition import Infinite
 from .executor import Executor
 
 
@@ -153,4 +153,4 @@ class SnapshotStructuralExecutor(Executor):
     def snapshot(self) :
         dump_info = {}
         if self.snapshot_condition(dump_info) :
-           print(self.behavior_model.model_snapshot(SYSTEM_VERSION)) 
+           print(self.behavior_model.model_snapshot()) 
