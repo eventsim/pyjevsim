@@ -21,7 +21,7 @@ from .definition import ExecutionType, Infinite, ModelType, SimulationMode
 from .executor_factory import ExecutorFactory
 from .system_message import SysMessage
 from .termination_manager import TerminationManager
-from .snapshot_behavior_executor import SnapshotBehaviorExecutor
+from .snapshot_behavior_executor import SnapshotExecutor
 
 class SysExecutor(CoreModel):
     EXTERNAL_SRC = "SRC"

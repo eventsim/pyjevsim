@@ -15,7 +15,7 @@ from pyjevsim.system_executor import SysExecutor
 from .model_msg_recv import MsgRecv
 from .model_peg import PEG
 
-from pyjevsim.snapshot_manager import SnapshotManager
+from pyjevsim.snapshot_manager import ModelSnapshotManager
 
 import dill
 import os
@@ -33,7 +33,7 @@ def debug(engine, global_time, snapshot_cycle) :
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # System Executor Initialization
     
-    snapshot_manager = SnapshotManager()
+    snapshot_manager = ModelSnapshotManager()
     
     with open(load_last_engine("./snapshot/debug/"), "rb") as f :
         engine_data = f.read()

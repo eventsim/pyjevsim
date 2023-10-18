@@ -4,10 +4,10 @@ from .executor import Executor
 from abc import abstractmethod, abstractstaticmethod
 import dill
 
-class SnapshotBehaviorExecutor(Executor):
+class SnapshotExecutor(Executor):
     @abstractstaticmethod
     def create_executor(cls, behavior_exeuctor):
-        return SnapshotBehaviorExecutor(behavior_exeuctor) ##class create
+        return SnapshotExecutor(behavior_exeuctor) ##class create
     
     def __init__(
         self, behavior_executor 
@@ -115,3 +115,5 @@ class SnapshotBehaviorExecutor(Executor):
     def model_dump(self) : 
         return dill.dumps(self.behavior_executor.get_core_model().model_snapshot())
     
+    def cleansing(self) :
+        return self.behavior_executor

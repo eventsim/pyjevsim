@@ -9,7 +9,7 @@
 from .behavior_model_executor import BehaviorModelExecutor
 from .definition import ModelType
 from .structural_executor import StructuralExecutor
-from .snapshot_behavior_executor import SnapshotBehaviorExecutor
+from .snapshot_behavior_executor import SnapshotExecutor
 from .snapshot_structural_executor import SnapshotStructuralExecutor
 
 class ExecutorFactory:
@@ -44,7 +44,7 @@ class ExecutorFactory:
         )
 
     def create_snapshot_behavior_executor(self, _, ins_t, des_t, en_name, model,snapshot_condition) :
-        return SnapshotBehaviorExecutor(ins_t, des_t, en_name, model,snapshot_condition)
+        return SnapshotExecutor(ins_t, des_t, en_name, model,snapshot_condition)
     
     
     def create_snapshot_structural_executor(self, _, ins_t, des_t, en_name, model, snapshot_condition) :
