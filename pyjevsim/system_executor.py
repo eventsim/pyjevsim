@@ -21,7 +21,7 @@ from .definition import ExecutionType, Infinite, ModelType, SimulationMode
 from .executor_factory import ExecutorFactory
 from .system_message import SysMessage
 from .termination_manager import TerminationManager
-from .snapshot_behavior_executor import SnapshotExecutor
+from .snapshot_executor import SnapshotExecutor
 
 class SysExecutor(CoreModel):
     EXTERNAL_SRC = "SRC"
@@ -104,6 +104,9 @@ class SysExecutor(CoreModel):
         if model_name in self.model_map:
             return self.model_map[model_name]
         return []
+    
+    def get_model(self, name) :
+        return self.model_map[name][0] 
 
     def remove_entity(self, model_name):
         if model_name in self.model_map:
@@ -178,6 +181,30 @@ class SysExecutor(CoreModel):
         else:
             self.port_map[(src_obj, out_port)] = [(dst_obj, in_port)]
 
+    def set_relation_map(self) :
+        self.relation_map = {}
+        for relation in self.port_map.keys() :
+            result_out_list = [] 
+            in_tuple = (relation[0].get_name(), relation[1])
+            out_list = self.port_map[relation]
+            for out in out_list :
+                result_out_list.append((out[0].get_name(), out[1]))
+            self.relation_map[in_tuple] = result_out_list
+        return self.relation_map
+    
+    def get_relation(self) :
+        self.set_relation_map()
+        return self.relation_map
+    
+    def remove_relation(self, src, out_port, dst, in_port) :
+        in_tuple = (self.model_map[src][0], out_port)
+        found = self.port_map[in_tuple].index((self.model_map[dst][0], in_port))
+        del self.port_map[in_tuple][found]
+        
+        if self.port_map[in_tuple] == [] :
+            del self.port_map[in_tuple]
+        return
+    
     def single_output_handling(self, obj, msg):
         pair = (obj, msg[1].get_dst())
         if pair not in self.port_map:

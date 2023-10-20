@@ -15,7 +15,7 @@ from pyjevsim.system_executor import SysExecutor
 from .model_msg_recv import MsgRecv
 from .model_peg import PEG
 
-from pyjevsim.snapshot_manager import ModelSnapshotManager
+from pyjevsim.model_snapshot_manager import ModelSnapshotManager
 
 import dill
 import os

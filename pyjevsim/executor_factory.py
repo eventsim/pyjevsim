@@ -9,7 +9,7 @@
 from .behavior_model_executor import BehaviorModelExecutor
 from .definition import ModelType
 from .structural_executor import StructuralExecutor
-from .snapshot_behavior_executor import SnapshotExecutor
+from .snapshot_executor import SnapshotExecutor
 from .snapshot_structural_executor import SnapshotStructuralExecutor
 
 class ExecutorFactory:

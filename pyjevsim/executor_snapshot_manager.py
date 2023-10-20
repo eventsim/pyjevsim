@@ -2,7 +2,7 @@ from abc import abstractmethod
 from dill import loads
 from .definition import ModelType
 
-class EngineSnapshotManager :
+class ExecutorSnapshotManager :
     def __init__(self) :
         pass
     
@@ -21,3 +21,6 @@ class EngineSnapshotManager :
         
                 
         return engine
+    
+    def cleansing(self, model) :
+        return model.get_behavior_executor()    

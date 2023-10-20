@@ -115,5 +115,5 @@ class SnapshotExecutor(Executor):
     def model_dump(self) : 
         return dill.dumps(self.behavior_executor.get_core_model().model_snapshot())
     
-    def cleansing(self) :
+    def get_behavior_executor(self) :
         return self.behavior_executor

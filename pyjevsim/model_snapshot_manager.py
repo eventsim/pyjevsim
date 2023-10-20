@@ -32,3 +32,6 @@ class ModelSnapshotManager :
         
     def restore_entity(self, name) :
         return self.load_snapshot_map[name]
+    
+
+    
