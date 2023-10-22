@@ -35,17 +35,9 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
 
     # Inject External Event to Engine
     se.insert_external_event("start", None)
-
-
-    print(se.get_relation())
     
-    
-    se.remove_relation("Gen", "process", "Proc", "recv")
-    print(se.get_relation())
-   
-    
-    #for _ in range(3):
-    #    se.simulate(1)
+    for _ in range(3):
+        se.simulate(1)
     
 
 
@@ -57,13 +49,11 @@ def test_casual_order1(capsys):
         "[Gen][IN]: started\n[Gen][OUT]: 0\n"
         + "[MsgRecv][IN]: 0\n[Gen][OUT]: 1\n[MsgRecv][IN]: 1\n"
     )
-    print(captured)
-    #assert captured.out == desired_output
-"""
+    assert captured.out == desired_output
+
 def test_execution_mode():
     before = time.perf_counter()
     execute_simulation(1, ExecutionType.R_TIME)
     after = time.perf_counter()
     diff = after - before
     assert math.isclose(diff, 3, rel_tol=0.05)
-"""

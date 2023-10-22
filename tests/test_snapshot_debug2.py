@@ -15,38 +15,67 @@ from pyjevsim.system_executor import SysExecutor
 from .model_msg_recv import MsgRecv
 from .model_peg import PEG
 
+
+from pyjevsim.snapshot_executor import SnapshotExecutor
 from pyjevsim.model_snapshot_manager import ModelSnapshotManager
 
-import dill
+from pyjevsim.executor_snapshot_manager import ExecutorSnapshotManager
+
 import os
 
-def load_last_engine(path) : 
-    file_list = os.listdir(path)
-    return path + file_list[-1]
 
-def debug(engine, global_time, snapshot_cycle) :
-    if int(global_time) % snapshot_cycle == 0 :
-        engine_info = engine.model_snapshot()
-        return dill.dumps(engine_info)
-    return None
-  
+class DebugSnapshotExecutor(SnapshotExecutor) :
+    @staticmethod
+    def create_executor(behavior_executor) :
+        return DebugSnapshotExecutor(behavior_executor)
+    
+    def __init__(self, behavior_executor):
+        super().__init__(behavior_executor)
+        
+    def snapshot_time_condition(self, global_time):
+        if int(global_time) >= 98 :
+            self.snapshot(f"{self.behavior_executor.get_name()}{int(global_time)}")
+        print(self.behavior_executor.get_core_model().serialize())
+        
+    def snapshot(self, name) :
+        model_data = self.model_dump()
+        
+        if model_data : 
+            with open(f"./snapshot/model/{name}.simx", "wb") as f :
+                f.write(model_data)
+
+
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # System Executor Initialization
     
+    executorsnapshot = ExecutorSnapshotManager()
     snapshot_manager = ModelSnapshotManager()
     
-    with open(load_last_engine("./snapshot/debug/"), "rb") as f :
+    snapshot_manager.register_snapshot_executor("NewGen", DebugSnapshotExecutor.create_executor)
+    
+    with open("./snapshot/executor/se90.simx", "rb") as f :
         engine_data = f.read()
-        
-    se = snapshot_manager.engine_load(engine_data)
-       
-    for i in range(30):
-        se.simulate(1)
+               
+    se = executorsnapshot.load_snapshot(engine_data)
+    
+    se.remove_entity("Gen")
+    
+    se.set_snapshot_manager(snapshot_manager)
+    se.reset_relation()
+    
+    new_gen = PEG("NewGen")
+    
+    se.register_entity(new_gen)
+    se.coupling_relation(se, "start", new_gen, "start")
+    proc = se.get_model("Proc")
 
-        test = debug(se, se.get_global_time(), 5)
-        if test != None :
-            with open(f"./snapshot/debug/engine_{se.get_global_time()}.simx", "wb") as f :
-                f.write(test)
+    se.coupling_relation(new_gen, "process", proc, "recv")
+       
+
+    se.insert_external_event("start", None)
+
+    for i in range(10):
+        se.simulate(1)
 
 # Test Suite
 def test_casual_order1(capsys):

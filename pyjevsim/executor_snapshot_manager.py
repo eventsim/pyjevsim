@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from dill import loads
+from dill import loads, dumps
 from .definition import ModelType
 
 class ExecutorSnapshotManager :
@@ -7,18 +7,15 @@ class ExecutorSnapshotManager :
         pass
     
     def snapshot_executor(self, engine) : 
-        return engine.model_snapshot()        
+        return dumps(engine.model_snapshot())
     
-    def load_snapshot(self, shotengine, model_snapshot_manager) :
+    def load_snapshot(self, shotengine) :
         engine_info = loads(shotengine)
         
         if engine_info["type"] != ModelType.UTILITY:
             raise Exception(f"{engine_info['name']} is not of SystemExecutor type")
         
-        engine = engine_info["data"]
-            
-        engine.set_snapshot_manager(model_snapshot_manager)
-        
+        engine = engine_info["data"]        
                 
         return engine
     
