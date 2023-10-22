@@ -25,6 +25,7 @@ class ENV(BehaviorModel):
             
 
     def output(self):
+        ##human info 계산
         msg = SysMessage(self.get_name(), "human_check")
         msg.insert(self.human)
         print(f"[ENV][OUT]: {self.human}")

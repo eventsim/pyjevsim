@@ -28,10 +28,7 @@ class ModelSnapshotManager :
         if name != None : 
             model.set_name(name)
             
-        self.load_snapshot_map[name] = model
+        return model
         
-    def restore_entity(self, name) :
-        return self.load_snapshot_map[name]
-    
 
     

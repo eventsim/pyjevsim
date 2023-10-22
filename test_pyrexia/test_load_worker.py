@@ -11,23 +11,27 @@ import time
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
-from pyjevsim.system_message import SysMessage
+from pyjevsim.model_snapshot_manager import ModelSnapshotManager
 
-from .model_worker import WorkerManager
 from .model_env import ENV
-
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # System Executor Initialization
-    se = SysExecutor(t_resol, ex_mode=execution_mode)
-    se.insert_input_port("start")
-
-    env_data = {"humidity" : 32, "wind" : 14.7, "temps" : 35.2, "datetime" : 10, "wbgt" : 12.1}
-    human_data = {"human_id" : 30221045, "smoke" : "S", "work_intensive" : 1, "time_stamp" : 10}
+    
+    env_data = {"site_id" : 2, "humid" : 0.3, "wind" : 1, "temp" : 35, "wbgt" : 27} # 수정필요
     
     # Model Creation
     env = ENV("Env", env_data)
-    worker = WorkerManager("Worker")
+    
+    snapshot_manager = ModelSnapshotManager() 
+    with open("./snapshot/test_pyrexia/Worker_low_health.simx", "rb") as f :
+        data = f.read()
+    
+    worker = snapshot_manager.load_snapshot("Worker", data)
+    
+    se = SysExecutor(t_resol, ex_mode=execution_mode)
+    se.insert_input_port("start")
+
 
     # Register Model to Engine
     se.register_entity(env)
@@ -40,7 +44,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     se.coupling_relation(env, "human_check", worker, "worker_check")
 
     # Inject External Event to Engine
-    se.insert_external_event("start", human_data)
+    se.insert_external_event("start", None)
 
     for _ in range(3):
         se.simulate(1)
