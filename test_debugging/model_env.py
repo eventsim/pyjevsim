@@ -3,32 +3,42 @@ from pyjevsim.definition import *
 from pyjevsim.system_message import SysMessage
 
 
-class ENV(BehaviorModel):
+class ENVModel(BehaviorModel):
     def __init__(self, name, env_data):
         BehaviorModel.__init__(self, name)
         self.init_state("Wait")
         self.insert_state("Wait", Infinite)
         self.insert_state("Environment", 0)
 
-        self.insert_input_port("env_check")
-        self.insert_output_port("human_check")
+        self.insert_input_port("process")
+        self.insert_output_port("work")
+        self.insert_output_port("rest")
 
         self.env_data = env_data
         self.human = None
         
     def ext_trans(self, port, msg):
-        if port == "env_check":
+        if port == "process":
             self._cur_state = "Environment"
             data = msg.retrieve()
             self.human = data[0]
-            print(f"[ENV][IN]: {self.human}")
+            
+            
+            self.human["health_score"] -= 0.1
+            self.human["health_score"] = round(self.human["health_score"], 1)
+            
+            print("[ENV][IN]:", self.human["human_id"], ":", self.human["health_score"])
             
 
     def output(self):
         ##human info 계산
-        msg = SysMessage(self.get_name(), "human_check")
+        if self.human["health_score"] > 5 :
+            msg = SysMessage(self.get_name(), "work")
+        else : 
+            msg = SysMessage(self.get_name(), "rest")
         msg.insert(self.human)
-        print(f"[ENV][OUT]: {self.human}")
+        
+        print("[ENV][OUT]:", self.human["human_id"], ":", self.human["health_score"])
         return msg
 
     def int_trans(self):

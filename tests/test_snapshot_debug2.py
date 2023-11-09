@@ -33,7 +33,7 @@ class DebugSnapshotExecutor(SnapshotExecutor) :
         super().__init__(behavior_executor)
         
     def snapshot_time_condition(self, global_time):
-        if int(global_time) >= 98 :
+        if int(global_time) >= 90 :
             self.snapshot(f"{self.behavior_executor.get_name()}{int(global_time)}")
         print(self.behavior_executor.get_core_model().serialize())
         
