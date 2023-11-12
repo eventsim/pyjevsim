@@ -24,47 +24,20 @@ from .model_rest import RestModel
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.R_TIME):
     # System Executor Initialization
     
-    env_data = {"site_id" : 2, "humid" :0.7, "wind" : 1, "temp" : 27, "wbgt" : 27}
-    human_data = {"human_id" : "human16", "work_point" : 0, "health_score" : 70, "work_speed" : 2} 
+    executor_snapshot = ExecutorSnapshotManager()
+    with open("./snapshot/executor/engine10.simx", "rb") as f :
+        se = executor_snapshot.load_snapshot(f.read())
     
-    snapshot_manager = ModelSnapshotManager()
- 
-    # Model Creation
-    env = ENVModel("Env", env_data)
+    se.get_model("Env").human["work_speed"] = 3
     
-    with open("./snapshot/model/work_model.simx", "rb") as f :
-        work = snapshot_manager.load_snapshot("Work", f.read())
-    rest = RestModel("Rest")
-   
-    se = SysExecutor(t_resol, ex_mode=execution_mode)
-    se.insert_input_port("start")
-
-
-    # Register Model to Engine
-    se.register_entity(env)
-    se.register_entity(work)
-    se.register_entity(rest)
-
-    # Set up relation among models
-    se.coupling_relation(se, "start", env, "process")
-    se.coupling_relation(env, "work", work, "work")
-    se.coupling_relation(env, "rest", rest, "rest")
-    
-    se.coupling_relation(work, "process", env, "process")
-    se.coupling_relation(work, "rest", rest, "rest")
-    
-    
-    se.coupling_relation(rest, "process", env, "process")
-    se.coupling_relation(rest, "keep_rest", rest, "rest")
-    
-    # Inject External Event to Engine
-    
-    se.insert_external_event("start", None)
+    print()
+    print(se.get_model("Env").human)
 
     for i in range(70):
         print("simulation time : ", se.get_global_time())
         se.simulate(1)
 
+    print(se.get_model("Env").human)
 
 # Test Suite
 def test_casual_order1(capsys):

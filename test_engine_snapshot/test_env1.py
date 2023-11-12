@@ -21,47 +21,22 @@ from .model_work import WorkModel
 from .model_env import ENVModel
 from .model_rest import RestModel
 
-class TestSnapshotExecutor(SnapshotExecutor) :
-    @staticmethod
-    def create_executor(behavior_executor) :
-        return TestSnapshotExecutor(behavior_executor)
-    
-    def __init__(self, behavior_executor):
-        super().__init__(behavior_executor)
-        self.check = True
-        
-    def snapshot_post_condition_int(self, cur_state):
-        if self.behavior_executor.get_core_model().human["health_score"] <= 50 and self.check:
-            self.snapshot("work_model")
-            print("health point 50 under : work model snapshot")
-            self.check = False
-            print(self.behavior_executor.get_core_model().human)
-            
-    def snapshot(self, name) :
-        model_data = self.model_dump()
-        
-        if model_data : 
-            with open(f"./snapshot/model/{name}.simx", "wb") as f :
-                f.write(model_data)
-
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.R_TIME):
     # System Executor Initialization
     
     env_data = {"site_id" : 1, "humid" :0.65, "wind" : 1, "temp" : 27, "wbgt" : 27}
-    human_data = {"human_id" : "human16", "work_point" : 0, "health_score" : 70, "work_speed" : 2} 
+    human_data = {"human_id" : "human5", "work_point" : 0, "health_score" : 70, "work_speed" : 2} 
     
-    snapshot_manager = ModelSnapshotManager()
+    executor_snapshot = ExecutorSnapshotManager()
+    
  
     # Model Creation
     env = ENVModel("Env", env_data)
     work = WorkModel("Work")
     rest = RestModel("Rest")
 
-
-    snapshot_manager.register_snapshot_executor("Work", TestSnapshotExecutor.create_executor)
-
     
-    se = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager = snapshot_manager)
+    se = SysExecutor(t_resol, ex_mode=execution_mode)
     se.insert_input_port("start")
 
 
@@ -86,9 +61,17 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.R_TIME):
     
     se.insert_external_event("start", human_data)
 
-    for i in range(70):
+    for i in range(20):
         print("simulation time : ", se.get_global_time())
         se.simulate(1)
+        if se.get_global_time() == 10 :
+            with open("./snapshot/executor/engine10.simx", "wb") as f :
+                f.write(executor_snapshot.snapshot_executor(se))
+                
+                print("sim time 10 : engien snapshot")
+                print(se.get_model("Work").human)
+            
+
 
 
 # Test Suite
