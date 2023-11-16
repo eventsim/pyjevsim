@@ -164,3 +164,6 @@ pylint.result.txt
 flake8.result.txt
 
 snapshot/
+snapshot/*
+.snapshot/*
+snapshot
