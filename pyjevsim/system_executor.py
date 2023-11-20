@@ -222,7 +222,7 @@ class SysExecutor(CoreModel):
                 print(self.port_map)
                 raise AssertionError
 
-            if destination[0] is None:
+            if destination[0] is self:
                 self.output_event_queue.append((self.global_time, msg[1].retrieve()))
             else:
                 # Receiver Message Handling
@@ -313,9 +313,10 @@ class SysExecutor(CoreModel):
         # Agent Deletion
         self.destroy_active_entity()
 
-        after = time.perf_counter()
         if self.ex_mode == ExecutionType.R_TIME:  # Realtime Constraints?
-            time.sleep(max(float(self.time_resolution) - float(after - before), 0))
+            delta = float(self.time_resolution) - float(before - time.perf_counter())
+            if delta > 0:
+                time.sleep(delta)
 
     def simulate(self, _time=Infinite, _tm=True):
         if _tm:

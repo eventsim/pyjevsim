@@ -10,18 +10,23 @@ from pyjevsim.definition import *
 from pyjevsim.definition import ExecutionType
 from pyjevsim.system_executor import SysExecutor
 from .model_stm import STM
-
+from .model_msg_recv import MsgRecv
 
 def test_f():
     se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
     se.insert_input_port("start")
 
     gen = STM("Gen")
-    se.register_entity(gen, inst_t=3)
+    mr = MsgRecv("MsgRecv")
+
+    se.register_entity(gen)
+    se.register_entity(mr)
 
     se.coupling_relation(se, "start", gen, "start")
+    se.coupling_relation(gen, "output", mr, "recv")
+
     se.insert_external_event("start", None)
     se.simulate(5)
 
-    gen = se.get_entity("Gen")
-
+    
+    assert mr.msg_recv > 0

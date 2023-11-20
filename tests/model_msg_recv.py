@@ -11,10 +11,13 @@ class MsgRecv(BehaviorModel):
         self.insert_state("Wait", Infinite)
         self.insert_input_port("recv")
 
+        self.msg_recv = 0
+
     def ext_trans(self, port, msg):
         if port == "recv":
             data = msg.retrieve()
             print(f"[MsgRecv][IN]: {data[0]}")
+            self.msg_recv += 1
             self._cur_state = "Wait"
 
     def output(self):

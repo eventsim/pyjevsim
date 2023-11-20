@@ -43,6 +43,7 @@ class StructuralExecutor(Executor):
     # @abstractmethod
     def init_executor(self):
         for model in self.sm.get_models():
+            # differentiate Structural Model and Behavioral Model
             executor = self.creator_functor(
                 self.global_time, self._instance_t, self._destruct_t, "subsystem", model
             )
@@ -130,6 +131,7 @@ class StructuralExecutor(Executor):
 
     # Output Function
     def output(self):
+        print(type(self.min_schedule_item[0]).behavior_model)
         msg = self.min_schedule_item[0].output()
         if msg is not None:
             self.output_event_handling(
