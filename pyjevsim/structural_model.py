@@ -34,7 +34,8 @@ class StructuralModel(CoreModel):
             else:
                 self.port_map[(self, src_port)].append((dst_obj, dst_port))
         elif dst_obj == self:
-            self.port_map[(src_obj, src_port)] = (self, dst_port)
+            self.port_map[(src_obj, src_port)] = [(self, dst_port)]
+            #self.port_map[(src_obj, src_port)] = (self, dst_port)
         else:  # TODO: check redundant port pairs.
             if (src_obj, src_port) not in self.internal_coupling_map:
                 self.port_map[(src_obj, src_port)] = [(dst_obj, dst_port)]

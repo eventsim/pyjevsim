@@ -279,8 +279,10 @@ class SysExecutor(CoreModel):
         self.create_entity()
         # TODO: consider event handling after time pass
         self.handle_external_input_event()
+        ## Engine을 하나의 coupled Model로 구성하고 실행하는 계층적 구조로 구현됨
         
         tuple_obj = self.min_schedule_item.popleft()
+        ##
         
         before = time.perf_counter()  # TODO: consider decorator
         
@@ -389,7 +391,7 @@ class SysExecutor(CoreModel):
     def get_generated_event(self):
         return self.output_event_queue
 
-    def handle_external_input_event(self):
+    def handle_external_input_event(self): #외부의 입력이 들어올 시 스케줄링 #coupled model : EIC
         event_list = [ev for ev in self.input_event_queue if ev[0] <= self.global_time]
         for event in event_list:
             self.output_handling(self, event)
@@ -403,10 +405,12 @@ class SysExecutor(CoreModel):
             )
         )
 
-    def handle_external_output_event(self):
+    def handle_external_output_event(self): ## Engine에 output 이벤트를 output port를 추가하고 이벤트 발생시 연결 
         event_lists = copy.deepcopy(self.output_event_queue)
         self.output_event_queue.clear()
         return event_lists
 
     def is_terminated(self):
         return self.simulation_mode == SimulationMode.SIMULATION_TERMINATED   
+    
+    ##Engine이 coupled model : 계층적으로 관리함

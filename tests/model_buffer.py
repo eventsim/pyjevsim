@@ -8,7 +8,7 @@ class Buffer(BehaviorModel):
         BehaviorModel.__init__(self, name)
         self.init_state("Wait")
         self.insert_state("Wait", Infinite)
-        self.insert_state("Delay", 1)
+        self.insert_state("Delay", 0)
 
         self.insert_input_port("recv")
         self.insert_output_port("output")
@@ -21,7 +21,7 @@ class Buffer(BehaviorModel):
             self._cur_state = "Delay"
 
     def output(self):
-        print(f"[Buf][OUT]: {self._msg[0].msg_no}")
+        print(f"[Buf][OUT]: {self._msg.retrieve()[0]}")
         msg = SysMessage(self.get_name(), "output")
         #msg.insert(f"{self._msg[0].msg_no}")
         return msg

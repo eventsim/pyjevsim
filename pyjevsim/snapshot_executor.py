@@ -74,7 +74,7 @@ class SnapshotExecutor(Executor):
         return self.behavior_executor.time_advance()
         
     def set_req_time(self, global_time):
-        self.snapshot_time_condition(global_time)
+        self.snapshot_time_condition(global_time) ## Snapshot 위치가 set_request_time ## interface를 set, get requesest time으로 통일화함 ## 구상class의 종류에 따라서 호출해서 사용한다
         self.behavior_executor.set_req_time(global_time)
         
     def get_req_time(self):

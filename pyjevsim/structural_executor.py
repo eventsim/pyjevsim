@@ -88,6 +88,7 @@ class StructuralExecutor(Executor):
     # Internal Transition
     def int_trans(self):
         self.min_schedule_item[0].int_trans()
+        
 
     def message_handling(self, obj, msg):
         if obj in self.product_model_map:
@@ -103,14 +104,16 @@ class StructuralExecutor(Executor):
                     # print(self.port_map)
                     raise AssertionError
 
-                if self.model_product_map[destination[0]] is None:
+                if destination[0] not in self.model_product_map:
                     pass
-                    # self.output_event_queue.append((self.global_time, msg[1].retrieve()))
+                    ##self.output_event_queue.append((self.global_time, msg[1].retrieve()))
                 else:
                     # Receiver Message Handling
                     self.model_product_map[destination[0]].ext_trans(
                         destination[1], msg
                     )
+                    #print("msg")
+                    #메세지 도착 여부 확인
                     # Receiver Scheduling
                     # wrong : destination[0].set_req_time(self.global_time + destination[0].time_advance())
 
@@ -118,6 +121,8 @@ class StructuralExecutor(Executor):
                     self.model_product_map[destination[0]].set_req_time(
                         self.global_time
                     )
+                    print(self.global_time)
+                    #두 모델 사이 시간 비교 
         else:
             pass  # TODO: uncaught Message Handling
 
@@ -131,7 +136,9 @@ class StructuralExecutor(Executor):
 
     # Output Function
     def output(self):
-        print(type(self.min_schedule_item[0]).behavior_model)
+        #print(self.min_schedule_item[0].get_core_model().__dict__)
+        #
+        
         msg = self.min_schedule_item[0].output()
         if msg is not None:
             self.output_event_handling(

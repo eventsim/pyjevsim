@@ -82,7 +82,7 @@ class BehaviorExecutor(Executor):
 
         return -1
 
-    def set_req_time(self, global_time):
+    def set_req_time(self, global_time): ## next event time을 setting 
         if self.time_advance() == Infinite:
             self._next_event_t = Infinite
             self.request_time = Infinite
@@ -94,7 +94,7 @@ class BehaviorExecutor(Executor):
             else:
                 self.request_time = global_time + self.time_advance()
 
-    def get_req_time(self):
+    def get_req_time(self): ##시간ㅇ reset_cancel_flag
         if self._cancel_reschedule_f:
             self._cancel_reschedule_f = False
             self.behavior_model.reset_cancel_flag()

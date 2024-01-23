@@ -34,14 +34,14 @@ class CoreModel(SystemObject):
         return self.model_type
 
     def insert_input_port(self, port):
-        setattr(self, port, port)
+        #setattr(self, port, port)
         self.external_input_ports.append(port)
 
     def retrieve_input_ports(self):
         return self.external_input_ports
 
     def insert_output_port(self, port):
-        setattr(self, port, port)
+        #setattr(self, port, port)
         self.external_output_ports.append(port)
 
     def retrieve_output_ports(self):
