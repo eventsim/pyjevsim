@@ -17,7 +17,7 @@ class MsgRecv(BehaviorModel):
         if port == "recv":
             self._cur_state = "Wait"
             data = msg.retrieve()
-            print(f"[MsgRecv][IN]: {data[0]}")
+            print(f"[{self.get_name()}][IN]: {data[0]}")
             self.msg_recv += 1
 
 

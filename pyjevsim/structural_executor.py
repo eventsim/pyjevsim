@@ -89,7 +89,6 @@ class StructuralExecutor(Executor):
 
     # External Transition
     def ext_trans(self, port, msg):
-        print("ext_trans : ", port,  msg)
         self.output_event_handling(self, msg)
         
 
@@ -100,15 +99,14 @@ class StructuralExecutor(Executor):
 
     def message_handling(self, obj, msg):
         #print(self.sm.port_map) ##
-        print(msg)
         if obj in self.product_model_map:
             pair = (obj.get_core_model(), msg.get_dst())
         else:
             pair = (self.get_core_model(), msg.get_dst())
         
-        print("port map", self.product_model_map)
-        print("pair", pair)
-        print("portmap ", self.sm.port_map)
+        #print("port map", self.product_model_map)
+        #print("pair", pair)
+        #print("portmap ", self.sm.port_map)
         if pair in self.sm.port_map:
             for port_pair in self.sm.port_map[pair]:
                 destination = port_pair
@@ -118,7 +116,6 @@ class StructuralExecutor(Executor):
                     raise AssertionError
 
                 if destination[0] not in self.model_product_map:
-                    print("!!!!")
                     return msg
                     pass
                     ##self.output_event_queue.append((self.global_time, msg[1].retrieve()))
@@ -127,7 +124,7 @@ class StructuralExecutor(Executor):
                     self.model_product_map[destination[0]].ext_trans(
                         destination[1], msg
                     )
-                    print("msg")
+                    #print("msg")
                     #메세지 도착 여부 확인
                     # Receiver Scheduling
                     # wrong : destination[0].set_req_time(self.global_time + destination[0].time_advance())
@@ -136,7 +133,7 @@ class StructuralExecutor(Executor):
                     self.model_product_map[destination[0]].set_req_time(
                         self.global_time
                     )
-                    print(self.global_time)
+                    #print(self.global_time)
                     return None
                     #두 모델 사이 시간 비교 
         else:
@@ -145,6 +142,8 @@ class StructuralExecutor(Executor):
             pass  # TODO: uncaught Message Handling
 
     def output_event_handling(self, obj, msg):
+        print("msg : ", msg)
+        print(type(msg))
         if msg is not None:
             if isinstance(msg, list):
                 for ith_msg in msg:
@@ -155,7 +154,6 @@ class StructuralExecutor(Executor):
     # Output Function
     def output(self):
         #print(self.min_schedule_item[0].get_core_model().__dict__)
-        
         msg = self.min_schedule_item[0].output()
         
         if msg is not None:
@@ -165,7 +163,7 @@ class StructuralExecutor(Executor):
             #print("self : ", self)
             #return None  # Temporarily
         else:
-            print("self : ", self.get_core_model())
+            #print("self : ", self.get_core_model())
             return None
 
     def set_req_time(self, global_time):
