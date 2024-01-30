@@ -17,12 +17,10 @@ class SnapshotStructuralExecutor(Executor):
     def __init__(
         self, structural_executor
     ):
-        super().__init__(structural_executor.get_global_time(),
-                         structural_executor.get_create_time(),
+        super().__init__(structural_executor.get_create_time(),
                          structural_executor.get_destruct_time(),
                          structural_executor.get_engine_name(),
-                         structural_executor.get_core_model(),
-                         structural_executor.get_creator_functor())
+                         )
         
         self.structural_executor = structural_executor
 
@@ -50,26 +48,25 @@ class SnapshotStructuralExecutor(Executor):
 
     def get_obj_id(self):
         return self.structural_executor.get_obj_id()
-
     
     @abstractmethod
     def snapshot_time_condition(self, global_time):
         pass
         
     @abstractmethod
-    def snapshot_pre_condition_int(self, cur_state):
+    def snapshot_pre_condition_int(self):
         pass
     
     @abstractmethod
-    def snapshot_post_condition_int(self,cur_state):
+    def snapshot_post_condition_int(self):
         pass
     
     @abstractmethod
-    def snapshot_pre_condition_out(self, cur_state):
+    def snapshot_pre_condition_out(self):
         pass
     
     @abstractmethod
-    def snapshot_post_condition_out(self, msg, cur_state):
+    def snapshot_post_condition_out(self):
         pass
     
     @abstractmethod
@@ -83,18 +80,13 @@ class SnapshotStructuralExecutor(Executor):
     # Internal Transition
     def int_trans(self):
         self.structural_executor.int_trans()
-        
-    def message_handling(self, obj, msg):
-        self.structural_executor.message_handling(obj, msg)
-        
-    def output_event_handling(self, obj, msg):
-        self.structural_executor.output_event_handling(obj, msg)
 
     # Output Function
     def output(self):
         self.structural_executor.output()
         
     def set_req_time(self, global_time):
+        self.snapshot_time_condition(global_time)
         self.structural_executor.set_req_time(global_time)
 
     def get_req_time(self):

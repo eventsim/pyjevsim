@@ -41,3 +41,4 @@ class StructuralModel(CoreModel):
                 self.port_map[(src_obj, src_port)] = [(dst_obj, dst_port)]
             else:
                 self.port_map[(src_obj, src_port)].append((dst_obj, dst_port))
+

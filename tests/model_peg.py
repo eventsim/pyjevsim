@@ -8,7 +8,7 @@ class PEG(BehaviorModel):
         BehaviorModel.__init__(self, name)
         self.init_state("Wait")
         self.insert_state("Wait", Infinite)
-        self.insert_state("Generate", 1)
+        self.insert_state("Generate", 0)
 
         self.insert_input_port("start")
         self.insert_output_port("process")
@@ -28,5 +28,5 @@ class PEG(BehaviorModel):
 
     def int_trans(self):
         if self._cur_state == "Generate":
-            self._cur_state = "Generate"
+            self._cur_state = "Wait"
             self.msg_no += 1

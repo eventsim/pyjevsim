@@ -23,7 +23,7 @@ class Buffer(BehaviorModel):
     def output(self):
         print(f"[Buf][OUT]: {self._msg.retrieve()[0]}")
         msg = SysMessage(self.get_name(), "output")
-        #msg.insert(f"{self._msg[0].msg_no}")
+        msg.insert(f"{self._msg.retrieve()[0]}")
         return msg
 
     def int_trans(self):

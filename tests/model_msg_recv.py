@@ -15,10 +15,13 @@ class MsgRecv(BehaviorModel):
 
     def ext_trans(self, port, msg):
         if port == "recv":
+            self._cur_state = "Wait"
             data = msg.retrieve()
+            print()
+            #print(msg)
             print(f"[MsgRecv][IN]: {data[0]}")
             self.msg_recv += 1
-            self._cur_state = "Wait"
+
 
     def output(self):
         return None

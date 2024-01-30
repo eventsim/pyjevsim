@@ -26,8 +26,8 @@ def test_f():
     se.coupling_relation(gen, "output", mr, "recv")
 
     se.insert_external_event("start", None)
-    for _ in range(5) : 
-        se.simulate(1)
+
+    se.simulate(5)
         #print(se.product_port_map)
 
     

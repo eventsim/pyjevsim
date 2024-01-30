@@ -219,7 +219,6 @@ class SysExecutor(CoreModel):
             destination = port_pair
             if destination is None:
                 print("Destination Not Found")
-                print(self.port_map)
                 raise AssertionError
 
             if destination[0] is self:
@@ -278,12 +277,11 @@ class SysExecutor(CoreModel):
         # Agent Creation
         self.create_entity()
         # TODO: consider event handling after time pass
+        
         self.handle_external_input_event()
         ## Engine을 하나의 coupled Model로 구성하고 실행하는 계층적 구조로 구현됨
         
         tuple_obj = self.min_schedule_item.popleft()
-        ##
-        
         before = time.perf_counter()  # TODO: consider decorator
         
         while math.isclose(tuple_obj.get_req_time(), self.global_time, rel_tol=1e-9):
