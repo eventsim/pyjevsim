@@ -89,6 +89,7 @@ class StructuralExecutor(Executor):
 
     # External Transition
     def ext_trans(self, port, msg):
+        print("ext trans :", msg)
         self.output_event_handling(self, msg)
         
 
@@ -120,11 +121,12 @@ class StructuralExecutor(Executor):
                     pass
                     ##self.output_event_queue.append((self.global_time, msg[1].retrieve()))
                 else:
+                    #print("test : ", self.model_product_map[destination[0]])
                     # Receiver Message Handling
                     self.model_product_map[destination[0]].ext_trans(
                         destination[1], msg
                     )
-                    #print("msg")
+
                     #메세지 도착 여부 확인
                     # Receiver Scheduling
                     # wrong : destination[0].set_req_time(self.global_time + destination[0].time_advance())
@@ -142,10 +144,10 @@ class StructuralExecutor(Executor):
             pass  # TODO: uncaught Message Handling
 
     def output_event_handling(self, obj, msg):
-        print("msg : ", msg)
-        print(type(msg))
+        #print("msg : ", msg)
         if msg is not None:
             if isinstance(msg, list):
+                print("test : ", msg)
                 for ith_msg in msg:
                     return self.message_handling(obj, copy.deepcopy(ith_msg))
             else:
@@ -155,7 +157,7 @@ class StructuralExecutor(Executor):
     def output(self):
         #print(self.min_schedule_item[0].get_core_model().__dict__)
         msg = self.min_schedule_item[0].output()
-        
+        print(self.min_schedule_item)
         if msg is not None:
             return self.output_event_handling(
                 self.min_schedule_item[0], msg

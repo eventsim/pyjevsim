@@ -32,7 +32,7 @@ def test_f():
     se.coupling_relation(gen, "output3", mr3, "recv")
     se.insert_external_event("start", None)
 
-    se.simulate(5)
+    se.simulate(20)
     #print(se.product_port_map)
 
     
