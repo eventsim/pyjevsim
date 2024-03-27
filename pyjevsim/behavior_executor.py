@@ -25,6 +25,10 @@ class BehaviorExecutor(Executor):
         # 2021.10.16 cbchoi
         self._cancel_reschedule_f = False
 
+    def set_global_time(self, gtime) : 
+        self.global_time = gtime
+        self.behavior_model.set_global_time(gtime)
+        
     def get_core_model(self):
         return self.behavior_model
 
@@ -83,6 +87,7 @@ class BehaviorExecutor(Executor):
         return -1
 
     def set_req_time(self, global_time):
+        self.set_global_time(global_time)
         if self.time_advance() == Infinite:
             self._next_event_t = Infinite
             self.request_time = Infinite
