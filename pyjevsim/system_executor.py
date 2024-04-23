@@ -409,3 +409,9 @@ class SysExecutor(CoreModel):
 
     def is_terminated(self):
         return self.simulation_mode == SimulationMode.SIMULATION_TERMINATED   
+
+    def get_core_model(self) : 
+        pass
+    
+    def snapshot_simulation(self, name, path = "./") :
+        self.snapshot_manager.snapshot_simulation(self.get_relation(), self.model_map, name, path)
