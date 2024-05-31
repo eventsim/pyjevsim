@@ -86,12 +86,8 @@ class BehaviorExecutor(Executor):
 
         return -1
 
-<<<<<<< HEAD
-    def set_req_time(self, global_time): ## next event time을 setting 
-=======
     def set_req_time(self, global_time):
         self.set_global_time(global_time)
->>>>>>> feature/BanksimExample
         if self.time_advance() == Infinite:
             self._next_event_t = Infinite
             self.request_time = Infinite
