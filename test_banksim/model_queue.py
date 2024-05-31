@@ -3,88 +3,75 @@ from pyjevsim.definition import *
 from pyjevsim.system_message import SysMessage
 
 class BankQueue(BehaviorModel):
-    def __init__(self, name):
+    def __init__(self, name, queue_size, proc_num):
         BehaviorModel.__init__(self, name)
         self.init_state("WAIT")
         self.insert_state("WAIT", Infinite)
-        self.insert_state("CHECK", 0)
-        self.insert_state("READY", Infinite)
         self.insert_state("SEND", 0)
+        
+        self.insert_input_port("user_in")
+        self.insert_input_port("proc_checked")
 
-        self.insert_input_port("in")
-        self.insert_input_port("next")
-
-        self.insert_output_port("ready")
-        self.insert_output_port("out")
-
-        self.insert_state("SEND_OK", 0)
-        self.insert_state("SEND_OK_AFTER", 0)
-        self.insert_input_port("check")
-        self.insert_output_port("ok")
-
-        self.user = None
-
+        self.usable_proc = []
+        for i in range(proc_num) :
+            self.insert_output_port(f"proc{i}")  
+            self.usable_proc.append(f"proc{i}")
+            
+        self.proc_num = proc_num
+        self.queue_size = queue_size
+        self.user = []
+        
+    def set_queue_size(self, queue_size) : 
+        self.queue_size = queue_size
+    
     def ext_trans(self, port, msg):
         _time = self.global_time   
-        if port == "in":
-            if not self.user:
-                self.user = msg.retrieve()[0]
-                print(f"{self.get_name()}[in] ID:{self.user.get_id()} Time:{_time}")
+        if port == "user_in":
+            if len(self.user) < self.queue_size:
+                user = msg.retrieve()[0]
+                self.user.append(user)
+                print(f"{self.get_name()}[in] ID:{user.get_id()} Time:{_time}")
             else:
                 print(f"User Dropped: {msg.retrieve()[0]}")
-
-            
-            self._cur_state = "CHECK"
-        elif port == "next":
-            if self.user:
-                print(f"{self.get_name()} Confirm Time:{_time}")
-                self._cur_state = "SEND"
-            else:
-                self._cur_state = "SEND_OK"
-
-        elif port == "check":
-            print(f"Receive Ack {self.get_name()}")
-            if self.user:
-                self.cancel_rescheduling()
-            else:
-                self._cur_state = "SEND_OK"
- 
+           
+            self._cur_state = "SEND"
+        elif port == "proc_checked":
+            self.usable_proc.append(msg.retrieve()[0])
+            self._cur_state = "SEND"
+        
+        if self.usable_proc == [] or self.user == [] :
+            self._cur_state = "WAIT"    
+             
     def output(self):
         msg = None
-        _time = self.global_time   
-        if self._cur_state == "CHECK":
-            print(f"{self.get_name()} Check")
-            msg = SysMessage(self.get_name(), "ready")
-        elif self._cur_state == "SEND":
-            print(f"{self.get_name()}[out] ID:{self.user.get_id()} Time:{_time}")
+        _time = self.global_time
+        if self._cur_state == "SEND":
+            user = self.user.pop(0)
+            print(f"{self.get_name()}[out] ID:{user.get_id()} Time:{_time}")
             
-            msg = SysMessage(self.get_name(), "out")
-            msg.insert(self.user)
-            self.user = None
-
-        elif self._cur_state == "SEND_OK":
-            print(f"SEND_OK {self.get_name()}")
-            msg = SysMessage(self.get_name(), "ok")
-
-        elif self._cur_state == "SEND_OK_AFTER":
-            print(f"SEND_OK {self.get_name()}")
-            msg = SysMessage(self.get_name(), "ok")
+            msg = SysMessage(self.get_name(), self.usable_proc.pop(0))
+            msg.insert(user)
 
         return msg
 
     def int_trans(self):
-        if self._cur_state == "WAIT":
-                self._cur_state = "CHECK"
-        elif self._cur_state == "CHECK":
-            self._cur_state = "READY"
-
-        elif self._cur_state == "SEND":
-            self._cur_state = "SEND_OK_AFTER"
-        elif self._cur_state == "SEND_OK":
-            print(f"WAIT {self.get_name()}")
-            self._cur_state = "WAIT"
-        elif self._cur_state == "SEND_OK_AFTER":
-            self._cur_state = "WAIT"
-
+        if self._cur_state == "SEND":
+            self._cur_state = "SEND"
+        if self.usable_proc == [] or self.user == [] :
+            self._cur_state = "WAIT"  
+            
+    def set_proc_num(self, proc_num) :
+        if proc_num > self.proc_num : 
+            for i in range(self.proc_num, proc_num) :
+                self.insert_output_port(f"proc{i}")  
+                self.usable_proc.append(f"proc{i}")
+        elif proc_num < self.proc_num : 
+            for i in range(proc_num, self.proc_num) :
+                self.usable_proc.remove(f"proc{i}")
+        
+        self.proc_num = proc_num
+        while len(self.user) > self.queue_size :
+            print(f"User Dropped: {self.user.pop()}")
+        
     def __str__(self):
         return f">> {self.get_name()}, State:{self._cur_state}, {self.user}"

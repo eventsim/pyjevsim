@@ -136,7 +136,7 @@ class SysExecutor(CoreModel):
 
     def destory_entity(self, delete_lst):
         for agent in delete_lst:
-            del self.active_obj_map[agent.get_obj_id()]
+            del self.active_obj_map[agent.get_obj_id()] ##
 
             port_del_map = {}
             for key, value in self.port_map.items():

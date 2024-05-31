@@ -3,31 +3,22 @@ from pyjevsim.definition import *
 from pyjevsim.system_message import SysMessage
 
 class BankAccountant(BehaviorModel):
-    def __init__(self, name):
+    def __init__(self, name, proc_num):
         BehaviorModel.__init__(self, name)
 
         self.init_state("WAIT")
         self.insert_state("WAIT", Infinite)
         self.insert_state("PROC", 1)
-        self.insert_state("EMPTY", 0)
 
-        self.insert_input_port("check")
         self.insert_input_port("in")
-
         self.insert_output_port("next")
 
+        self.proc_num = f"proc{proc_num}"
         self.user = None
         self.proc_user = []
 
     def ext_trans(self, port, msg):
         _time = self.global_time   
-        if port == "check":
-            if self._cur_state == "WAIT":
-                print("[A] WAIT")
-                self._cur_state = "EMPTY"
-            else:
-                self.cancel_rescheduling()
-
         if port == "in":
             self.user = msg.retrieve()[0]
             self._cur_state = "PROC"
@@ -45,20 +36,17 @@ class BankAccountant(BehaviorModel):
             print(f"[A][processed] ID:{self.user.get_id()} Time:{_time}")
 
             msg = SysMessage(self.get_name(), "next")
-
-        elif self._cur_state == "EMPTY":
-            print("[A] EMPTY")
-            msg = SysMessage(self.get_name(), "next")			
+            msg.insert(self.proc_num)
 
         return msg
 
     def int_trans(self):
         if self._cur_state == "PROC":
-                self._cur_state = "WAIT"
-        elif self._cur_state == "EMPTY":
             self._cur_state = "WAIT"
-
+            
     def __del__(self):
+        print(f"[{self.get_name()}-{self.proc_num} log]")
+        print("user-name, process_time, arrival_time, done_time, wait_time")
         for user in self.proc_user:
             print(user)
 

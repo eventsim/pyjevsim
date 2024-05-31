@@ -27,11 +27,11 @@ class ModelSnapshotManager :
                 else :
                     lst.append(model)
             relation[port_key] = lst
-            print(relation)
+            #print(relation)
             
         path = f"{directory_path}/{name}"   
         if not os.path.exists(f"{path}"):
-            os.makedirs(name)   
+            os.makedirs(path)   
         
         with open(f"{path}/relation_map.json", "w") as f :
             relation = {str(key): str(value) for key, value in relation.items()}
