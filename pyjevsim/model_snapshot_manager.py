@@ -1,6 +1,9 @@
 from abc import abstractmethod
-from dill import loads
+from dill import loads, dump
 from .definition import ModelType
+import json
+import os
+import ast
 
 class ModelSnapshotManager :
     def __init__(self) :
@@ -8,6 +11,45 @@ class ModelSnapshotManager :
         self.load_snapshot_map = {}
         pass
     
+    def snapshot_simulation(self, relation_map, model_map, name, directory_path=".") :        
+        relation = {}
+        for key, value in relation_map.items() :
+            if key[0] :
+                port_key = ((key[0].get_name(), key[1]))
+            else :
+                port_key = key
+                
+            lst = []
+            for model in value :
+                if model[0] != None :
+                    data = (model[0].get_name(), model[1])
+                    lst.append(tuple(data))
+                else :
+                    lst.append(model)
+            relation[port_key] = lst
+            #print(relation)
+            
+        path = f"{directory_path}/{name}"   
+        if not os.path.exists(f"{path}"):
+            os.makedirs(path)   
+        
+        with open(f"{path}/relation_map.json", "w") as f :
+            relation = {str(key): str(value) for key, value in relation.items()}
+            json.dump(relation, f)
+        
+        dump_model = {}
+        with open(f"{path}/model_map.json", "w") as f :
+            dump_model["model_name"] = list(model_map.keys())
+            dump_model["model_name"].remove('dc')
+            json.dump(dump_model, f)
+            
+        for key, value in model_map.items() : 
+            if key == 'dc' :
+                continue
+            with open(f"{path}/{key}.simx", "wb") as f :
+                dump(value[0].get_core_model(), f)
+        return
+        
     def register_snapshot_executor(self, name, snapshot_executor_generator):
         self.snapshot_executor_map[name] = snapshot_executor_generator
     
@@ -32,3 +74,4 @@ class ModelSnapshotManager :
         
 
     
+

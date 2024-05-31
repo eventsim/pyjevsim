@@ -46,6 +46,9 @@ class BehaviorModel(CoreModel):
     def init_state(self, state):
         self._cur_state = state
 
+    def set_global_time(self, gtime) :
+        self.global_time = gtime 
+        pass
     # added by jylee 2023.09.26
     @abstractmethod
     def ext_trans(self, port, msg):
