@@ -8,17 +8,26 @@
 
 from enum import Enum
 
-# TODO-01 Define Error Type or Exception cbchoi
-Infinite = float("inf")  # hug value
+# Define an infinite value
+Infinite = float("inf")
+
 
 class AttributeType(Enum):
-    # BEHAVIOR = 0
+    """Enum for attribute types."""
     ASPECT = 1
     RUNTIME = 2
     UNKNOWN_TYPE = -1
 
     @staticmethod
     def resolve_type_from_str(name):
+        """Resolves an attribute type from a string.
+        
+        Args:
+            name (str): The name of the attribute type 
+        Returns:
+            AttributeType: The resolved attribute type 
+        """
+        
         if "ASPECT" == name.upper():
             return AttributeType.ASPECT
         elif "RUNTIME" == name.upper():
@@ -28,6 +37,13 @@ class AttributeType(Enum):
 
     @staticmethod
     def resolve_type_from_enum(enum):
+        """Resolves an attribute type to a string.
+        
+        Args:
+            enum (AttributeType): The attribute type enum 
+        Returns:
+            str: The name of the attribute type 
+        """
         if enum == AttributeType.ASPECT:
             return "ASPECT"
         elif enum == AttributeType.RUNTIME:
@@ -38,32 +54,50 @@ class AttributeType(Enum):
 
 # 2019.05.16 added by cbchoi
 class SimulationMode(Enum):
+    """Enum for simulation modes."""
+    
     SIMULATION_IDLE = (
         0  # Simulation Engine is instantiated but simulation is not running
     )
-    SIMULATION_RUNNING = 1  # Simulation Engine is instantiated, simulation is running
+    SIMULATION_RUNNING = 1  # Simulation Engine is instantiated, simulation is running 
     SIMULATION_TERMINATED = (
         2  # Simulation Engine is instantiated but simulation is terminated
     )
-    SIMULATION_PAUSE = 3  # Simulation Engine is instantiated, simulation paused
+    SIMULATION_PAUSE = 3  # Simulation Engine is instantiated, simulation paused 
     SIMULATION_UNKNOWN = -1  # Simulation Engine went to abnormal state
 
 
 # 2020.01.20 added by cbchoi
 class ModelType(Enum):
-    BEHAVIORAL = 0
-    STRUCTURAL = 1
-    UTILITY = 2
+    """Enum for model types."""
+    
+    BEHAVIORAL = 0 #BehaviorModel type : DEVS Atomic Model
+    STRUCTURAL = 1 #StructuralModel type : DEVS Coupled Model
+    UTILITY = 2 
 
 
 # 2023.10.01 added by cbchoi
 class ExecutionType(Enum):
-    R_TIME = 0
-    V_TIME = 1
+    """Enum for execution types."""
+    
+    R_TIME = 0 #Real time
+    V_TIME = 1 #Virtual time
 
 
 class SingletonType(object):
+    """A decorator for making a class a singleton."""
+    
     def __call__(self, cls, *args, **kwargs):
+        """Creates or returns the singleton instance of the class.
+        
+        Args:
+            cls (type): The class to be instantiated
+            *args: Variable length argument list 
+            **kwargs: Arbitrary keyword arguments
+        
+        Returns:
+            object: The singleton instance of the class
+        """
         try:
             return cls.__instance
         except AttributeError:

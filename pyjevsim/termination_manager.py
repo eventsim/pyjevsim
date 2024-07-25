@@ -10,7 +10,6 @@ import datetime
 import os
 import signal
 
-
 class TerminationManager:
     def __init__(self):
         TerminationManager.__set_terminate_handler()

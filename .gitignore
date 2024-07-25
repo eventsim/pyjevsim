@@ -167,3 +167,6 @@ snapshot/
 snapshot/*
 .snapshot/*
 snapshot
+
+.github
+.vscode

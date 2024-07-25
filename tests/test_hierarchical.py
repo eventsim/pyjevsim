@@ -17,10 +17,8 @@ from .model_stm import STM
 def execute_simulation():
     # System Simulator Initialization
     se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
-    # se.register_engine("first", "REAL_TIME", 1)
+    
     se.insert_input_port("start")
-    # gen = PEG(0, Infinite, "Gen", "first")
-    # se.register_entity(gen)
 
     gen = STM("Gen")
     se.register_entity(gen, inst_t=3)

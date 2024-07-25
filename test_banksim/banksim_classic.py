@@ -1,17 +1,11 @@
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
-from pyjevsim.snapshot_executor import SnapshotExecutor
-from pyjevsim.model_snapshot_manager import ModelSnapshotManager
 
 from .model_acoountant import BankAccountant
 from .model_queue import BankQueue
 from .model_user_gen import BankUserGenerator
 
-from datetime import datetime
-
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
-    result = []
-    result.append(datetime.now()) #software start time
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
     
     gen_num = 3             #Number of BankUserGenerators 
@@ -54,22 +48,9 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         
     ss.insert_external_event('start', None)
 
-    ## simulation run
-    result.append(datetime.now()) #simulation start time
-    check = True
-    
-    
+    ## simulation run  
     for i in range(100000):
-        if check and i >= 10000 : 
-            check = False
-            for gen in gen_list : 
-                gen.set_cycle(1) 
-        print()
         ss.simulate(1)
-    
-    result.append(datetime.now()) #simulation finish time
-    print("<< Software time : ", result[2]-result[0])
-    print("<< Simulation time : ", result[2]-result[1])
     
 def test_casual_order1(capsys):
     execute_simulation(1, ExecutionType.V_TIME)

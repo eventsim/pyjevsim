@@ -8,23 +8,33 @@
 
 from .behavior_model import BehaviorModel
 from .definition import *
-from .system_message import SysMessage
-
 
 class DefaultMessageCatcher(BehaviorModel):
+    """
+    A default model for catching uncaught messages.
+    Receiving and not processing uncaught messages
+    """
+
     def __init__(self, _name):
         super().__init__(_name)
 
-        self.init_state("IDLE")
-        self.insert_state("IDLE", Infinite)
-
-        self.insert_input_port("uncaught")
+        self.init_state("IDLE")  # Set initial state to 'IDLE'
+        self.insert_state("IDLE", Infinite)  # Insert 'IDLE' state with infinite duration
+        self.insert_input_port("uncaught")  # Insert 'uncaught' input port
 
     def ext_trans(self, port, msg):
-        data = msg.retrieve()
+        """
+        Received an uncaught message.
+        
+        Args:
+            port (str): The port name
+            msg (SysMessage): The incoming message
+        """
+        data = msg.retrieve()  # Retrieve message
 
     def int_trans(self):
         return
 
     def output(self):
         return None
+    

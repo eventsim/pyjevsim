@@ -6,12 +6,7 @@ from .model_acoountant import BankAccountant
 from .model_queue import BankQueue
 from .model_user_gen import BankUserGenerator
 
-from datetime import datetime
-
-def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
-    result = []
-    result.append(datetime.now()) #software start time
-    
+def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):    
     snapshot_manager = ModelSnapshotManager()
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
     
@@ -56,40 +51,16 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     
     ss.insert_external_event('start', None)
     
-    ## simulation run
-    result.append(datetime.now()) #simulation start time
-    check = True
-    
-    
-    for i in range(100000):
-        print()
-        if check and i >= 10000 : 
-            ss.snapshot_simulation(name = "banksim", path = "./snapshot")
+    # simulation run
+        
+    for i in range(100000):        
+        # Snapshot when simulation time is 10000 
+        if i >= 10000 : 
+            ss.snapshot_simulation(name = "banksim", directory_path = "./snapshot")
             ss.simulation_stop()
-            check = False
-            
-            for j in (6, 7, 8) :
-                account = BankAccountant(f'processor{j}', j)
-                account_list.append(account) 
-                    
-            for gen in gen_list : 
-                ss.register_entity(gen) 
-                ss.coupling_relation(None, 'start', gen, 'start')
-                ss.coupling_relation(gen, 'user_out', que, 'user_in')
-            ss.register_entity(que)
-            que.set_proc_num(proc_num+3)
-            for j in range(proc_num+3) : 
-                ss.register_entity(account_list[j])
-                ss.coupling_relation(que, f'proc{j}', account_list[j], 'in')
-                ss.coupling_relation(account_list[j], 'next', que, 'proc_checked')
-            
-            ss.insert_external_event('start', None)
-            
+            break
+        
         ss.simulate(1)
-    
-    result.append(datetime.now()) #simulation finish time
-    print("<< Software time : ", result[2]-result[0])
-    print("<< Simulation time : ", result[2]-result[1])
     
 def test_casual_order1(capsys):
     execute_simulation(1, ExecutionType.V_TIME)

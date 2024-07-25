@@ -4,12 +4,7 @@ from pyjevsim.model_snapshot_manager import ModelSnapshotManager
 
 from .model_acoountant import BankAccountant
 
-from datetime import datetime
-
-def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
-    result = []
-    result.append(datetime.now()) #software start time
-    
+def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):    
     snapshot_manager = ModelSnapshotManager()
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
                
@@ -25,6 +20,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         #BankUserGenerator Restore
         with open(f"./snapshot/gen{i}.simx", "rb") as f :
             gen = snapshot_manager.load_snapshot(f"gen{i}", f.read())  
+        
         #gen cycle set
         gen.set_cycle(gen_cycle)
     
@@ -59,14 +55,10 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss.insert_external_event('start', None)
     
     ## simulation run
-    result.append(datetime.now()) #simulation start time
     for i in range(25000):
         print()
         ss.simulate(1)
        
-    result.append(datetime.now()) #simulation finish time
-    print("<< Software time : ", result[2]-result[0])
-    print("<< Simulation time : ", result[2]-result[1])
 
 def test_casual_order1(capsys):
     execute_simulation(1, ExecutionType.V_TIME)

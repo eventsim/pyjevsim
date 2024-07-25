@@ -8,7 +8,6 @@ from .model_queue import BankQueue
 from .model_user_gen import BankUserGenerator
 
 import os
-from datetime import datetime
 
 class BankGenModelSnapshotExecutor(SnapshotExecutor) :
     @staticmethod
@@ -35,9 +34,6 @@ class BankGenModelSnapshotExecutor(SnapshotExecutor) :
                 f.write(model_data)
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
-    result = []
-    result.append(datetime.now()) #software start time
-    
     snapshot_manager = ModelSnapshotManager()
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
     
@@ -90,14 +86,9 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss.insert_external_event('start', None)
 
     ## simulation run
-    result.append(datetime.now()) #simulation start time
     for i in range(100000):
         print()
         ss.simulate(1)
-    
-    result.append(datetime.now()) #simulation finish time
-    print("<< Software time : ", result[2]-result[0])
-    print("<< Simulation time : ", result[2]-result[1])
     
 def test_casual_order1(capsys):
     execute_simulation(1, ExecutionType.V_TIME)

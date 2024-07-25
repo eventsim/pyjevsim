@@ -11,8 +11,6 @@ import time
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
-from pyjevsim.model_snapshot_manager import ModelSnapshotManager
-from pyjevsim.snapshot_manager import SnapshotManager
 from .model_msg_recv import MsgRecv
 from .model_peg import PEG
 
@@ -36,7 +34,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # Inject External Event to Engine
     se.insert_external_event("start", None)
     
-    for _ in range(10):
+    for _ in range(3):
         se.simulate(1)
 
 
