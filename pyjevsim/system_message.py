@@ -9,7 +9,7 @@
 from .system_object import SystemObject
 
 class SysMessage(SystemObject):
-    """System message class for handling messages between Models."""
+    """SysMessage for handling messages(port and data) between Models."""
 
     def __init__(self, src_name="", dst_name=""):
         """

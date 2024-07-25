@@ -129,9 +129,9 @@
       se.insert_external_event(_port = "start", _msg = None, scheduled_time = 0)
       
       #Args:
-      #_port (str): port name
-      #_msg (SysMessage or None): Event message
-      #scheduled_time (float, optional): The scheduled time for the event
+       #_port (str): port name
+       #_msg (SysMessage or None): Event message
+       #scheduled_time (float, optional): The scheduled time for the event
       ```
 3. SysMessage
    - SysMessage for handling messages(port and data) between Models.
@@ -156,7 +156,8 @@
 **BehaviorModel Snapshot Manual**
 - To snapshot a model, set up BehavioralModel and SnapshotExecutor at Snapshot Manager.
 - Then assign the set ModelSnapshotManager to the SysExecutor. 
-1. Snapshot Executor 
+
+1. SnapshotExecutor  
    - SnapshotExecutor is a framework for adding snapshot conditions to behavior models.
    - You inherit from SnapshotExecutor and enter a snapshot condition. 
    - Snapshot conditions can be written at time increments or before or after functions in the behavior model. 
@@ -170,15 +171,137 @@
     	def __init__(self, behavior_executor):
         	super().__init__(behavior_executor)
    ```
-2. 
+   - snapshot
+     - An abstract method that creates a method to take a snapshot.
+     - You can use the snapshot method in a conditional method.
+     - Use the model_dump method to get the model data in bytes. 
+     - Save that data to the DB or save it to a file.
+     ```
+     @abstractmethod
+     def snapshot(self, name):
+         #name (str): The name of the snapshot
+     	pass
+     ```
+   - snapshot_time_condition: Functions that allow you to enter conditions based on time increments.
+     ```
+     @abstractmethod
+     def snapshot_time_condition(self, global_time):
+     """Abstract method for snapshot time condition.
+          
+     Args:
+     global_time (float): The global time / simulation time
+     """
+     pass #Write your conditions.
+     ```
+   - You can enter snapshot conditions before and after the ext_trans, int_trans, and output functions are executed.
+     The arguments are the same as for each function.
+     ```
+     snapshot_pre_condition_ext #executed prior to running text_trans
+     snapshot_post_condition_ext #executed after the #ext_trans run
+       
+     snapshot_pre_condition_int #executed before running int_trans
+     snapshot_post_condition_int #executed after running int_trans
+       
+     snapshot_pre_condition_out #executed before running output
+     snapshot_post_condition_out #executed after output execution
+     ```
+2. ModelSnapshotManager : Set the ModelSnapshotManager to SysExecutor.
+   ```
+   snapshot_manager = ModelSnapshotManager() #Set ModelSnapshotManager
+   ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager) # Set up snapshot manager in SysExecutor
+   ```
+3. register_snapshot_executor : Register the SnapshotExecutor with the ModelSnapshotManager.
+   ```
+   snapshot_manager.register_snapshot_executor(name = "model_name", snapshot_executor_generator = BankGenModelSnapshotExecutor.create_executor)
+   
+   #name (str): name of SnapshotExecutor
+   #snapshot_executor_generator : The generator function for SnapshotExecutor
+   ```
+**BehaviorModel Restore Manual**
+1. ModelSnapshotManager : Set the ModelSnapshotManager.
+   ```
+   snapshot_manager = ModelSnapshotManager() #Set ModelSnapshotManager
+   ```
+2. load_snapshot : Restore SnapshotData to BehaviorModel
+   ```
+   gen = snapshot_manager.load_snapshot(name = "gen", shotmodel = snapshot_data)
+   
+   #Args:
+    #name (str): The name of Model
+    #shotmodel (bytes): Binary data of the model snapshot
+   
+   #Returns:
+    #object(BehaivorModel): The loaded model
+        
+   #Raises:
+    #Exception: If the model type is not ModelType.BEHAVIORAL
+   ```
 -----
-**test code**
-- A GBP example is written in tests where you can experiment with basic DEVS.
-- In addition, a BankSim example is written in test_banksim where you can store DEVS, BehaivorModel Snapshot and Simulation. 
-```
-pytest -s tests/behavior_model.py
-```
+**Simulation Snapshot Manual**
+- Snapshots of simulations (models registered in the SysExecutor and releases of models) are possible over time.
+- The running simulation is saved locally in a file format.
 
-```
-pytest -s test_banksim/classic_banksim.py
-```
+1. ModelSnapshotManager : Set the ModelSnapshotManager to SysExecutor.
+   ```
+   snapshot_manager = ModelSnapshotManager() #Set ModelSnapshotManager
+   ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager) # Set up snapshot manager in SysExecutor
+   ```
+2. snapshot_simulation : As the simulation time increases, when the conditions are satisfied, the Snapshot.
+   ```
+   ss.snapshot_simulation(name = "banksim", directory_path = "./snapshot")
+   
+   #name(str) : Name of the simulation to be snapshot
+   #directory_path : Where the simulation will be snapshot
+   ```
+
+**Simulation Restore Manual**
+1. SnapshotManager : Set the SnapshotManager.
+   ```
+   snapshot_manager = SnapshotManager(t_resol, ex_mode=execution_mode, name = "banksim", path = "./snapshot")   
+   
+   #t_resol(float) SysExecutor's time resolution to be restored with the saved model and connection information between models
+   #ex_mode (R_TIME or V_TIME): Execution mode(Real time or Virtual time)
+   #name (str): Name of SysExecutor
+   #path (str, optional): Path to load snapshots
+   ```
+2. get_engine : Restored SysExecutor
+   ```
+   ss = snapshot_manager.get_engine()
+   ```
+-----
+**test code : ./tests**
+- A GBP example is written in tests where you can experiment with basic DEVS.
+  - GBP Example: BehaviorModel (DEVS Atomic Model)
+    ```
+    pytest -s tests/test_behavior_model.py
+    ```
+  - GBP Example: Structural (DEVS Coupled Model)
+    ```
+      pytest -s tests/test_structural.py
+    ```
+  - GBP Example: Hierarchical (DEVS Atomic Model & Coupled Model)
+    ```
+      pytest -s tests/test_hierarchical.py
+    ```
+  **test code : ./test_banksim**
+- In addition, a BankSim example is written in test_banksim where you can store DEVS, BehaivorModel Snapshot and Simulation. 
+  - banksim_classic.py : classic Bank Simulation
+    ```
+    pytest -s test_banksim/banksim_classic.py
+    ```
+  - banksim_model_snapshot.py : BehavioralModel snapshots example
+    ```
+    pytest -s test_banksim/banksim_model_snapshot.py
+    ```
+  - banksim_model_restore.py : Restored a model saved from banksim_model_snapshot
+    ```
+    pytest -s test_banksim/banksim_model_restore.py
+    ```
+  - banksim_snapshot.py : Simulation(Model & Relation) snapshots example
+    ```
+    pytest -s test_banksim/banksim_snapshot.py
+    ```
+  - banksim_restore.py : Restored Simulation(Model & Relation) saved from banksim_snapshot
+    ```
+    pytest -s test_banksim/banksim_restore.py
+    ```

@@ -63,7 +63,7 @@ class ModelSnapshotManager:
         Register SnapshotExecutor.
         
         Args:
-            name (str): name of SnapshotExecutor / 스냅샷 실행기의 이름
+            name (str): name of SnapshotExecutor
             snapshot_executor_generator : The generator function for SnapshotExecutor
         """
         self.snapshot_executor_map[name] = snapshot_executor_generator

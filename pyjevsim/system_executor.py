@@ -515,6 +515,10 @@ class SysExecutor(CoreModel):
         """
         Snapshot the model and its releases. 
 
+        Args : 
+            name(str) : Name of the simulation to be snapshot
+            directory_path : Where the simulation will be snapshot
+            
         Raises:
             ValueError: Snapshot manager is not set.
         """

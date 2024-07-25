@@ -17,7 +17,7 @@ class SnapshotManager:
             t_resol (float): Time resolution
             ex_mode (R_TIME or V_TIME): Execution mode(Real time or Virtual time)
             name (str): Name of SysExecutor
-            path (str, optional): Path to save/load snapshots
+            path (str, optional): Path to load snapshots
         """
         self.path = f"{path}/{name}"
         self.sim_name = name
