@@ -1,32 +1,87 @@
-from dill import loads
-from .behavior_model import BehaviorModel
+from abc import abstractmethod
+from dill import load
+from .definition import ModelType
+import json
+import ast
+from .system_executor import SysExecutor
 
-class SnapshotManager :
-    def __init__(self, snapshot_condition) :
-        self.SYSTEM_VERSION = ["1.0"]
+class SnapshotManager:
+    """The ModelSnapshotManager reads the snapshotted simulation(the directory where all the models and their releases are stored) 
+    and returns it as a SysExecutor."""
 
-        self.snapshot_condition = snapshot_condition
+    def __init__(self, t_resol, ex_mode, name, path="."):
+        """
+        Initializes the SnapshotManager with time resolution, execution mode, name, and path.
+
+        Args:
+            t_resol (float): Time resolution
+            ex_mode (R_TIME or V_TIME): Execution mode(Real time or Virtual time)
+            name (str): Name of SysExecutor
+            path (str, optional): Path to load snapshots
+        """
+        self.path = f"{path}/{name}"
+        self.sim_name = name
+        self.engine = SysExecutor(t_resol, ex_mode, snapshot_manager=None)
+        self.model_map = {}
+        self.set_engine()
         pass
+
+    def set_engine(self):
+        """
+        Sets up SysExecutor with the relation map and model map.
+        """
+        with open(f"{self.path}/relation_map.json", "r") as f:
+            relation = json.load(f)   
+        relation = {ast.literal_eval(key): ast.literal_eval(value) for key, value in relation.items()}
+
+        model_list = {}
+        with open(f"{self.path}/model_map.json", "r") as f:
+            model_list = json.load(f)  
+        model_list = model_list["model_name"]
+
+        self.load_models(model_list)
+        self.relations(relation)
+
+    def load_models(self, model_list):
+        """
+        Loads models from files and registers them with SysExecutor.
         
-    def get_snapshot_model_name(self, global_time) :
-        model_name = self.snapshot_condition(global_time) 
-        return model_name
-    
-    def model_dump(self, model_executor) :
-        return model_executor.get_core_model().model_snapshot()
-                
-    def model_load(self, shotmodel, name = None) :
-        model_info = loads(shotmodel) #shotmodel : binary data of model info 
-    
-        if model_info["version"] not in self.SYSTEM_VERSION :
-            raise Exception(f"{model_info['model_name']} model type does not match pyjevsim version")
-        
-        model = model_info["model_data"]
-        
-        if  not isinstance(model, BehaviorModel) :
-            raise Exception(f"{model_info['model_name']} is not of BehaviorModel type")
+        Args:
+            model_list (list): List of model names
+        """
+        for model_name in model_list:
+            with open(f"{self.path}/{model_name}.simx", "rb") as f:
+                model = load(f)
             
-        if name != None : 
-            model.set_name(name)
+            if model["type"] != ModelType.BEHAVIORAL:
+                raise TypeError("Model Type is not BehaviorModel")
+            
+            self.model_map[model_name] = model["data"]
+            self.engine.register_entity(model["data"])
+
+    def relations(self, relation_map):
+        """
+        Sets up coupling relations in SysExecutor.
         
-        return model    
+        Args:
+            relation_map (dict): The relation map / 관계 맵
+        """
+        for key, value in relation_map.items():
+            if key[0] != 'default' and key[0]:
+                output_model = self.model_map[key[0]]
+            else:
+                output_model = self.engine
+            for model in value:
+                if model[0]:
+                    input_model = self.model_map[model[0]]
+                else:
+                    input_model = self.engine
+                self.engine.coupling_relation(output_model, key[1], input_model, model[1])
+
+    def get_engine(self):
+        """Returns the SysExecutor.
+
+        Returns:
+            Restored SysExecutor
+        """
+        return self.engine

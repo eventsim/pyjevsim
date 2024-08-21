@@ -6,34 +6,21 @@
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 """
 
-from abc import abstractmethod
-
 from .behavior_executor import BehaviorExecutor
-from .behavior_model import BehaviorModel
-from .definition import *
-
+from .definition import Infinite
 
 class BehaviorModelExecutor(BehaviorExecutor):
+    """
+    Allows the use of models from DEVS Module “pyevsim” via the decorator technique.
+    """
     def __init__(
         self, itime=Infinite, dtime=Infinite, ename="default", behavior_model=""
     ):
+        """
+        Args:
+            itime (int or Infinite): Time of instance creation
+            dtime (int or Infinite): Time of instance destruction
+            ename (str): SysExecutor name
+            behavior_model (ModelType.BEHAVIORAL): Behavior Model
+        """
         super().__init__(itime, dtime, ename, behavior_model)
-
-
-"""        
-    def ext_trans(self, port, msg):
-        super().ext_trans(port, msg)
-
-    # Internal Transition
-    def int_trans(self):
-        super().int_trans()
-        pass
-
-    # Output Function
-    def output(self):
-        return super().output()
-
-    # Time Advanced Function
-    def time_advance(self):
-        return super().time_advance()
-"""

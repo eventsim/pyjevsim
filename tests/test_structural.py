@@ -13,7 +13,7 @@ from .model_stm import STM
 
 
 def test_f():
-    se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
+    se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
     se.insert_input_port("start")
 
     gen = STM("Gen")
@@ -22,6 +22,6 @@ def test_f():
     se.coupling_relation(se, "start", gen, "start")
     se.insert_external_event("start", None)
     se.simulate(5)
-
+    
     gen = se.get_entity("Gen")
 

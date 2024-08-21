@@ -162,3 +162,11 @@ cython_debug/
 # Formatting
 pylint.result.txt
 flake8.result.txt
+
+snapshot/
+snapshot/*
+.snapshot/*
+snapshot
+
+.github
+.vscode

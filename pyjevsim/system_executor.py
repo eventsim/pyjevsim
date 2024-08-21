@@ -21,22 +21,29 @@ from .definition import ExecutionType, Infinite, ModelType, SimulationMode
 from .executor_factory import ExecutorFactory
 from .system_message import SysMessage
 from .termination_manager import TerminationManager
-from .snapshot_manager import SnapshotManager
 
 class SysExecutor(CoreModel):
+    """SysExecutor managing the execution of models in a simulation.(Simulation Engine)"""
+
     EXTERNAL_SRC = "SRC"
     EXTERNAL_DST = "DST"
 
-    def __init__(
-        self, _time_resolution, _sim_name="default", ex_mode=ExecutionType.V_TIME
-    ):
+    def __init__(self, _time_resolution, _sim_name="default", ex_mode=ExecutionType.V_TIME, snapshot_manager=None):
+        """
+        Initializes the SysExecutor with time resolution, simulation name, execution mode, and optional snapshot manager.
+
+        Args:
+            _time_resolution (float): The time resolution for the simulation
+            _sim_name (str, optional): The name of the simulation
+            ex_mode (R_TIME or VTIME): The execution mode
+            snapshot_manager (ModelSnapshotManager, optional): Manages SnapshotExecutor
+        """
         CoreModel.__init__(self, _sim_name, ModelType.UTILITY)
         self.lock = threading.Lock()
-        # self.thread_flag = False
 
         self.global_time = 0
         self.target_time = 0
-        self.time_resolution = _time_resolution  # time_resolution may changed? - cbchoi
+        self.time_resolution = _time_resolution
 
         # dictionary for waiting simulation objects
         self.waiting_obj_map = {}
@@ -47,21 +54,12 @@ class SysExecutor(CoreModel):
         self.product_port_map = {}
         self.port_map = {}
 
-        # added by cbchoi 2020.01.20
+
         self.hierarchical_structure = {}
-
-        # added by cbchoi 2022.08.06
         self.model_map = {}
-
+        
         self.min_schedule_item = deque()
-
         self.sim_init_time = datetime.datetime.now()
-
-        self.exec_factory = ExecutorFactory()
-
-        self.dmc = DefaultMessageCatcher("dc")
-        self.register_entity(self.dmc)
-
         self.simulation_mode = SimulationMode.SIMULATION_IDLE
 
         # External Interface
@@ -70,20 +68,50 @@ class SysExecutor(CoreModel):
 
         # TIME Handling
         self.ex_mode = ex_mode
+        self.snapshot_manager = snapshot_manager
         
-        #Available pyjevsim Versions
-        self.SYSTEM_VERSION = ["1.0"] 
-        self.use_snapshot = False
+        self.exec_factory = ExecutorFactory()
+        #Factory pattern to convert Model to ModelExecutor
         
-    # retrieve global time
+        self.dmc = DefaultMessageCatcher("dc")
+        #Model for handling uncaught messages
+        self.register_entity(self.dmc)
+        
     def get_global_time(self):
-        return self.global_time
+        """
+        Retrieves the current global time.(simulation time)
 
+        Returns:
+            float: The current global time
+        """
+        return self.global_time
+    
+    def set_snapshot_manager(self, snapshot_manager):
+        """
+        Sets the snapshot manager.
+
+        Args:
+            snapshot_manager (ModelSnapshotManager): The snapshot manager to set
+        """
+        self.snapshot_manager = snapshot_manager
+    
     def register_entity(self, entity, inst_t=0, dest_t=Infinite, ename="default"):
-        # sim object에서 behavior executor
+        """
+        Register simulation entity(Model).
+
+        Args:
+            entity (BehaviorModel or StructuralModel): The entity to register
+            inst_t (float, optional): Instance creation time
+            dest_t (float, optional): Destruction time
+            ename (str, optional): SysExecutor name
+        """
         sim_obj = self.exec_factory.create_executor(
             self.global_time, inst_t, dest_t, ename, entity
         )
+        if self.snapshot_manager:
+            if self.snapshot_manager.check_snapshot_executor(entity.get_name()):
+                sim_obj = self.snapshot_manager.create_snapshot_executor(sim_obj)
+        
         self.product_port_map[entity] = sim_obj
 
         if not sim_obj.get_create_time() in self.waiting_obj_map:
@@ -91,24 +119,52 @@ class SysExecutor(CoreModel):
 
         self.waiting_obj_map[sim_obj.get_create_time()].append(sim_obj)
 
-        # added by cbchoi 2022.08.06
         if sim_obj.get_name() in self.model_map:
             self.model_map[sim_obj.get_name()].append(sim_obj)
         else:
             self.model_map[sim_obj.get_name()] = [sim_obj]
 
-    # added by cbchoi 2022.08.06
     def get_entity(self, model_name):
+        """
+        Retrieves entities by model name.
+
+        Args:
+            model_name (str): The name of the model
+
+        Returns:
+            list: List of entities
+        """
         if model_name in self.model_map:
             return self.model_map[model_name]
         return []
+    
+    def get_model(self, name):
+        """
+        Retrieve Model by name.
+
+        Args:
+            name (str): The name of the model
+
+        Returns:
+            CoreModel: Model(BehaviorModel or StructuralModel)
+        """
+        return self.model_map[name][0].get_core_model()
 
     def remove_entity(self, model_name):
+        """
+        Removes an entity by model name.
+
+        Args:
+            model_name (str): The name of the model
+        """
         if model_name in self.model_map:
             self.destory_entity(self.model_map[model_name])
             del self.model_map[model_name]
 
     def create_entity(self):
+        """
+        Creates entities that are scheduled for creation.
+        """
         if len(self.waiting_obj_map.keys()) != 0:
             key = min(self.waiting_obj_map)
             if key <= self.global_time:
@@ -119,23 +175,26 @@ class SysExecutor(CoreModel):
                     self.min_schedule_item.append(obj)
                 del self.waiting_obj_map[key]
 
-                # select object that requested minimum time
                 self.min_schedule_item = sorted(
                     self.min_schedule_item,
                     key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
                 )
 
     def destory_entity(self, delete_lst):
+        """
+        Destroys a list of entities.
+
+        Args:
+            delete_lst (list): List of entities to delete
+        """
         for agent in delete_lst:
             del self.active_obj_map[agent.get_obj_id()]
 
             port_del_map = {}
             for key, value in self.port_map.items():
-                # Sender
                 if key[0] == agent:
                     port_del_map[key] = True
 
-                # Receiver
                 if value:
                     del_items = []
                     for src_port in value:
@@ -152,6 +211,9 @@ class SysExecutor(CoreModel):
                 self.min_schedule_item.remove(agent)
 
     def destroy_active_entity(self):
+        """
+        Destroys active entities that are scheduled for destruction.
+        """
         if len(self.active_obj_map.keys()) != 0:
             delete_lst = []
             for _, agent in self.active_obj_map.items():
@@ -161,6 +223,16 @@ class SysExecutor(CoreModel):
             self.destory_entity(delete_lst)
 
     def coupling_relation(self, src_obj, out_port, dst_obj, in_port):
+        """
+        Related Model's input/output ports to each other. 
+        Related src_obj's output port to dst_obj's input port.
+
+        Args:
+            src_obj (BehaviorMdoel or StructuralModel): Model to relate as output ports 
+            out_port (str): src_obj's output port
+            dst_obj (CoreModel): Model to relate as input ports 
+            in_port (str): dst_obj's input port
+        """
         if src_obj and src_obj != self:
             src_obj = self.product_port_map[src_obj]
         else:
@@ -176,7 +248,52 @@ class SysExecutor(CoreModel):
         else:
             self.port_map[(src_obj, out_port)] = [(dst_obj, in_port)]
 
+    def get_relation(self):
+        """
+        Retrieves the current coupling relations.
+
+        Returns:
+            dict: The relation map
+        """
+        relation_map = {}
+        for relation in self.port_map.keys():
+            result_out_list = [] 
+            in_tuple = (relation[0].get_core_model(), relation[1])
+            out_list = self.port_map[relation]
+            for out in out_list:
+                result_out_list.append((out[0].get_core_model(), out[1]))
+            relation_map[in_tuple] = result_out_list
+        return relation_map
+        
+    def remove_relation(self, src, out_port, dst, in_port):
+        """
+        Removes a coupling relation.
+
+        Args:
+            src_obj (BehaviorMdoel or StructuralModel): Models that remove relationships as output port
+            out_port (str): src_obj's output port
+            dst_obj (CoreModel): Models that remove relationships as input port
+            in_port (str): dst_obj's input port
+        """
+        in_tuple = (self.model_map[src][0], out_port)
+        found = self.port_map[in_tuple].index((self.model_map[dst][0], in_port))
+        del self.port_map[in_tuple][found]
+        
+        if self.port_map[in_tuple] == []:
+            del self.port_map[in_tuple]
+
+    def reset_relation(self):
+        """Resets all coupling relations."""
+        self.port_map = {}
+
     def single_output_handling(self, obj, msg):
+        """
+        Handles a single output message.
+
+        Args:
+            obj (BehaviorModel or StructuralModel): Model
+            msg (SysMessage): The message
+        """
         pair = (obj, msg[1].get_dst())
         if pair not in self.port_map:
             self.port_map[pair] = [
@@ -184,23 +301,26 @@ class SysExecutor(CoreModel):
             ]
 
         for port_pair in self.port_map[pair]:
-            # print(port_pair)
             destination = port_pair
             if destination is None:
                 print("Destination Not Found")
-                print(self.port_map)
                 raise AssertionError
 
-            if destination[0] is None:
+            if destination[0] is self:
                 self.output_event_queue.append((self.global_time, msg[1].retrieve()))
             else:
-                # Receiver Message Handling
                 if destination[0].get_obj_id() in self.active_obj_map:
                     destination[0].ext_trans(destination[1], msg[1])
-                    # Receiver Scheduling
                     destination[0].set_req_time(self.global_time)
 
     def output_handling(self, obj, msg):
+        """
+        Handles output messages.
+
+        Args:
+            obj (BehaviorModel or StructuralModel): Model
+            msg (SysMessage): The message
+        """
         if msg is not None:
             if isinstance(msg[1], list):
                 for ith_msg in msg[1]:
@@ -210,33 +330,15 @@ class SysExecutor(CoreModel):
                 self.single_output_handling(obj, msg)
 
     def init_sim(self):
+        """Initializes the simulation."""
         self.simulation_mode = SimulationMode.SIMULATION_RUNNING
 
-        # Flattening
-        # _del_model = []
-        # _del_coupling = []
-        # for model_lst in self.waiting_obj_map.values():
-        #    for model in model_lst:
-        #        pass
-        # if model.get_type() == ModelType.STRUCTURAL:
-        #    self.flattening(model, _del_model, _del_coupling)
-
-        # for target, _model in _del_model:
-        #    if _model in self.waiting_obj_map[target]:
-        #        self.waiting_obj_map[target].remove(_model)
-
-        # for target, _model in _del_coupling:
-        #    if _model in self.port_map[target]:
-        #        self.port_map[target].remove(_model)
-
-        # setup inital time
         if self.active_obj_map is None:
             self.global_time = min(self.waiting_obj_map)
 
-        # search min_schedule_item after first init_sim call
         if not self.min_schedule_item:
             for obj in self.active_obj_map.items():
-                if obj[1].time_advance() < 0:  # exception handling for parent instance
+                if obj[1].time_advance() < 0:
                     print("You should give positive real number for the deadline")
                     raise AssertionError
 
@@ -244,23 +346,18 @@ class SysExecutor(CoreModel):
                 self.min_schedule_item.append(obj[1])
 
     def schedule(self):
-        # Agent Creation
+        """Schedules the next simulation event."""
         self.create_entity()
-        # TODO: consider event handling after time pass
         self.handle_external_input_event()
         
-        if self.use_snapshot : 
-            self.snapshot()
-        
         tuple_obj = self.min_schedule_item.popleft()
-        before = time.perf_counter()  # TODO: consider decorator
-
+        before = time.perf_counter()  # Record time before processing
+        
         while math.isclose(tuple_obj.get_req_time(), self.global_time, rel_tol=1e-9):
             msg = tuple_obj.output()
             if msg is not None:
                 self.output_handling(tuple_obj, (self.global_time, msg))
 
-            # Sender Scheduling
             tuple_obj.int_trans()
             req_t = tuple_obj.get_req_time()
 
@@ -278,24 +375,28 @@ class SysExecutor(CoreModel):
 
         self.min_schedule_item.appendleft(tuple_obj)
 
-        # update Global Time
         self.global_time += self.time_resolution
 
-        # Agent Deletion
         self.destroy_active_entity()
 
-        after = time.perf_counter()
-        if self.ex_mode == ExecutionType.R_TIME:  # Realtime Constraints?
-            time.sleep(max(float(self.time_resolution) - float(after - before), 0))
+        if self.ex_mode == ExecutionType.R_TIME:
+            delta = float(self.time_resolution) - float(before - time.perf_counter())
+            if delta > 0:
+                time.sleep(delta)
 
     def simulate(self, _time=Infinite, _tm=True):
+        """
+        Runs the simulation for a given amount of time.
+
+        Args:
+            _time (float): The simulation time
+            _tm (bool): Whether to use the termination manager 
+        """
         if _tm:
             self.tm = TerminationManager()
 
-        # Termination Condition
         self.target_time = self.global_time + _time
 
-        # Get minimum scheduled event
         self.init_sim()
 
         while self.global_time < self.target_time:
@@ -310,16 +411,13 @@ class SysExecutor(CoreModel):
             self.schedule()
 
     def simulation_stop(self):
-        # may buggy?
+        """Stops the simulation and resets SysExecutor."""
         self.global_time = 0
         self.target_time = 0
-        self.time_resolution = 1  # time_resolution may changed? - cbchoi
+        self.time_resolution = 1
 
-        # dictionary for waiting simulation objects
         self.waiting_obj_map = {}
-        # dictionary for active simulation objects
         self.active_obj_map = {}
-        # dictionary for object to ports
         self.port_map = {}
 
         self.min_schedule_item = deque()
@@ -329,8 +427,15 @@ class SysExecutor(CoreModel):
         self.dmc = DefaultMessageCatcher("dc")
         self.register_entity(self.dmc)
 
-    # External Event Handling - by cbchoi
     def insert_external_event(self, _port, _msg, scheduled_time=0):
+        """
+        Inserts an external event into the simulation.
+        
+        Args:
+            _port (str): port name
+            _msg (SysMessage or None): Event message
+            scheduled_time (float, optional): The scheduled time for the event
+        """
         sys_msg = SysMessage("SRC", _port)
         sys_msg.insert(_msg)
 
@@ -340,10 +445,17 @@ class SysExecutor(CoreModel):
                     self.input_event_queue, (scheduled_time + self.global_time, sys_msg)
                 )
         else:
-            # TODO Exception Handling
             print("[INSERT_EXTERNAL_EVNT] Port Not Found")
 
     def insert_custom_external_event(self, _port, _bodylist, scheduled_time=0):
+        """
+        Inserts a custom external event into the simulation.
+
+        Args:
+            _port (str): The port name / 포트 이름
+            _bodylist (list): The list of message bodies
+            scheduled_time (float, optional): The scheduled time for the event
+        """
         sys_msg = SysMessage("SRC", _port)
         sys_msg.extend(_bodylist)
 
@@ -353,13 +465,19 @@ class SysExecutor(CoreModel):
                     self.input_event_queue, (scheduled_time + self.global_time, sys_msg)
                 )
         else:
-            # TODO Exception Handling
             print("[INSERT_EXTERNAL_EVNT] Port Not Found")
 
     def get_generated_event(self):
+        """
+        Returns the queue of generated events.
+        
+        Returns:
+            deque: The queue of generated events
+        """
         return self.output_event_queue
 
     def handle_external_input_event(self):
+        """Handles external input events."""
         event_list = [ev for ev in self.input_event_queue if ev[0] <= self.global_time]
         for event in event_list:
             self.output_handling(self, event)
@@ -374,28 +492,41 @@ class SysExecutor(CoreModel):
         )
 
     def handle_external_output_event(self):
+        """
+        Handles external output events and clears the output event queue.
+        
+        Returns:
+            list: List of output events
+        """
         event_lists = copy.deepcopy(self.output_event_queue)
         self.output_event_queue.clear()
         return event_lists
 
     def is_terminated(self):
-        return self.simulation_mode == SimulationMode.SIMULATION_TERMINATED   
+        """
+        Checks if the simulation is terminated.
+        
+        Returns:
+            bool: True if terminated, False otherwise
+        """
+        return self.simulation_mode == SimulationMode.SIMULATION_TERMINATED
+    
+    def snapshot_simulation(self, name = "", directory_path=".") : 
+        """
+        Snapshot the model and its releases. 
 
-    def set_snapshot(self, snapshot_condition) :
-        self.use_snapshot = True
-        self.snapshot_manger = SnapshotManager(snapshot_condition)
-        self.snapshot_data = []
+        Args : 
+            name(str) : Name of the simulation to be snapshot
+            directory_path : Where the simulation will be snapshot
+            
+        Raises:
+            ValueError: Snapshot manager is not set.
+        """
+        if not self.snapshot_manager : 
+            raise ValueError("Snapshot manager is not set. Cannot take snapshot.")
         
-    def snapshot(self) :
+        if name == "" :
+            name = self.get_name()
         
-        name_list = self.snapshot_manger.get_snapshot_model_name(self.get_global_time())
-        if name_list == None : 
-            return 
+        self.snapshot_manager.snapshot_simulation(self.port_map, self.model_map, name, directory_path)
         
-        for name in name_list : 
-            model = self.get_entity(name)
-            self.snapshot_data.append({name : self.snapshot_manger.model_dump(model[0]), "global_time" : self.get_global_time()}) 
-            #get_entity type : list?
-        
-    def get_snapshot_data(self) :
-        return self.snapshot_data

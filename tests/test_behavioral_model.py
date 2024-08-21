@@ -11,14 +11,12 @@ import time
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
-
 from .model_msg_recv import MsgRecv
 from .model_peg import PEG
 
-
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     # System Executor Initialization
-    se = SysExecutor(t_resol, ex_mode=execution_mode)
+    se = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
     se.insert_input_port("start")
 
     # Model Creation
@@ -35,7 +33,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
 
     # Inject External Event to Engine
     se.insert_external_event("start", None)
-
+    
     for _ in range(3):
         se.simulate(1)
 
@@ -43,14 +41,15 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
 # Test Suite
 def test_casual_order1(capsys):
     execute_simulation(1, ExecutionType.V_TIME)
+    
     captured = capsys.readouterr()
+    
     desired_output = (
         "[Gen][IN]: started\n[Gen][OUT]: 0\n"
         + "[MsgRecv][IN]: 0\n[Gen][OUT]: 1\n[MsgRecv][IN]: 1\n"
     )
     assert captured.out == desired_output
-
-
+    
 def test_execution_mode():
     before = time.perf_counter()
     execute_simulation(1, ExecutionType.R_TIME)

@@ -39,10 +39,17 @@ class StructuralExecutor(Executor):
 
     def get_core_model(self):
         return self.sm
+    
+    def get_global_time(self) :
+        return self.global_time 
+    
+    def get_creator_functor(self) :
+        return self.creator_functor
 
     # @abstractmethod
     def init_executor(self):
         for model in self.sm.get_models():
+            # differentiate Structural Model and Behavioral Model
             executor = self.creator_functor(
                 self.global_time, self._instance_t, self._destruct_t, "subsystem", model
             )
@@ -82,18 +89,25 @@ class StructuralExecutor(Executor):
 
     # External Transition
     def ext_trans(self, port, msg):
+        print("ext trans :", msg)
         self.output_event_handling(self, msg)
+        
 
     # Internal Transition
     def int_trans(self):
         self.min_schedule_item[0].int_trans()
+        
 
     def message_handling(self, obj, msg):
+        #print(self.sm.port_map) ##
         if obj in self.product_model_map:
             pair = (obj.get_core_model(), msg.get_dst())
         else:
             pair = (self.get_core_model(), msg.get_dst())
-
+        
+        #print("port map", self.product_model_map)
+        #print("pair", pair)
+        #print("portmap ", self.sm.port_map)
         if pair in self.sm.port_map:
             for port_pair in self.sm.port_map[pair]:
                 destination = port_pair
@@ -102,14 +116,18 @@ class StructuralExecutor(Executor):
                     # print(self.port_map)
                     raise AssertionError
 
-                if self.model_product_map[destination[0]] is None:
+                if destination[0] not in self.model_product_map:
+                    return msg
                     pass
-                    # self.output_event_queue.append((self.global_time, msg[1].retrieve()))
+                    ##self.output_event_queue.append((self.global_time, msg[1].retrieve()))
                 else:
+                    #print("test : ", self.model_product_map[destination[0]])
                     # Receiver Message Handling
                     self.model_product_map[destination[0]].ext_trans(
                         destination[1], msg
                     )
+
+                    #메세지 도착 여부 확인
                     # Receiver Scheduling
                     # wrong : destination[0].set_req_time(self.global_time + destination[0].time_advance())
 
@@ -117,26 +135,37 @@ class StructuralExecutor(Executor):
                     self.model_product_map[destination[0]].set_req_time(
                         self.global_time
                     )
+                    #print(self.global_time)
+                    return None
+                    #두 모델 사이 시간 비교 
         else:
+            print("uncaught")
+            return None
             pass  # TODO: uncaught Message Handling
 
     def output_event_handling(self, obj, msg):
+        #print("msg : ", msg)
         if msg is not None:
             if isinstance(msg, list):
+                print("test : ", msg)
                 for ith_msg in msg:
-                    self.message_handling(obj, copy.deepcopy(ith_msg))
+                    return self.message_handling(obj, copy.deepcopy(ith_msg))
             else:
-                self.message_handling(obj, msg)
+                return self.message_handling(obj, msg)
 
     # Output Function
     def output(self):
+        #print(self.min_schedule_item[0].get_core_model().__dict__)
         msg = self.min_schedule_item[0].output()
+        print(self.min_schedule_item)
         if msg is not None:
-            self.output_event_handling(
+            return self.output_event_handling(
                 self.min_schedule_item[0], msg
             )  ## TODO: Output Handling Bugfix
-            return None  # Temporarily
+            #print("self : ", self)
+            #return None  # Temporarily
         else:
+            #print("self : ", self.get_core_model())
             return None
 
     def set_req_time(self, global_time):

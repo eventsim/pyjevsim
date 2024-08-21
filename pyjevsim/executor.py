@@ -6,9 +6,15 @@
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 """
 
-
 class Executor:
+    """Base class for executors."""
     def __init__(self, itime, dtime, ename):
-        self.engine_name = ename
-        self._instance_t = itime
+        """
+        Args:
+            itime (float): Instance creation time
+            dtime (float): Destruction time
+            ename (str): Engine name
+        """
+        self.engine_name = ename 
+        self._instance_t = itime 
         self._destruct_t = dtime
