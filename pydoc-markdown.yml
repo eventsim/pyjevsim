@@ -1,0 +1,7 @@
+site_name: "PyJEvsim"
+modules:
+  - "pyjevsim"
+renderer:
+  type: markdown
+  directory: .
+  filename: README.md
