@@ -10,7 +10,7 @@ License: MIT.  The full license text is available at:
 
 <a id="pyjevsim.behavior_model"></a>
 
-# pyjevsim.behavior\_model
+# pyjevsim\ Model
 
 <a id="pyjevsim.behavior_model.BehaviorModel"></a>
 
@@ -124,80 +124,274 @@ Inserts an internal transition
 - `event` _str_ - Event causing the transition
 - `post_state` _str_ - Next state
 
+
+<a id="pyjevsim.system_executor"></a>
+
+# pyjevsim.system\_executor
+
+<a id="pyjevsim.system_executor.SysExecutor"></a>
+
+## SysExecutor
+```python
+class SysExecutor(CoreModel)
+```
+
+SysExecutor managing the execution of models in a simulation.(Simulation Engine)
+
+<a id="pyjevsim.system_executor.SysExecutor.__init__"></a>
+
+#### \_\_init\_\_
+
+```python
+def __init__(_time_resolution,
+             _sim_name="default",
+             ex_mode=ExecutionType.V_TIME,
+             snapshot_manager=None)
+```
+
+Initializes the SysExecutor with time resolution, simulation name, execution mode, and optional snapshot manager.
+
+**Arguments**:
+
+- `_time_resolution` _float_ - The time resolution for the simulation
+- `_sim_name` _str, optional_ - The name of the simulation
+- `ex_mode` _R_TIME or VTIME_ - The execution mode
+- `snapshot_manager` _ModelSnapshotManager, optional_ - Manages SnapshotExecutor
+
+<a id="pyjevsim.system_executor.SysExecutor.register_entity"></a>
+
+#### register\_entity
+
+```python
+def register_entity(entity, inst_t=0, dest_t=Infinite, ename="default")
+```
+
+Register simulation entity(Model).
+
+**Arguments**:
+
+- `entity` _BehaviorModel or StructuralModel_ - The entity to register
+- `inst_t` _float, optional_ - Instance creation time
+- `dest_t` _float, optional_ - Destruction time
+- `ename` _str, optional_ - SysExecutor name
+
+<a id="pyjevsim.system_executor.SysExecutor.remove_entity"></a>
+
+#### remove\_entity
+
+```python
+def remove_entity(model_name)
+```
+
+Removes an entity by model name.
+
+**Arguments**:
+
+- `model_name` _str_ - The name of the model
+
+<a id="pyjevsim.system_executor.SysExecutor.coupling_relation"></a>
+
+#### coupling\_relation
+
+```python
+def coupling_relation(src_obj, out_port, dst_obj, in_port)
+```
+
+Related Model's input/output ports to each other.
+Related src_obj's output port to dst_obj's input port.
+
+**Arguments**:
+
+- `src_obj` _BehaviorMdoel or StructuralModel_ - Model to relate as output ports
+- `out_port` _str_ - src_obj's output port
+- `dst_obj` _CoreModel_ - Model to relate as input ports
+- `in_port` _str_ - dst_obj's input port
+
+<a id="pyjevsim.system_executor.SysExecutor.get_relation"></a>
+
+#### get\_relation
+
+```python
+def get_relation()
+```
+
+Retrieves the current coupling relations.
+
+**Returns**:
+
+- `dict` - The relation map
+
+<a id="pyjevsim.system_executor.SysExecutor.remove_relation"></a>
+
+#### remove\_relation
+
+```python
+def remove_relation(src, out_port, dst, in_port)
+```
+
+Removes a coupling relation.
+
+**Arguments**:
+
+- `src_obj` _BehaviorMdoel or StructuralModel_ - Models that remove relationships as output port
+- `out_port` _str_ - src_obj's output port
+- `dst_obj` _CoreModel_ - Models that remove relationships as input port
+- `in_port` _str_ - dst_obj's input port
+
+<a id="pyjevsim.system_executor.SysExecutor.reset_relation"></a>
+
+#### reset\_relation
+
+```python
+def reset_relation()
+```
+
+Resets all coupling relations.
+
+<a id="pyjevsim.system_executor.SysExecutor.simulate"></a>
+
+#### simulate
+
+```python
+def simulate(_time=Infinite, _tm=True)
+```
+
+Runs the simulation for a given amount of time.
+
+**Arguments**:
+
+- `_time` _float_ - The simulation time
+- `_tm` _bool_ - Whether to use the termination manager
+
+<a id="pyjevsim.system_executor.SysExecutor.simulation_stop"></a>
+
+#### simulation\_stop
+
+```python
+def simulation_stop()
+```
+
+Stops the simulation and resets SysExecutor.
+
+<a id="pyjevsim.system_executor.SysExecutor.insert_external_event"></a>
+
+#### insert\_external\_event
+
+```python
+def insert_external_event(_port, _msg, scheduled_time=0)
+```
+
+Inserts an external event into the simulation.
+
+**Arguments**:
+
+- `_port` _str_ - port name
+- `_msg` _SysMessage or None_ - Event message
+- `scheduled_time` _float, optional_ - The scheduled time for the event
+
+<a id="pyjevsim.system_executor.SysExecutor.insert_custom_external_event"></a>
+
+#### insert\_custom\_external\_event
+
+```python
+def insert_custom_external_event(_port, _bodylist, scheduled_time=0)
+```
+
+Inserts a custom external event into the simulation.
+
+**Arguments**:
+
+- `_port` _str_ - The port name
+- `_bodylist` _list_ - The list of message bodies
+- `scheduled_time` _float, optional_ - The scheduled time for the event
+
+
+<a id="pyjevsim.system_message"></a>
+
+# pyjevsim.system\_message
+
+<a id="pyjevsim.system_message.SysMessage"></a>
+
+## SysMessage 
+
+```python
+class SysMessage(SystemObject)
+```
+
+SysMessage for handling messages(port and data) between Models.
+
+<a id="pyjevsim.system_message.SysMessage.__init__"></a>
+
+#### \_\_init\_\_
+
+```python
+def __init__(src_name="", dst_name="")
+```
+
+**Arguments**:
+
+- `src_name` _str_ - The source name(Model name)
+- `dst_name` _str_ - The destination name(port)
+
+<a id="pyjevsim.system_message.SysMessage.__str__"></a>
+
+#### \_\_str\_\_
+
+```python
+def __str__()
+```
+
+Returns the string representation of the message.
+
+**Returns**:
+
+- `str` - The string representation
+
+<a id="pyjevsim.system_message.SysMessage.insert"></a>
+
+#### insert
+
+```python
+def insert(msg)
+```
+
+Inserts a message into the message list(data).
+
+**Arguments**:
+
+- `msg` _any_ - The message to insert
+
+<a id="pyjevsim.system_message.SysMessage.extend"></a>
+
+#### extend
+
+```python
+def extend(_list)
+```
+
+Extends the message list with multiple messages.
+
+**Arguments**:
+
+- `_list` _list_ - The list of messages to add
+
+<a id="pyjevsim.system_message.SysMessage.retrieve"></a>
+
+#### retrieve
+
+```python
+def retrieve()
+```
+
+Retrieves the list of messages.
+
+**Returns**:
+
+- `list` - The list of messages
+
 <a id="pyjevsim.executor_snapshot_manager"></a>
 
-# pyjevsim.executor\_snapshot\_manager
-
-<a id="pyjevsim.executor_snapshot_manager.ExecutorSnapshotManager"></a>
-
-## ExecutorSnapshotManager
-
-```python
-class ExecutorSnapshotManager()
-```
-
-Manager class for taking and loading snapshots of SysExecutor.
-
-<a id="pyjevsim.executor_snapshot_manager.ExecutorSnapshotManager.snapshot_executor"></a>
-
-#### snapshot\_executor
-
-```python
-def snapshot_executor(engine)
-```
-
-Take snapshot of Sysexecutor.
-
-**Arguments**:
-
-- `engine(SysExecutor)` - SysExecutor to snapshot
-  
-
-**Returns**:
-
-- `bytes` - Serialized snapshot of the Sysexecutor
-
-<a id="pyjevsim.executor_snapshot_manager.ExecutorSnapshotManager.load_snapshot"></a>
-
-#### load\_snapshot
-
-```python
-def load_snapshot(shotengine)
-```
-
-Loads Sysexecutor snapshot.
-
-**Arguments**:
-
-- `shotengine` _bytes_ - Serialized snapshot of the engine
-  
-
-**Returns**:
-
-- `object(SysExecutor)` - loaded SysExecutor
-
-<a id="pyjevsim.executor_snapshot_manager.ExecutorSnapshotManager.cleansing"></a>
-
-#### cleansing
-
-```python
-def cleansing(model)
-```
-
-Returns model that does not use a SnapshotExecutor as a BehaviorExecutor Type.
-
-**Arguments**:
-
-- `model(SnapshotExecutor)` - SnapshotExecutor to cleanse
-  
-
-**Returns**:
-
-- `object` - BehaviorExecutor
-
-<a id="pyjevsim.model_snapshot_manager"></a>
-
-# pyjevsim.model\_snapshot\_manager
+# pyjevsim Snapshot Manager
 
 <a id="pyjevsim.model_snapshot_manager.ModelSnapshotManager"></a>
 
@@ -304,6 +498,135 @@ Loads BehaviorModel.
 **Raises**:
 
 - `Exception` - If the model type is not ModelType.BEHAVIORAL
+
+
+<a id="pyjevsim.snapshot_manager"></a>
+
+# pyjevsim.snapshot\_manager
+
+<a id="pyjevsim.snapshot_manager.SnapshotManager"></a>
+
+## SnapshotManager
+
+```python
+class SnapshotManager()
+```
+
+The ModelSnapshotManager reads the snapshotted simulation(the directory where all the models and their releases are stored)
+and returns it as a SysExecutor.
+
+<a id="pyjevsim.snapshot_manager.SnapshotManager.__init__"></a>
+
+#### \_\_init\_\_
+
+```python
+def __init__(t_resol, ex_mode, name, path=".")
+```
+
+Initializes the SnapshotManager with time resolution, execution mode, name, and path.
+
+**Arguments**:
+
+- `t_resol` _float_ - Time resolution
+- `ex_mode` _R_TIME or V_TIME_ - Execution mode(Real time or Virtual time)
+- `name` _str_ - Name of SysExecutor
+- `path` _str, optional_ - Path to load snapshots
+
+<a id="pyjevsim.snapshot_manager.SnapshotManager.load_models"></a>
+
+#### load\_models
+
+```python
+def load_models(model_list)
+```
+
+Loads models from files and registers them with SysExecutor.
+
+**Arguments**:
+
+- `model_list` _list_ - List of model names
+
+<a id="pyjevsim.snapshot_manager.SnapshotManager.get_engine"></a>
+
+#### get\_engine
+
+```python
+def get_engine()
+```
+
+Returns the SysExecutor.
+
+**Returns**:
+
+  Restored SysExecutor
+
+<a id="pyjevsim.executor_snapshot_manager.ExecutorSnapshotManager"></a>
+
+## ExecutorSnapshotManager
+
+```python
+class ExecutorSnapshotManager()
+```
+
+Manager class for taking and loading snapshots of SysExecutor.
+
+<a id="pyjevsim.executor_snapshot_manager.ExecutorSnapshotManager.snapshot_executor"></a>
+
+#### snapshot\_executor
+
+```python
+def snapshot_executor(engine)
+```
+
+Take snapshot of Sysexecutor.
+
+**Arguments**:
+
+- `engine(SysExecutor)` - SysExecutor to snapshot
+  
+
+**Returns**:
+
+- `bytes` - Serialized snapshot of the Sysexecutor
+
+<a id="pyjevsim.executor_snapshot_manager.ExecutorSnapshotManager.load_snapshot"></a>
+
+#### load\_snapshot
+
+```python
+def load_snapshot(shotengine)
+```
+
+Loads Sysexecutor snapshot.
+
+**Arguments**:
+
+- `shotengine` _bytes_ - Serialized snapshot of the engine
+  
+
+**Returns**:
+
+- `object(SysExecutor)` - loaded SysExecutor
+
+<a id="pyjevsim.executor_snapshot_manager.ExecutorSnapshotManager.cleansing"></a>
+
+#### cleansing
+
+```python
+def cleansing(model)
+```
+
+Returns model that does not use a SnapshotExecutor as a BehaviorExecutor Type.
+
+**Arguments**:
+
+- `model(SnapshotExecutor)` - SnapshotExecutor to cleanse
+  
+
+**Returns**:
+
+- `object` - BehaviorExecutor
+
 
 <a id="pyjevsim.snapshot_executor"></a>
 
@@ -495,326 +818,3 @@ Dumps BehaviorModel
 **Returns**:
 
 - `bytes` - The dumped BehaviorModel
-
-<a id="pyjevsim.snapshot_manager"></a>
-
-# pyjevsim.snapshot\_manager
-
-<a id="pyjevsim.snapshot_manager.SnapshotManager"></a>
-
-## SnapshotManager
-
-```python
-class SnapshotManager()
-```
-
-The ModelSnapshotManager reads the snapshotted simulation(the directory where all the models and their releases are stored)
-and returns it as a SysExecutor.
-
-<a id="pyjevsim.snapshot_manager.SnapshotManager.__init__"></a>
-
-#### \_\_init\_\_
-
-```python
-def __init__(t_resol, ex_mode, name, path=".")
-```
-
-Initializes the SnapshotManager with time resolution, execution mode, name, and path.
-
-**Arguments**:
-
-- `t_resol` _float_ - Time resolution
-- `ex_mode` _R_TIME or V_TIME_ - Execution mode(Real time or Virtual time)
-- `name` _str_ - Name of SysExecutor
-- `path` _str, optional_ - Path to load snapshots
-
-<a id="pyjevsim.snapshot_manager.SnapshotManager.load_models"></a>
-
-#### load\_models
-
-```python
-def load_models(model_list)
-```
-
-Loads models from files and registers them with SysExecutor.
-
-**Arguments**:
-
-- `model_list` _list_ - List of model names
-
-<a id="pyjevsim.snapshot_manager.SnapshotManager.get_engine"></a>
-
-#### get\_engine
-
-```python
-def get_engine()
-```
-
-Returns the SysExecutor.
-
-**Returns**:
-
-  Restored SysExecutor
-
-<a id="pyjevsim.system_executor"></a>
-
-# pyjevsim.system\_executor
-
-<a id="pyjevsim.system_executor.SysExecutor"></a>
-
-## SysExecutor
-```python
-class SysExecutor(CoreModel)
-```
-
-SysExecutor managing the execution of models in a simulation.(Simulation Engine)
-
-<a id="pyjevsim.system_executor.SysExecutor.__init__"></a>
-
-#### \_\_init\_\_
-
-```python
-def __init__(_time_resolution,
-             _sim_name="default",
-             ex_mode=ExecutionType.V_TIME,
-             snapshot_manager=None)
-```
-
-Initializes the SysExecutor with time resolution, simulation name, execution mode, and optional snapshot manager.
-
-**Arguments**:
-
-- `_time_resolution` _float_ - The time resolution for the simulation
-- `_sim_name` _str, optional_ - The name of the simulation
-- `ex_mode` _R_TIME or VTIME_ - The execution mode
-- `snapshot_manager` _ModelSnapshotManager, optional_ - Manages SnapshotExecutor
-
-<a id="pyjevsim.system_executor.SysExecutor.register_entity"></a>
-
-#### register\_entity
-
-```python
-def register_entity(entity, inst_t=0, dest_t=Infinite, ename="default")
-```
-
-Register simulation entity(Model).
-
-**Arguments**:
-
-- `entity` _BehaviorModel or StructuralModel_ - The entity to register
-- `inst_t` _float, optional_ - Instance creation time
-- `dest_t` _float, optional_ - Destruction time
-- `ename` _str, optional_ - SysExecutor name
-
-<a id="pyjevsim.system_executor.SysExecutor.remove_entity"></a>
-
-#### remove\_entity
-
-```python
-def remove_entity(model_name)
-```
-
-Removes an entity by model name.
-
-**Arguments**:
-
-- `model_name` _str_ - The name of the model
-
-<a id="pyjevsim.system_executor.SysExecutor.coupling_relation"></a>
-
-#### coupling\_relation
-
-```python
-def coupling_relation(src_obj, out_port, dst_obj, in_port)
-```
-
-Related Model's input/output ports to each other.
-Related src_obj's output port to dst_obj's input port.
-
-**Arguments**:
-
-- `src_obj` _BehaviorMdoel or StructuralModel_ - Model to relate as output ports
-- `out_port` _str_ - src_obj's output port
-- `dst_obj` _CoreModel_ - Model to relate as input ports
-- `in_port` _str_ - dst_obj's input port
-
-<a id="pyjevsim.system_executor.SysExecutor.get_relation"></a>
-
-#### get\_relation
-
-```python
-def get_relation()
-```
-
-Retrieves the current coupling relations.
-
-**Returns**:
-
-- `dict` - The relation map
-
-<a id="pyjevsim.system_executor.SysExecutor.remove_relation"></a>
-
-#### remove\_relation
-
-```python
-def remove_relation(src, out_port, dst, in_port)
-```
-
-Removes a coupling relation.
-
-**Arguments**:
-
-- `src_obj` _BehaviorMdoel or StructuralModel_ - Models that remove relationships as output port
-- `out_port` _str_ - src_obj's output port
-- `dst_obj` _CoreModel_ - Models that remove relationships as input port
-- `in_port` _str_ - dst_obj's input port
-
-<a id="pyjevsim.system_executor.SysExecutor.reset_relation"></a>
-
-#### reset\_relation
-
-```python
-def reset_relation()
-```
-
-Resets all coupling relations.
-
-<a id="pyjevsim.system_executor.SysExecutor.simulate"></a>
-
-#### simulate
-
-```python
-def simulate(_time=Infinite, _tm=True)
-```
-
-Runs the simulation for a given amount of time.
-
-**Arguments**:
-
-- `_time` _float_ - The simulation time
-- `_tm` _bool_ - Whether to use the termination manager
-
-<a id="pyjevsim.system_executor.SysExecutor.simulation_stop"></a>
-
-#### simulation\_stop
-
-```python
-def simulation_stop()
-```
-
-Stops the simulation and resets SysExecutor.
-
-<a id="pyjevsim.system_executor.SysExecutor.insert_external_event"></a>
-
-#### insert\_external\_event
-
-```python
-def insert_external_event(_port, _msg, scheduled_time=0)
-```
-
-Inserts an external event into the simulation.
-
-**Arguments**:
-
-- `_port` _str_ - port name
-- `_msg` _SysMessage or None_ - Event message
-- `scheduled_time` _float, optional_ - The scheduled time for the event
-
-<a id="pyjevsim.system_executor.SysExecutor.insert_custom_external_event"></a>
-
-#### insert\_custom\_external\_event
-
-```python
-def insert_custom_external_event(_port, _bodylist, scheduled_time=0)
-```
-
-Inserts a custom external event into the simulation.
-
-**Arguments**:
-
-- `_port` _str_ - The port name / 포트 이름
-- `_bodylist` _list_ - The list of message bodies
-- `scheduled_time` _float, optional_ - The scheduled time for the event
-
-<a id="pyjevsim.system_message"></a>
-
-# pyjevsim.system\_message
-
-<a id="pyjevsim.system_message.SysMessage"></a>
-
-## SysMessage 
-
-```python
-class SysMessage(SystemObject)
-```
-
-SysMessage for handling messages(port and data) between Models.
-
-<a id="pyjevsim.system_message.SysMessage.__init__"></a>
-
-#### \_\_init\_\_
-
-```python
-def __init__(src_name="", dst_name="")
-```
-
-**Arguments**:
-
-- `src_name` _str_ - The source name(Model name)
-- `dst_name` _str_ - The destination name(port)
-
-<a id="pyjevsim.system_message.SysMessage.__str__"></a>
-
-#### \_\_str\_\_
-
-```python
-def __str__()
-```
-
-Returns the string representation of the message.
-
-**Returns**:
-
-- `str` - The string representation
-
-<a id="pyjevsim.system_message.SysMessage.insert"></a>
-
-#### insert
-
-```python
-def insert(msg)
-```
-
-Inserts a message into the message list(data).
-
-**Arguments**:
-
-- `msg` _any_ - The message to insert
-
-<a id="pyjevsim.system_message.SysMessage.extend"></a>
-
-#### extend
-
-```python
-def extend(_list)
-```
-
-Extends the message list with multiple messages.
-
-**Arguments**:
-
-- `_list` _list_ - The list of messages to add
-
-<a id="pyjevsim.system_message.SysMessage.retrieve"></a>
-
-#### retrieve
-
-```python
-def retrieve()
-```
-
-Retrieves the list of messages.
-
-**Returns**:
-
-- `list` - The list of messages
