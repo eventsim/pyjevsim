@@ -10,7 +10,7 @@ License: MIT.  The full license text is available at:
 
 <a id="pyjevsim.behavior_model"></a>
 
-# pyjevsim\ Model
+# pyjevsim Model
 
 <a id="pyjevsim.behavior_model.BehaviorModel"></a>
 
@@ -127,7 +127,7 @@ Inserts an internal transition
 
 <a id="pyjevsim.system_executor"></a>
 
-# pyjevsim.system\_executor
+# pyjevsim System Executor
 
 <a id="pyjevsim.system_executor.SysExecutor"></a>
 
@@ -308,7 +308,7 @@ Inserts a custom external event into the simulation.
 
 <a id="pyjevsim.system_message"></a>
 
-# pyjevsim.system\_message
+# pyjevsim System Message
 
 <a id="pyjevsim.system_message.SysMessage"></a>
 
@@ -499,11 +499,6 @@ Loads BehaviorModel.
 
 - `Exception` - If the model type is not ModelType.BEHAVIORAL
 
-
-<a id="pyjevsim.snapshot_manager"></a>
-
-# pyjevsim.snapshot\_manager
-
 <a id="pyjevsim.snapshot_manager.SnapshotManager"></a>
 
 ## SnapshotManager
@@ -630,7 +625,7 @@ Returns model that does not use a SnapshotExecutor as a BehaviorExecutor Type.
 
 <a id="pyjevsim.snapshot_executor"></a>
 
-# pyjevsim.snapshot\_executor
+# pyjevsim Snapshot Executor
 
 <a id="pyjevsim.snapshot_executor.SnapshotExecutor"></a>
 
