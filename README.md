@@ -8,12 +8,12 @@ Copyright (c) 2014-2020 Hanbat National University
 License: MIT.  The full license text is available at:
  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
-## Requirements**
+## Requirements
 1. python >= 3.12 
 2. Pyjevsim was developed utilizing existing modules.
   Modules are written in  “Requirements.txt” and can be installed via pip via pip.
   ```
-  pip install -r requirements.txt
+    pip install -r requirements.txt
   ```
 
 <a id="pyjevsim.behavior_model"></a>

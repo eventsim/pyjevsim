@@ -1,7 +1,20 @@
-site_name: "PyJEvsim"
-modules:
-  - "pyjevsim"
-renderer:
-  type: markdown
-  directory: .
-  filename: README.md
+# .readthedocs.yml
+version: 2
+
+build:
+  os: ubuntu-20.04
+  tools:
+    python: "3.9"
+  jobs:
+    include:
+      - name: "Install dependencies"
+        install:
+          - pip install -r requirements.txt
+
+sphinx:
+  configuration: docs/source/conf.py
+
+python:
+  install:
+    - method: pip
+      path: .

@@ -1,5 +1,5 @@
 .. pyjevsim documentation master file, created by
-   sphinx-quickstart on Wed Sep  4 17:48:17 2024.
+   sphinx-quickstart on Fri Sep 20 10:40:52 2024.
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
@@ -15,6 +15,4 @@ documentation for details.
    :maxdepth: 2
    :caption: Contents:
 
-   A/a1.md
-   A/a2.md
-   
+   modules
