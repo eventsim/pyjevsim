@@ -1,3 +1,12 @@
+"""
+ Author: Changbeom Choi (@cbchoi)
+ Copyright (c) 2014-2024 Handong Global University
+ Copyright (c) 2014-2024 Hanbat National University
+ License: MIT.  The full license text is available at:
+  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+"""
+""" This module contains an object, ModelSnapshotManager, that manages snapshots of the BehaviorModel. """
+
 from abc import abstractmethod
 from dill import loads, dump
 from .definition import ModelType

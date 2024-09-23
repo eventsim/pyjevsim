@@ -1,26 +1,27 @@
 """
  Author: Changbeom Choi (@cbchoi)
- Copyright (c) 2014-2020 Handong Global University
- Copyright (c) 2014-2020 Hanbat National University
+ Copyright (c) 2014-2024 Handong Global University
+ Copyright (c) 2014-2024 Hanbat National University
  License: MIT.  The full license text is available at:
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 """
+"""This module contains a BehaviorExecutor, an object for executing a BehaviorModel."""
 
 from .definition import Infinite
 from .executor import Executor
 
 class BehaviorExecutor(Executor):
-    def __init__(self, itime=Infinite, dtime=Infinite, ename="default", behavior_model=None):
-        """
-        A decorated form of the BehaviorModel, ready to be executed by the SysExecutor.
-        Manages the simulation time of the BehaviorModel and the information in the SysExecutor.
+    """
+    A decorated form of the BehaviorModel, ready to be executed by the SysExecutor.
+    Manages the simulation time of the BehaviorModel and the information in the SysExecutor.
 
-        Args:
-            itime (int or Infinite): Time of instance creation
-            dtime (int or Infinite): Time of instance destruction
-            ename (str): SysExecutor name
-            behavior_model (ModelType.BEHAVIORAL): Behavior Model
-        """
+    Args:
+        itime (int or Infinite): Time of instance creation
+        dtime (int or Infinite): Time of instance destruction
+        ename (str): SysExecutor name
+        behavior_model (ModelType.BEHAVIORAL): Behavior Model
+    """
+    def __init__(self, itime=Infinite, dtime=Infinite, ename="default", behavior_model=None):
         super().__init__(itime, dtime, ename)
 
         self._next_event_t = 0  # Next event time

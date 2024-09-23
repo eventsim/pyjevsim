@@ -1,10 +1,11 @@
 """
  Author: Changbeom Choi (@cbchoi)
- Copyright (c) 2014-2020 Handong Global University
- Copyright (c) 2014-2020 Hanbat National University
+ Copyright (c) 2014-2024 Handong Global University
+ Copyright (c) 2014-2024 Hanbat National University
  License: MIT.  The full license text is available at:
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 """
+""" This module contains a default model, DefaultMessageCatcher, for catching uncaught messages. """
 
 from .behavior_model import BehaviorModel
 from .definition import *
@@ -12,7 +13,7 @@ from .definition import *
 class DefaultMessageCatcher(BehaviorModel):
     """
     A default model for catching uncaught messages.
-    Receiving and not processing uncaught messages
+    Receiving and not processing uncaught messages.
     """
 
     def __init__(self, _name):

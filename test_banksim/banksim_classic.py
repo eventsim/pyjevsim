@@ -1,3 +1,4 @@
+""" """
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 
@@ -15,6 +16,8 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     user_process_time = 3   #BankUser's processing speed
     gen_cycle = 2           #BankUser Generattion cycle
     max_user = 50000        #Total number of users generated
+    
+    max_simtime = 100000    #simulation time
     
     
     ## model set & register entity
@@ -49,7 +52,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss.insert_external_event('start', None)
 
     ## simulation run  
-    for i in range(100000):
+    for i in range(max_simtime):
         ss.simulate(1)
     
 def test_casual_order1(capsys):

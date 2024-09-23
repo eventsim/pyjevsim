@@ -1,16 +1,15 @@
 """
  Author: Changbeom Choi (@cbchoi)
- Copyright (c) 2014-2020 Handong Global University
- Copyright (c) 2014-2020 Hanbat National University
+ Copyright (c) 2014-2024 Handong Global University
+ Copyright (c) 2014-2024 Hanbat National University
  License: MIT.  The full license text is available at:
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 """
-
+""" This module contains definitions for pyjevsim's const and type. """
 from enum import Enum
 
 # Define an infinite value
 Infinite = float("inf")
-
 
 class AttributeType(Enum):
     """Enum for attribute types."""
@@ -51,8 +50,6 @@ class AttributeType(Enum):
         else:
             return "UNKNOWN"
 
-
-# 2019.05.16 added by cbchoi
 class SimulationMode(Enum):
     """Enum for simulation modes."""
     
@@ -67,7 +64,6 @@ class SimulationMode(Enum):
     SIMULATION_UNKNOWN = -1  # Simulation Engine went to abnormal state
 
 
-# 2020.01.20 added by cbchoi
 class ModelType(Enum):
     """Enum for model types."""
     
@@ -76,7 +72,6 @@ class ModelType(Enum):
     UTILITY = 2 
 
 
-# 2023.10.01 added by cbchoi
 class ExecutionType(Enum):
     """Enum for execution types."""
     
