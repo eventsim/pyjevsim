@@ -1,69 +1,15 @@
-tests package
-=============
+Model
+=====
 
-Submodules
-----------
+.. toctree::
+   :maxdepth: 4
 
-tests.model\_buffer module
---------------------------
+   tests_model
 
-.. automodule:: tests.model_buffer
-   :members:
-   :undoc-members:
-   :show-inheritance:
+Simultion
+=========
 
-tests.model\_msg\_recv module
------------------------------
+.. toctree::
+   :maxdepth: 4
 
-.. automodule:: tests.model_msg_recv
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tests.model\_peg module
------------------------
-
-.. automodule:: tests.model_peg
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tests.model\_stm module
------------------------
-
-.. automodule:: tests.model_stm
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tests.test\_behavioral\_model module
-------------------------------------
-
-.. automodule:: tests.test_behavioral_model
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tests.test\_hierarchical module
--------------------------------
-
-.. automodule:: tests.test_hierarchical
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-tests.test\_structural module
------------------------------
-
-.. automodule:: tests.test_structural
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: tests
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   tests_sim

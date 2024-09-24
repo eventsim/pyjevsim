@@ -1,4 +1,4 @@
-pyjevsim
+Pyjevsim
 ========
 
 .. toctree::
@@ -6,26 +6,10 @@ pyjevsim
 
    pyjevsim
 
-tests
-=====
+Pyjevsim Example
+================
 
 .. toctree::
    :maxdepth: 4
 
-   tests
-
-test_banksim
-============
-
-.. toctree::
-   :maxdepth: 4
-
-   test_banksim
-
-test_banksim_debug
-==================
-
-.. toctree::
-   :maxdepth: 4
-
-   test_banksim_debug
+   pyjevsim_example
