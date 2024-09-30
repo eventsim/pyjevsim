@@ -1,7 +1,7 @@
 Banksim User Generate Model
 ---------------------------
 
-.. automodule:: test_banksim_debug.model_user_gen
+.. automodule:: test_banksim.model_user_gen
    :members:
    :undoc-members:
    :show-inheritance:
@@ -9,7 +9,7 @@ Banksim User Generate Model
 Banksim Queue Model
 -------------------
 
-.. automodule:: test_banksim_debug.model_queue
+.. automodule:: test_banksim.model_queue
    :members:
    :undoc-members:
    :show-inheritance:
@@ -17,7 +17,7 @@ Banksim Queue Model
 Banksim Accountant Model
 ------------------------
 
-.. automodule:: test_banksim_debug.model_acoountant
+.. automodule:: test_banksim.model_accountant
    :members:
    :undoc-members:
    :show-inheritance:

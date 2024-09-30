@@ -4,7 +4,7 @@ Model
 .. toctree::
    :maxdepth: 4
 
-   banksim_wiq_model
+   banksim_model
 
 Simultion
 =========
@@ -12,4 +12,4 @@ Simultion
 .. toctree::
    :maxdepth: 4
 
-   banksim_wiq_sim
+   banksim_sim

@@ -1,3 +1,11 @@
+Generator Model
+---------------
+
+.. automodule:: tests.model_peg
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Buffer Model
 ------------
 
@@ -10,14 +18,6 @@ Recieve Model
 -------------
 
 .. automodule:: tests.model_msg_recv
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-Generator Model
----------------
-
-.. automodule:: tests.model_peg
    :members:
    :undoc-members:
    :show-inheritance:

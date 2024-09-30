@@ -13,11 +13,3 @@ Snapshot : Banksim What-if-Question
    :maxdepth: 4
 
    test_banksim
-
-Snapshot : Banksim Debugging
-============================
-
-.. toctree::
-   :maxdepth: 4
-
-   test_banksim_debug
