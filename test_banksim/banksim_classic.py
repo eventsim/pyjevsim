@@ -1,7 +1,25 @@
+"""
+Author: Changbeom Choi (@cbchoi)
+Copyright (c) 2014-2024 Handong Global University
+Copyright (c) 2014-2024 Hanbat National University
+License: MIT.  The full license text is available at:
+ - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
+Simple BankSimulation example. 
+
+The User Generator Model generates a Bank User periodically.
+The Bank Accountatnt handles the Bank User's operations,
+Bank Queue stores the Bank User's data and passes the Bank User's information to the Bank Accountant when no Bank Accountant is available. 
+
+Usage:
+In a terminal in the parent directory, run the following command.
+ - pytest -s ./test_banksim/banksim_classic.py 
+"""
+
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 
-from .model_acoountant import BankAccountant
+from .model_accountant import BankAccountant
 from .model_queue import BankQueue
 from .model_user_gen import BankUserGenerator
 
@@ -15,6 +33,8 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     user_process_time = 3   #BankUser's processing speed
     gen_cycle = 2           #BankUser Generattion cycle
     max_user = 50000        #Total number of users generated
+    
+    max_simtime = 100000    #simulation time
     
     
     ## model set & register entity
@@ -49,7 +69,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss.insert_external_event('start', None)
 
     ## simulation run  
-    for i in range(100000):
+    for i in range(max_simtime):
         ss.simulate(1)
     
 def test_casual_order1(capsys):

@@ -1,9 +1,27 @@
+"""
+Author: Changbeom Choi (@cbchoi)
+Copyright (c) 2014-2024 Handong Global University
+Copyright (c) 2014-2024 Hanbat National University
+License: MIT.  The full license text is available at:
+ - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
+Example of snapshot a BankGenerator model during a Bank Simulation run.
+
+The User Generator Model generates a Bank User periodically.
+The Bank Accountatnt handles the Bank User's operations,
+Bank Queue stores the Bank User's data and passes the Bank User's information to the Bank Accountant when no Bank Accountant is available. 
+
+Usage:
+In a terminal in the parent directory, run the following command.
+ - pytest -s ./test_banksim/banksim_model_snapshot.py 
+"""
+
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 from pyjevsim.snapshot_executor import SnapshotExecutor
 from pyjevsim.model_snapshot_manager import ModelSnapshotManager
 
-from .model_acoountant import BankAccountant
+from .model_accountant import BankAccountant
 from .model_queue import BankQueue
 from .model_user_gen import BankUserGenerator
 
@@ -15,7 +33,7 @@ class BankGenModelSnapshotExecutor(SnapshotExecutor) :
         return BankGenModelSnapshotExecutor(behavior_executor)
     
     def __init__(self, behavior_executor):
-        super().__init__(behavior_executor)
+        super().__init__(behavior_executor) #set behavior_executor
         self.check = True
         
     def snapshot_time_condition(self, global_time):
@@ -26,7 +44,9 @@ class BankGenModelSnapshotExecutor(SnapshotExecutor) :
             self.check = False
             
     def snapshot(self, name) :
-        model_data = self.model_dump()
+        model_data = self.model_dump() #model snapshot data(binary type)
+        
+        ## snapshot model to simx file (path : ./snapshot/model.simx)  
         if model_data : 
             if not os.path.exists("./snapshot"):
                 os.makedirs("./snapshot")

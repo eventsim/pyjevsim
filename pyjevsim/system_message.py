@@ -1,9 +1,11 @@
 """
- Author: Changbeom Choi (@cbchoi)
- Copyright (c) 2014-2020 Handong Global University
- Copyright (c) 2014-2020 Hanbat National University
- License: MIT.  The full license text is available at:
-  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+Author: Changbeom Choi (@cbchoi)
+Copyright (c) 2014-2024 Handong Global University
+Copyright (c) 2014-2024 Hanbat National University
+License: MIT.  The full license text is available at:
+ - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
+This module contains an object SysMessage for handling messages (port and data) between Models. 
 """
 
 from .system_object import SystemObject
