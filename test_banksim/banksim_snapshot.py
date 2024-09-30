@@ -1,8 +1,27 @@
+"""
+Author: Changbeom Choi (@cbchoi)
+Copyright (c) 2014-2024 Handong Global University
+Copyright (c) 2014-2024 Hanbat National University
+License: MIT.  The full license text is available at:
+ - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+"""
+""" 
+Example of taking a snapshot of the model and model relationships during a bank simulation run.
+
+The User Generator Model generates a Bank User periodically.
+The Bank Accountatnt handles the Bank User's operations,
+Bank Queue stores the Bank User's data and passes the Bank User's information to the Bank Accountant when no Bank Accountant is available. 
+
+Usage:
+In a terminal in the parent directory, run the following command.
+pytest -s ./test_banksim/banksim_snapshot.py 
+"""
+
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 from pyjevsim.model_snapshot_manager import ModelSnapshotManager
 
-from .model_acoountant import BankAccountant
+from .model_accountant import BankAccountant
 from .model_queue import BankQueue
 from .model_user_gen import BankUserGenerator
 
@@ -56,6 +75,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     for i in range(100000):        
         # Snapshot when simulation time is 10000 
         if i >= 10000 : 
+            ##snapshot at simtime 10000(path ./snapshot/banksim)
             ss.snapshot_simulation(name = "banksim", directory_path = "./snapshot")
             ss.simulation_stop()
             break

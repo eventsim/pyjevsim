@@ -1,9 +1,9 @@
 """
- Author: Changbeom Choi (@cbchoi)
- Copyright (c) 2014-2024 Handong Global University
- Copyright (c) 2014-2024 Hanbat National University
- License: MIT.  The full license text is available at:
-  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+Author: Changbeom Choi (@cbchoi)
+Copyright (c) 2014-2024 Handong Global University
+Copyright (c) 2014-2024 Hanbat National University
+License: MIT.  The full license text is available at:
+ - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 """
 """ This module contains an object, ExecutorSnapshotManager, that manages snapshots of the SysExecutor. """
 from dill import loads, dumps
