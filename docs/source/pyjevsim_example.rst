@@ -6,8 +6,8 @@ DEVS Example
 
    tests
 
-Snapshot : Banksim What-if-Question
-===================================
+Snapshot Example : Bank Simulation 
+==================================
 
 .. toctree::
    :maxdepth: 4
