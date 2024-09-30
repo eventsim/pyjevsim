@@ -4,8 +4,7 @@ Copyright (c) 2014-2024 Handong Global University
 Copyright (c) 2014-2024 Hanbat National University
 License: MIT.  The full license text is available at:
  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
-"""
-""" 
+
 Example of taking a snapshot of the model and model relationships during a bank simulation run.
 
 The User Generator Model generates a Bank User periodically.
@@ -14,7 +13,7 @@ Bank Queue stores the Bank User's data and passes the Bank User's information to
 
 Usage:
 In a terminal in the parent directory, run the following command.
-pytest -s ./test_banksim/banksim_snapshot.py 
+ - pytest -s ./test_banksim/banksim_snapshot.py 
 """
 
 from pyjevsim.definition import *

@@ -4,8 +4,9 @@ Copyright (c) 2014-2024 Handong Global University
 Copyright (c) 2014-2024 Hanbat National University
 License: MIT.  The full license text is available at:
  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
+This module contains an ExecutorFactory that decorates an object of type Model into an Executor that is executable by a SysExecutor. 
 """
-""" This module contains an ExecutorFactory that decorates an object of type Model into an Executor that is executable by a SysExecutor. """
 
 from .behavior_model_executor import BehaviorModelExecutor
 from .definition import ModelType

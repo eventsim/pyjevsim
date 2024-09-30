@@ -4,8 +4,9 @@ Copyright (c) 2014-2024 Handong Global University
 Copyright (c) 2014-2024 Hanbat National University
 License: MIT.  The full license text is available at:
  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
+This module contains a StructuralExecutor, an object for executing a StructuralModel.
 """
-"""This module contains a StructuralExecutor, an object for executing a StructuralModel."""
 
 import copy
 from collections import deque

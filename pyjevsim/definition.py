@@ -4,8 +4,9 @@ Copyright (c) 2014-2024 Handong Global University
 Copyright (c) 2014-2024 Hanbat National University
 License: MIT.  The full license text is available at:
  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
+This module contains definitions for pyjevsim's const and type. 
 """
-""" This module contains definitions for pyjevsim's const and type. """
 from enum import Enum
 
 # Define an infinite value

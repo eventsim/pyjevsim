@@ -4,8 +4,9 @@ Copyright (c) 2014-2024 Handong Global University
 Copyright (c) 2014-2024 Hanbat National University
 License: MIT.  The full license text is available at:
  - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+
+This module contains the configuration object BehaviorModelExeuctor, which decorates the BehaviorExecutor for model compatibility with pyevsim, a Python-based simulation engine. 
 """
-""" This module contains the configuration object BehaviorModelExeuctor, which decorates the BehaviorExecutor for model compatibility with pyevsim, a Python-based simulation engine. """
 
 from .behavior_executor import BehaviorExecutor
 from .definition import Infinite
