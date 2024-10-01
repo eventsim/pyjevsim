@@ -11,7 +11,6 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 project = 'pyjevsim' 
 author = 'jaiyun'
-release = '2'
 
 extensions = [
     'sphinx.ext.autodoc',      
