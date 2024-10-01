@@ -7,17 +7,17 @@ from sphinx.application import Sphinx
 
 import os
 import sys
-sys.path.insert(0, os.path.abspath('../'))  
+sys.path.insert(0, os.path.abspath('../..'))  
 
 project = 'pyjevsim' 
-author = 'jaiyun'  # 작성자 이름
-release = '1.0'  # 프로젝트 버전
+author = 'jaiyun'
+release = '2'
 
 extensions = [
-    'sphinx.ext.autodoc',      # Python 자동 문서화 기능
-    'sphinx.ext.napoleon',     # Google 및 NumPy 스타일의 docstrings 지원
-    'sphinx.ext.viewcode',     # 소스코드 링크 추가
-    'sphinx.ext.githubpages',  # GitHub Pages 지원
+    'sphinx.ext.autodoc',      
+    'sphinx.ext.napoleon',     
+    'sphinx.ext.viewcode',     
+    'sphinx.ext.githubpages',  
 ]
 
 pygments_style = "sphinx"

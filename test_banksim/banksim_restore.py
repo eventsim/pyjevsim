@@ -3,7 +3,7 @@ Author: Changbeom Choi (@cbchoi)
 Copyright (c) 2014-2024 Handong Global University
 Copyright (c) 2014-2024 Hanbat National University
 License: MIT.  The full license text is available at:
- - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
+https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 Example of restoring Simulation snapshot to configure a bank simulation.
 
@@ -15,7 +15,8 @@ Bank Queue stores the Bank User's data and passes the Bank User's information to
 
 Usage:
 In a terminal in the parent directory, run the following command.
- - pytest -s ./test_banksim/banksim_restore.py 
+
+   pytest -s ./test_banksim/banksim_restore.py 
 """
 
 from pyjevsim.definition import *
