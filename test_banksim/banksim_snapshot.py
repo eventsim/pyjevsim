@@ -1,7 +1,7 @@
 """
 Author: Changbeom Choi (@cbchoi)
-Copyright (c) 2014-2024 Handong Global University
-Copyright (c) 2014-2024 Hanbat National University
+Copyright (c) 2014-2020 Handong Global University
+Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
@@ -16,27 +16,29 @@ In a terminal in the parent directory, run the following command.
 
    pytest -s ./test_banksim/banksim_snapshot.py 
 """
+import time
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
-from pyjevsim.model_snapshot_manager import ModelSnapshotManager
+from pyjevsim.snapshot_manager import SnapshotManager
 
 from .model_accountant import BankAccountant
 from .model_queue import BankQueue
 from .model_user_gen import BankUserGenerator
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):    
-    snapshot_manager = ModelSnapshotManager()
+    snapshot_manager = SnapshotManager()
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
     
-    gen_num = 3             #Number of BankUserGenerators 
-    queue_size = 10         #BankQueue size
-    proc_num = 5            #Number of BankAccountant
+    gen_num = 10             #Number of BankUserGenerators 
+    queue_size = 100         #BankQueue size
+    proc_num = 30            #Number of BankAccountant
     
-    user_process_time = 3   #BankUser's processing speed
+    user_process_time = 5   #BankUser's processing speed
     gen_cycle = 2           #BankUser Generattion cycle
-    max_user = 50000        #Total number of users generated
+    max_user = 500000        #Total number of users generated
     
+    max_simtime = 100010    #simulation time
     
     ## model set & register entity
     gen_list = []
@@ -72,17 +74,20 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     
     # simulation run
         
-    for i in range(100000):        
+    for i in range(max_simtime):        
         # Snapshot when simulation time is 10000 
-        if i >= 10000 : 
+        if i == 10000 : 
             ##snapshot at simtime 10000(path ./snapshot/banksim)
             ss.snapshot_simulation(name = "banksim", directory_path = "./snapshot")
-            ss.simulation_stop()
             break
-        
+            
+        print("[time] : ", i)
         ss.simulate(1)
-    
-def test_casual_order1(capsys):
-    execute_simulation(1, ExecutionType.V_TIME)
-    print(capsys)
+        
+        
+start_time = time.time()
+execute_simulation(1, ExecutionType.V_TIME)
+end_time = time.time()
+execution_time = end_time - start_time
+print(f"run time: {execution_time} sec")
     

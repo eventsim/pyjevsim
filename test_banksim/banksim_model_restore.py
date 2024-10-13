@@ -1,7 +1,7 @@
 """
 Author: Changbeom Choi (@cbchoi)
-Copyright (c) 2014-2024 Handong Global University
-Copyright (c) 2014-2024 Hanbat National University
+Copyright (c) 2014-2020 Handong Global University
+Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
@@ -18,40 +18,44 @@ In a terminal in the parent directory, run the following command.
 
    pytest -s ./test_banksim/banksim_model_restore.py 
 """
-
+import time
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
-from pyjevsim.model_snapshot_manager import ModelSnapshotManager
+from pyjevsim.snapshot_manager import SnapshotManager
+from pyjevsim.restore_handler import RestoreHandler
 
+from .model_queue import BankQueue
 from .model_accountant import BankAccountant
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):    
-    snapshot_manager = ModelSnapshotManager()
-    ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
+    snapshot_manager = SnapshotManager(restore_handler=RestoreHandler())
+    ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
                
-    gen_num = 3             #Number of BankUserGenerators 
-    queue_size = 10         #BankQueue size(reset queue size)
-    proc_num = 5            #Number of BankAccountant
+    gen_num = 10             #Number of BankUserGenerators 
+    queue_size = 100         #BankQueue size(reset queue size)
+    proc_num = 30           #Number of BankAccountant
     gen_cycle = 2           #BankUser Generattion cycle(reset cycle)
+    
+    max_simtime = 100000
     
     ## model restore & set register entity
     #BankUserGenerator Restore
     gen_list = []
     for i in range(gen_num) :
         #BankUserGenerator Restore
-        with open(f"./snapshot/gen{i}.simx", "rb") as f :
-            gen = snapshot_manager.load_snapshot(f"gen{i}", f.read())  
-        
+        if i < 10 :
+            with open(f"./snapshot/[time]gen{i}.simx", "rb") as f :
+                gen = snapshot_manager.load_snapshot(f"gen{i}", f.read())  
+        else : 
+            with open(f"./snapshot/[time]gen{0}.simx", "rb") as f :
+                gen = snapshot_manager.load_snapshot(f"gen{i}", f.read())  
         #gen cycle set
         gen.set_cycle(gen_cycle)
     
         gen_list.append(gen)
         ss.register_entity(gen)    
-    
-    #BankQueue Restore
-    with open(f"./snapshot/Queue.simx", "rb") as f :
-        que = snapshot_manager.load_snapshot(f"Queue", f.read())
-    
+       
+    que = BankQueue('Queue', queue_size, proc_num)
     
     #queue size set
     que.set_queue_size(queue_size)
@@ -76,12 +80,13 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss.insert_external_event('start', None)
     
     ## simulation run
-    for i in range(25000):
-        print()
+    for i in range(max_simtime):
+        print("[time] : ", i)
         ss.simulate(1)
        
 
-def test_casual_order1(capsys):
-    execute_simulation(1, ExecutionType.V_TIME)
-    print(capsys)
-    
+start_time = time.time()
+execute_simulation(1, ExecutionType.V_TIME)
+end_time = time.time()
+execution_time = end_time - start_time
+print(f"run time: {execution_time} sec")

@@ -1,7 +1,7 @@
 """
 Author: Changbeom Choi (@cbchoi)
-Copyright (c) 2014-2024 Handong Global University
-Copyright (c) 2014-2024 Hanbat National University
+Copyright (c) 2014-2020 Handong Global University
+Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
@@ -16,56 +16,47 @@ In a terminal in the parent directory, run the following command.
 
    pytest -s ./test_banksim/banksim_model_snapshot.py 
 """
+import time
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
-from pyjevsim.snapshot_executor import SnapshotExecutor
-from pyjevsim.model_snapshot_manager import ModelSnapshotManager
+
+from pyjevsim.snapshot_condition import SnapshotCondition
+from pyjevsim.snapshot_manager import SnapshotManager
 
 from .model_accountant import BankAccountant
 from .model_queue import BankQueue
 from .model_user_gen import BankUserGenerator
 
-import os
-
-class BankGenModelSnapshotExecutor(SnapshotExecutor) :
+class BankGenModelCondition(SnapshotCondition) :
     @staticmethod
     def create_executor(behavior_executor) :
-        return BankGenModelSnapshotExecutor(behavior_executor)
+        return BankGenModelCondition(behavior_executor)
     
     def __init__(self, behavior_executor):
         super().__init__(behavior_executor) #set behavior_executor
         self.check = True
         
     def snapshot_time_condition(self, global_time):
-        #if global time >= 10000 : snapshot model
+        #if global time >= 50000 : snapshot model
         if global_time >= 10000 and self.check:
-            self.snapshot("")
-            print("snapshot_model")
             self.check = False
-            
-    def snapshot(self, name) :
-        model_data = self.model_dump() #model snapshot data(binary type)
-        
-        ## snapshot model to simx file (path : ./snapshot/model.simx)  
-        if model_data : 
-            if not os.path.exists("./snapshot"):
-                os.makedirs("./snapshot")
-            with open(f"./snapshot/{self.behavior_executor.get_name()}.simx", "wb") as f :
-                f.write(model_data)
+            return True
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
-    snapshot_manager = ModelSnapshotManager()
+    snapshot_manager = SnapshotManager()
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
     
-    gen_num = 3             #Number of BankUserGenerators 
-    queue_size = 10         #BankQueue size
-    proc_num = 5            #Number of BankAccountant
+    gen_num = 10            #Number of BankUserGenerators 
+    queue_size = 100        #BankQueue size
+    proc_num = 30           #Number of BankAccountant
     
-    user_process_time = 3   #BankUser's processing speed
+    user_process_time = 5   #BankUser's processing speed
     gen_cycle = 2           #BankUser Generattion cycle
-    max_user = 50000        #Total number of users generated
+    max_user = 500000       #Total number of users generated
     
+    max_simtime = 50001    #simulation time
+           
     
     ## model set & register entity
     gen_list = []
@@ -77,13 +68,11 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         gen_list.append(gen)    
         
         #Associating snapshot conditions with models 
-        snapshot_manager.register_snapshot_executor(f"gen{i}", BankGenModelSnapshotExecutor.create_executor)
+        snapshot_manager.register_snapshot_condition(f"gen{i}", BankGenModelCondition.create_executor)
         ss.register_entity(gen)    
         
         
     que = BankQueue('Queue', queue_size, proc_num)
-    #Associating snapshot conditions with models 
-    snapshot_manager.register_snapshot_executor(f"Queue", BankGenModelSnapshotExecutor.create_executor)
     ss.register_entity(que)
     
     
@@ -107,11 +96,13 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss.insert_external_event('start', None)
 
     ## simulation run
-    for i in range(100000):
-        print()
+    for i in range(max_simtime):
+        print("[time] : ", i)
         ss.simulate(1)
     
-def test_casual_order1(capsys):
-    execute_simulation(1, ExecutionType.V_TIME)
-    print(capsys)
+start_time = time.time()
+execute_simulation(1, ExecutionType.V_TIME)
+end_time = time.time()
+execution_time = end_time - start_time
+print(f"run time: {execution_time} sec")
     
