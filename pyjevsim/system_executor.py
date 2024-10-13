@@ -17,7 +17,6 @@ import time
 from collections import deque
 
 from .core_model import CoreModel
-from .behavior_model import BehaviorModel
 from .default_message_catcher import DefaultMessageCatcher
 from .definition import ExecutionType, Infinite, ModelType, SimulationMode
 from .executor_factory import ExecutorFactory

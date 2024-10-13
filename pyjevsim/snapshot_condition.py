@@ -5,11 +5,10 @@ Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 """
-from abc import abstractmethod, staticmethod
+from abc import abstractmethod, abstractstaticmethod
 
 class SnapshotCondition:
-    @staticmethod
-    @abstractmethod
+    @abstractstaticmethod
     def create_executor(behavior_executor) :
         return SnapshotCondition(behavior_executor)
     

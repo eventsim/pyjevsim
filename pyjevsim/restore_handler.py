@@ -7,13 +7,13 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 """
 from dill import load, loads
-from .definition import ModelType
+from .definition import ModelType, ExecutionType
 import json
 import ast
 from .system_executor import SysExecutor
 
 class RestoreHandler():
-    def __init__(self, t_resol, ex_mode, name, path="."):
+    def __init__(self, t_resol=1, ex_mode=ExecutionType.V_TIME, name="project", path="./snapshot"):
         """
         Initializes the SnapshotManager with time resolution, execution mode, name, and path.
 
@@ -27,10 +27,9 @@ class RestoreHandler():
         self.sim_name = name
         self.engine = SysExecutor(t_resol, ex_mode, snapshot_manager=None)
         self.model_map = {}
-        self.set_engine()
         pass
-
-    def set_engine(self):
+        
+    def restore_engine(self):
         """
         Sets up SysExecutor with the relation map and model map.
         """
@@ -88,6 +87,7 @@ class RestoreHandler():
         Returns:
             Restored SysExecutor
         """
+        self.restore_engine()
         return self.engine
     
     def load_snapshot(self, name, shotmodel):

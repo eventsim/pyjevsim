@@ -11,7 +11,6 @@ import dill
 import os
 
 from .executor import Executor
-from .snapshot_condition import SnapshotCondition
 
 class SnapshotExecutor(Executor):
     """
@@ -196,7 +195,6 @@ class SnapshotExecutor(Executor):
             name (str): The name of the snapshot
         """
         model_data = self.model_dump() #model snapshot data(binary type)
-        
         ## snapshot model to simx file (path : ./snapshot/model.simx)  
         if model_data : 
             if not os.path.exists(_path):

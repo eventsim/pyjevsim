@@ -1,7 +1,7 @@
 """
 Author: Changbeom Choi (@cbchoi)
-Copyright (c) 2014-2024 Handong Global University
-Copyright (c) 2014-2024 Hanbat National University
+Copyright (c) 2014-2020 Handong Global University
+Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
@@ -16,6 +16,7 @@ In a terminal in the parent directory, run the following command.
 
    pytest -s ./test_banksim/banksim_classic.py 
 """
+import time
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
@@ -26,16 +27,16 @@ from .model_user_gen import BankUserGenerator
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
+        
+    gen_num = 10            #Number of BankUserGenerators 
+    queue_size = 100        #BankQueue size
+    proc_num = 30           #Number of BankAccountant
     
-    gen_num = 3             #Number of BankUserGenerators 
-    queue_size = 10         #BankQueue size
-    proc_num = 5            #Number of BankAccountant
-    
-    user_process_time = 3   #BankUser's processing speed
+    user_process_time = 5   #BankUser's processing speed
     gen_cycle = 2           #BankUser Generattion cycle
-    max_user = 50000        #Total number of users generated
+    max_user = 500000       #Total number of users generated
     
-    max_simtime = 100000    #simulation time
+    max_simtime = 180000    #simulation time
     
     
     ## model set & register entity
@@ -71,8 +72,35 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
 
     ## simulation run  
     for i in range(max_simtime):
+        if i == 10000 :
+            # case2 3
+            #for gen in gen_list : 
+            #    gen.set_cycle(1)
+            #    #gen.set_cycle(3)
+            
+            # case4
+            
+            for j in range(4, 10) :
+                ss.remove_relation(f'gen{j}', 'user_out', 'Queue', 'user_in')
+                ss.get_entity(gen_list[j])
+            
+            # case5
+            
+            #for j in range(9, 15) :
+            #    gen = BankUserGenerator(f'gen{j}', gen_cycle, user, user_process_time)
+            #    gen_list.append(gen)    
+            #    ss.register_entity(gen)
+            #    ss.coupling_relation(None, 'start', gen, 'start')
+            #    ss.coupling_relation(gen, 'user_out', que, 'user_in')
+            #ss.insert_external_event('start', None)
+        print("[time] : ", i)
         ss.simulate(1)
-    
+               
+                
 
+start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)
+end_time = time.time()
+execution_time = end_time - start_time
+print(f"run time: {execution_time} sec")
     

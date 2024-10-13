@@ -8,10 +8,9 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module contains an ExecutorFactory that decorates an object of type Model into an Executor that is executable by a SysExecutor. 
 """
 
-from .behavior_model_executor import BehaviorModelExecutor
 from .definition import ModelType
-from .structural_executor_model import StructuralModelExecutor
-from .snapshot_executor import SnapshotExecutor
+from .behavior_executor import BehaviorExecutor
+from .structural_executor import StructuralExecutor
 
 class ExecutorFactory:
     """Factory class to create different types of executors."""
@@ -63,7 +62,7 @@ class ExecutorFactory:
         Returns:
             BehaviorModelExecutor: The created BehaviorModelexecutor
         """
-        return BehaviorModelExecutor(ins_t, des_t, en_name, model)
+        return BehaviorExecutor(ins_t, des_t, en_name, model)
 
     def create_structural_executor(self, global_time, ins_t, des_t, en_name, model):
         """Create StructuralModelExecutor
@@ -78,7 +77,7 @@ class ExecutorFactory:
         Returns:
             StructuralModelExecutor: created StructuralModelExecutor 
         """
-        return StructuralModelExecutor(
+        return StructuralExecutor(
             global_time, ins_t, des_t, en_name, model, self.create_behavior_executor
         )
     
