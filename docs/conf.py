@@ -16,7 +16,8 @@ extensions = [
     'sphinx.ext.autodoc',      
     'sphinx.ext.napoleon',     
     'sphinx.ext.viewcode',     
-    'sphinx.ext.githubpages',  
+    'sphinx.ext.githubpages',
+    'sphinx-prompt',
 ]
 
 pygments_style = "sphinx"

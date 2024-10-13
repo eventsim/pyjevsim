@@ -166,7 +166,11 @@ flake8.result.txt
 snapshot/
 snapshot/*
 .snapshot/*
-snapshot
+snapshot_model*
+snapshot_sim*
+snapshot_test
+
+count
 
 .vscode
 
