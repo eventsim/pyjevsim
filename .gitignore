@@ -170,6 +170,8 @@ snapshot_model*
 snapshot_sim*
 snapshot_test
 
+count
+
 .vscode
 
 .DS_Store
