@@ -1,17 +1,17 @@
 """
 Author: Changbeom Choi (@cbchoi)
-Copyright (c) 2014-2024 Handong Global University
-Copyright (c) 2014-2024 Hanbat National University
+Copyright (c) 2014-2020 Handong Global University
+Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 This module contains an object SnapshotExecutor that decorates a BehaviorExecutor to snapshot a BehaviorModel. 
 """
-
-from abc import abstractmethod, abstractstaticmethod
 import dill
+import os
 
 from .executor import Executor
+from .snapshot_condition import SnapshotCondition
 
 class SnapshotExecutor(Executor):
     """
@@ -20,28 +20,18 @@ class SnapshotExecutor(Executor):
     inheriting from that class and entering snapshot conditions. 
     The snapshot condition can be before or after a function in the behavior model.  
     """
-
-    @abstractstaticmethod
-    def create_executor(cls, behavior_executor):
-        """Creates a SnapshotExecutor instance.
-
-        Args:
-            cls (type): Name of created class
-            behavior_executor (BehaviorExecutor):BehaviorExecutor to decorate
-        Returns:
-            SnapshotExecutor: The created snapshot executor
-        """
-        return SnapshotExecutor(behavior_executor)
-
-    def __init__(self, behavior_executor):
+    def __init__(self, behavior_executor, condition):
         """
         Args:
             behavior_executor (BehaviorExecutor): BehaviorExecutor to decorate
         """
-        super().__init__(behavior_executor.get_create_time(),
+        Executor.__init__(self,
+                         behavior_executor.get_create_time(),
                          behavior_executor.get_destruct_time(),
                          behavior_executor.get_engine_name())        
+        
         self.behavior_executor = behavior_executor
+        self.condition = condition
 
     def get_core_model(self):
         """Returns BehaviorModel of SnapshotExecutor.
@@ -132,19 +122,23 @@ class SnapshotExecutor(Executor):
             port (str): The port name
             msg (Message): The message
         """
-        self.snapshot_pre_condition_ext(port, msg, self.get_cur_state())
+        if self.condition.snapshot_pre_condition_ext(port, msg, self.get_cur_state()):
+            self.snapshot("ext_before")
         #Conditions created before ext_trans function 
         self.behavior_executor.ext_trans(port, msg)
-        self.snapshot_post_condition_ext(port, msg, self.get_cur_state())
+        if self.condition.snapshot_post_condition_ext(port, msg, self.get_cur_state()):
+            self.snapshot("ext_after")
         #Conditions generated after ext_trans function 
 
     # Internal Transition
     def int_trans(self):
         """Handles the internal transition."""
-        self.snapshot_pre_condition_int(self.get_cur_state())
+        if self.condition.snapshot_pre_condition_int(self.get_cur_state()):
+            self.snapshot("int_before")
         #Conditions created before int_trans function 
         self.behavior_executor.int_trans()
-        self.snapshot_post_condition_int(self.get_cur_state())
+        if self.condition.snapshot_post_condition_int(self.get_cur_state()):
+            self.snapshot("int_after")
         #Conditions generated after int_trans function
 
     # Output Function
@@ -154,10 +148,12 @@ class SnapshotExecutor(Executor):
         Returns:
             Message: The output message
         """
-        self.snapshot_pre_condition_out(self.get_cur_state())
+        if self.condition.snapshot_pre_condition_out(self.get_cur_state()):
+            self.snapshot("output_before")
         #Conditions created before output function 
         out_msg = self.behavior_executor.output()
-        self.snapshot_post_condition_out(self.get_cur_state(), out_msg)
+        if self.condition.snapshot_post_condition_out(self.get_cur_state(), out_msg):
+            self.snapshot("output_after")
         #Conditions generated after output function
         
         return out_msg
@@ -177,7 +173,8 @@ class SnapshotExecutor(Executor):
         Args:
             global_time (float): Simulation time
         """
-        self.snapshot_time_condition(global_time)
+        if self.condition.snapshot_time_condition(global_time):
+            self.snapshot("time")
         #Snapshot conditions over time
         self.behavior_executor.set_req_time(global_time)
 
@@ -189,76 +186,7 @@ class SnapshotExecutor(Executor):
         """
         return self.behavior_executor.get_req_time()
 
-    @abstractmethod
-    def snapshot_time_condition(self, global_time):
-        """Abstract method for snapshot time condition.
-        
-        Args:
-            global_time (float): The global time / simulation time
-        """
-        pass
-
-    @abstractmethod
-    def snapshot_pre_condition_ext(self, port, msg, cur_state):
-        """Abstract method for pre-condition of external transition snapshot.
-
-        Args:
-            port (str): The port name
-            msg (SysMessage): The message
-            cur_state (str): The current state
-        """
-        pass
-
-    @abstractmethod
-    def snapshot_post_condition_ext(self, port, msg, cur_state):
-        """Abstract method for post-condition of external transition snapshot.
-
-        Args:
-            port (str): The port name
-            msg (SysMessage): The message
-            cur_state (str): The current state
-        """
-        pass
-
-    @abstractmethod
-    def snapshot_pre_condition_int(self, cur_state):
-        """Abstract method for pre-condition of internal transition snapshot.
-
-        Args:
-            cur_state (str): The current state
-        """
-        pass
-
-    @abstractmethod
-    def snapshot_post_condition_int(self, cur_state):
-        """Abstract method for post-condition of internal transition snapshot.
-        
-        Args:
-            cur_state (str): The current state
-        """
-        pass
-
-    @abstractmethod
-    def snapshot_pre_condition_out(self, cur_state):
-        """Abstract method for pre-condition of output snapshot.
-        
-        Args:
-            cur_state (str): The current state
-        """
-        pass
-
-    @abstractmethod
-    def snapshot_post_condition_out(self, msg, cur_state):
-        """Abstract method for post-condition of output snapshot.
-        
-        Args:
-            msg (SysMessage): The message
-            cur_state (str): The current state
-        """
-        pass
-
-    @abstractmethod
-    def snapshot(self, name):
+    def snapshot(self, _prefix, _path="./snapshot"):
         """An abstract method that creates a method to take a snapshot.
         You can use the snapshot method in a conditional method.
         Use the model_dump method to get the model data in bytes. 
@@ -267,7 +195,15 @@ class SnapshotExecutor(Executor):
         Args:
             name (str): The name of the snapshot
         """
-        pass
+        model_data = self.model_dump() #model snapshot data(binary type)
+        
+        ## snapshot model to simx file (path : ./snapshot/model.simx)  
+        if model_data : 
+            if not os.path.exists(_path):
+                os.makedirs(_path)
+                
+            with open(f"{_path}/[{_prefix}]{self.behavior_executor.get_name()}.simx", "wb") as f :
+                f.write(model_data)
 
     def model_dump(self):
         """Dumps BehaviorModel
@@ -284,4 +220,3 @@ class SnapshotExecutor(Executor):
             BehaviorExecutor: The behavior executor / 동작 실행기
         """
         return self.behavior_executor
-    

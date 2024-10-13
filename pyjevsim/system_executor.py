@@ -1,7 +1,7 @@
 """
 Author: Changbeom Choi (@cbchoi)
-Copyright (c) 2014-2024 Handong Global University
-Copyright (c) 2014-2024 Hanbat National University
+Copyright (c) 2014-2020 Handong Global University
+Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
@@ -72,7 +72,10 @@ class SysExecutor(CoreModel):
         self.ex_mode = ex_mode
         self.snapshot_manager = snapshot_manager
         
-        self.exec_factory = ExecutorFactory()
+        if snapshot_manager:
+            self.exec_factory = snapshot_manager.get_snapshot_factory()
+        else:
+            self.exec_factory = ExecutorFactory()
         #Factory pattern to convert Model to ModelExecutor
         
         self.dmc = DefaultMessageCatcher("dc")
@@ -88,6 +91,7 @@ class SysExecutor(CoreModel):
         """
         return self.global_time
     
+    '''
     def set_snapshot_manager(self, snapshot_manager):
         """
         Sets the snapshot manager.
@@ -96,6 +100,7 @@ class SysExecutor(CoreModel):
             snapshot_manager (ModelSnapshotManager): The snapshot manager to set
         """
         self.snapshot_manager = snapshot_manager
+    '''
     
     def register_entity(self, entity, inst_t=0, dest_t=Infinite, ename="default"):
         """
@@ -110,9 +115,9 @@ class SysExecutor(CoreModel):
         sim_obj = self.exec_factory.create_executor(
             self.global_time, inst_t, dest_t, ename, entity
         )
-        if self.snapshot_manager:
-            if self.snapshot_manager.check_snapshot_executor(entity.get_name()):
-                sim_obj = self.snapshot_manager.create_snapshot_executor(sim_obj)
+        #if self.snapshot_manager:
+        #    if self.snapshot_manager.check_snapshot_executor(entity.get_name()):
+        #        sim_obj = self.snapshot_manager.create_snapshot_executor(sim_obj)
         
         self.product_port_map[entity] = sim_obj
 

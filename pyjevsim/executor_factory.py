@@ -1,7 +1,7 @@
 """
 Author: Changbeom Choi (@cbchoi)
-Copyright (c) 2014-2024 Handong Global University
-Copyright (c) 2014-2024 Hanbat National University
+Copyright (c) 2014-2020 Handong Global University
+Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
@@ -81,22 +81,4 @@ class ExecutorFactory:
         return StructuralModelExecutor(
             global_time, ins_t, des_t, en_name, model, self.create_behavior_executor
         )
-
-    def create_snapshot_behavior_executor(self, _, ins_t, des_t, en_name, model, snapshot_condition):
-        """
-        Create SnapshotExecutor.
-        The SnapshotExecutor decorates a BehaviorModelExecutor to store data from a running BehaviorModel under certain conditions.
-
-        Args:
-            _ (float): Unused global time
-            ins_t (float): Instance creation time
-            des_t (float): Destruction time
-            en_name (str): SysExecutor name
-            model (BehaviorModel): The behavior model to execute
-            snapshot_condition (Callable): The condition to take snapshots
-
-        Returns:
-            SnapshotExecutor: The created SnapshotExecutor
-        """
-        return SnapshotExecutor(ins_t, des_t, en_name, model, snapshot_condition)
     

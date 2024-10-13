@@ -81,7 +81,5 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         ss.simulate(1)
        
 
-def test_casual_order1(capsys):
-    execute_simulation(1, ExecutionType.V_TIME)
-    print(capsys)
+execute_simulation(1, ExecutionType.V_TIME)
     
