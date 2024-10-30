@@ -36,9 +36,10 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     gen_cycle = 2           #BankUser Generattion cycle
     max_user = 500000       #Total number of users generated
     
-    max_simtime = 180000    #simulation time
-    
-    
+    max_simtime = 150000    #simulation time
+    wiq_time = 100000       #what-if-question poinst
+        
+        
     ## model set & register entity
     gen_list = []
     user = int(max_user / gen_num)
@@ -72,31 +73,35 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
 
     ## simulation run  
     for i in range(max_simtime):
-        if i == 10000 :
-            # case2 3
+        print("[time] : ", i)
+        ss.simulate(1)
+        
+        if i == wiq_time : # what if question point
+            #Please check the journal or document for "test case"
+            
+            ##test case2 or 3
+            ##wiq : parameter 
             #for gen in gen_list : 
             #    gen.set_cycle(1)
-            #    #gen.set_cycle(3)
+            #    gen.set_cycle(3)
             
-            # case4
+            ##test case4 : Generator Model reduction           
+            #for j in range(5, 10) :
+            #    ss.remove_relation(f'gen{j}', 'user_out', 'Queue', 'user_in')
+            #    ss.get_entity(gen_list[j])
             
-            for j in range(4, 10) :
-                ss.remove_relation(f'gen{j}', 'user_out', 'Queue', 'user_in')
-                ss.get_entity(gen_list[j])
-            
-            # case5
-            
-            #for j in range(9, 15) :
+            ## test case5 : Generator Model increase
+            #new_gen_num = 15
+            #user = gen_list[-1].get_user()
+            #print("user test", user)
+            #for j in range(gen_num, new_gen_num) :
             #    gen = BankUserGenerator(f'gen{j}', gen_cycle, user, user_process_time)
             #    gen_list.append(gen)    
             #    ss.register_entity(gen)
             #    ss.coupling_relation(None, 'start', gen, 'start')
             #    ss.coupling_relation(gen, 'user_out', que, 'user_in')
             #ss.insert_external_event('start', None)
-        print("[time] : ", i)
-        ss.simulate(1)
-               
-                
+            pass                
 
 start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)

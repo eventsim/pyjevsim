@@ -38,7 +38,7 @@ class BankGenModelCondition(SnapshotCondition) :
         self.check = True
         
     def snapshot_time_condition(self, global_time):
-        #if global time >= 50000 : snapshot model
+        #snapshot model
         if global_time >= 10000 and self.check:
             self.check = False
             return True
@@ -55,7 +55,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     gen_cycle = 2           #BankUser Generattion cycle
     max_user = 500000       #Total number of users generated
     
-    max_simtime = 50001    #simulation time
+    max_simtime = 50001     #simulation time
            
     
     ## model set & register entity

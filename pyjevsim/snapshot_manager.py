@@ -14,9 +14,16 @@ import os
 from .snapshot_factory import SnapshotFactory
 
 class SnapshotManager:
-    """The ModelSnapshotManager reads the snapshotted simulation(the directory where all the models and their releases are stored) 
-    and returns it as a SysExecutor."""
+    """SnapshotManager performs snapshots or restores snapshotted data.
+    It manages the models you want to snapshot and the SnapshotCondition for those models. 
+    It snapshots simulations (the directory where all the models and their releases are stored).
+    It also manages the RestoreHandler, which performs a restore of the model or simulation. 
+    """
     def __init__(self,  restore_handler = None):
+        """
+        Args:
+            restore_handler (RestoreHandler, optional): If you want to restore snapshotted simulation, specify a RestoreHandler as a parameter. Defaults to None.
+        """
         self.snapshot_condition_map = {}
         self.restore_handler = restore_handler
 
@@ -32,12 +39,32 @@ class SnapshotManager:
             return None
     
     def register_snapshot_condition(self, _name, _snapshot_condition):
+        """Associate the model you want to take a snapshot of with the model's SnapshotCondition.
+
+        Args:
+            _name (str): BehaivorModel name
+            _snapshot_condition (SnapshotCondition): Concrete SnapshotCondition
+        """
         self.snapshot_condition_map[_name] = _snapshot_condition
         
     def get_snapshot_factory(self):
+        """Creates a SnapshotFactory with the SnapshotConditions entered by the user.
+
+        Returns:
+            SnapshotFactory: SnapshotFactory that generates a SnapshotExecutor that takes the snapshot 
+        """
         return SnapshotFactory(self.snapshot_condition_map)
     
     def load_snapshot(self, name, shotmodel):
+        """_summary_
+
+        Args:
+            name (str): The name of the snapshot Model to restore.
+            shotmodel (Binary): Data from snapshotted models.
+
+        Returns:
+            restore_handler.load_snapshot(name, shotmodel) : Restored BehaviorModel
+        """
         if self.restore_handler:
             return self.restore_handler.load_snapshot(name, shotmodel)
         else:

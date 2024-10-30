@@ -14,10 +14,7 @@ from .executor import Executor
 
 class SnapshotExecutor(Executor):
     """
-    Framework for adding snapshot conditions to behavior models.
-    It is a decorated form of BehaviorExecutor, 
-    inheriting from that class and entering snapshot conditions. 
-    The snapshot condition can be before or after a function in the behavior model.  
+    Set the model you want to snapshot to a SnapshotExecutor in a form that can be executed by a SystemExecutor.
     """
     def __init__(self, behavior_executor, condition):
         """

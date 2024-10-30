@@ -13,9 +13,11 @@ import ast
 from .system_executor import SysExecutor
 
 class RestoreHandler():
+    """ Restore a snapshotted model or project.
+    """
     def __init__(self, t_resol=1, ex_mode=ExecutionType.V_TIME, name="project", path="./snapshot"):
         """
-        Initializes the SnapshotManager with time resolution, execution mode, name, and path.
+        Initializes the RestoreHandler with time resolution, execution mode, name, and path.
 
         Args:
             t_resol (float): Time resolution

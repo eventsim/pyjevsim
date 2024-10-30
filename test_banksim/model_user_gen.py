@@ -151,3 +151,7 @@ class BankUserGenerator(BehaviorModel):
             cycle (float): Generation cycle time
         """
         self.cycle = cycle
+        print("set cycle")
+        
+    def get_user(self) : 
+        return self.max_user - self.generated_user
