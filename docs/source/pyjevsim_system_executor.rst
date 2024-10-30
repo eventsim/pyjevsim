@@ -14,6 +14,14 @@ Executor Factory
    :undoc-members:
    :show-inheritance:
 
+Snapshot Factory
+----------------
+
+.. automodule:: pyjevsim.snapshot_factory
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 Message Catcher
 ---------------
 

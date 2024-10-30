@@ -5,16 +5,16 @@ Pyjevsim Snapshot Manager
    :undoc-members:
    :show-inheritance:
 
-Pyjevsim Model Snapshot Manager
--------------------------------
-.. automodule:: pyjevsim.model_snapshot_manager
+Pyjevsim Restore Handler
+------------------------
+.. automodule:: pyjevsim.restore_handler
    :members:
    :undoc-members:
    :show-inheritance:
 
-Pyjevsim Executor Snapshot Manager
-----------------------------------
-.. automodule:: pyjevsim.executor_snapshot_manager
+Pyjevsim Snapshot Condition
+---------------------------
+.. automodule:: pyjevsim.snapshot_condition
    :members:
    :undoc-members:
    :show-inheritance:
