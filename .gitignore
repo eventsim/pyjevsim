@@ -180,5 +180,5 @@ graph.py
 .DS_Store
 
 test_run.py
-testcase_log
-snapshot_test
+testcase_log/
+snapshot_test/
