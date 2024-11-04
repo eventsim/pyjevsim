@@ -31,12 +31,12 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     snapshot_manager = SnapshotManager(restore_handler=RestoreHandler())
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
                
-    gen_num = 10             #Number of BankUserGenerators 
-    queue_size = 100         #BankQueue size(reset queue size)
+    gen_num = 10            #Number of BankUserGenerators 
+    queue_size = 100        #BankQueue size(reset queue size)
     proc_num = 30           #Number of BankAccountant
     gen_cycle = 2           #BankUser Generattion cycle(reset cycle)
     
-    max_simtime = 100000
+    max_simtime = 100000    #simulation time
     
     ## model restore & set register entity
     #BankUserGenerator Restore

@@ -8,10 +8,18 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 from .executor_factory import ExecutorFactory
 from .snapshot_executor import SnapshotExecutor
 
-class SnapshotFactory(ExecutorFactory): 
+class SnapshotFactory(ExecutorFactory):
+    """
+    The SnapshotManager determines which model you want to take a snapshot of, 
+    and sets it to a SnapshotExecutor in a form that the SystemExecutor can execute.
+    And for models that don't take snapshots, it creates an Executor for each model's type.
+    """
     def __init__(self, snapshot_map):
+        """
+        Args:
+            snapshot_map(dictionary): _description_
+        """
         super().__init__()
-        
         self.snapshot_condition_map = snapshot_map
         pass
     
@@ -40,6 +48,14 @@ class SnapshotFactory(ExecutorFactory):
         return self.create_snapshot_executor(model)
     
     def create_snapshot_executor(self, model):
+        """Create a SnapshotExecutor for the model you want to snapshot.
+
+        Args:
+            model (BehaviorModel): _description_
+
+        Returns:
+            _type_: _description_
+        """
         if model.get_name() in self.snapshot_condition_map:
             return SnapshotExecutor(model, self.snapshot_condition_map[model.get_name()](model))
         else:

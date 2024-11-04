@@ -8,17 +8,30 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 from abc import abstractmethod, abstractstaticmethod
 
 class SnapshotCondition:
+    """A class for filling in the snapshot condition of a model.
+    Users inherit from SnapshotCondition to fill in the model snapshot condition.
+    Snapshot conditions can be placed before or after functions in the behavior model.  
+    """
     @abstractstaticmethod
     def create_executor(behavior_executor) :
+        """
+        This method is an abstractstatic method.
+        Specify the SnapshotCondition you created as the return value of this method.
+        
+        Args:
+            behavior_executor (BehaviorExecutor): Set the BehaviorExecutor of the BehaviorModel you want to snapshot.
+        Returns:
+            SnapshotCondition : Returns the SnapshotCondition as configured by the user.
+        """
         return SnapshotCondition(behavior_executor)
     
     def __init__(self, behavior_executor):
+        """
+        Args:
+            behavior_executor (BehaviorExecutor): Set the BehaviorExecutor of the BehaviorModel you want to snapshot.
+        """
         self.behavior_executor = behavior_executor
-        #super().__init__(behavior_executor) #set behavior_executor
         
-    #def __init__(self):
-    #    pass
-    
     @abstractmethod
     def snapshot_time_condition(self, global_time):
         """Abstract method for snapshot time condition.
