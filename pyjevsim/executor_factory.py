@@ -18,13 +18,7 @@ class ExecutorFactory:
     def __init__(self):
         pass
 
-    def create_executor(
-        self,
-        global_time,
-        ins_t,
-        des_t,
-        en_name,
-        model,
+    def create_executor(self, global_time, ins_t, des_t, en_name, model, parent
     ):
         """Creates an executor based on the model type.
 
@@ -40,31 +34,31 @@ class ExecutorFactory:
         """
         if model.get_model_type() == ModelType.BEHAVIORAL:
             return self.create_behavior_executor(
-                global_time, ins_t, des_t, en_name, model
+                global_time, ins_t, des_t, en_name, model, parent
             )
         elif model.get_model_type() == ModelType.STRUCTURAL:
             return self.create_structural_executor(
-                global_time, ins_t, des_t, en_name, model
+                global_time, ins_t, des_t, en_name, model, parent
             )
         else:
             return None
 
-    def create_behavior_executor(self, _, ins_t, des_t, en_name, model):
+    def create_behavior_executor(self, _, ins_t, des_t, en_name, model, parent):
         """Create BehaviorModelexecutor
 
         Args:
             _ (float): Unused global time
             ins_t (float): Instance creation time 
             des_t (float): Destruction time
-            en_name (str): SysExecutor name / 엔진 이름
-            model (BehaviorModel): Behavior model to execute / 실행할 동작 모델
+            en_name (str): SysExecutor name 
+            model (BehaviorModel): Behavior model to execute
 
         Returns:
             BehaviorModelExecutor: The created BehaviorModelexecutor
         """
-        return BehaviorExecutor(ins_t, des_t, en_name, model)
+        return BehaviorExecutor(ins_t, des_t, en_name, model, parent)
 
-    def create_structural_executor(self, global_time, ins_t, des_t, en_name, model):
+    def create_structural_executor(self, global_time, ins_t, des_t, en_name, model, parent):
         """Create StructuralModelExecutor
 
         Args:
@@ -78,6 +72,6 @@ class ExecutorFactory:
             StructuralModelExecutor: created StructuralModelExecutor 
         """
         return StructuralExecutor(
-            global_time, ins_t, des_t, en_name, model, self.create_behavior_executor
+            global_time, ins_t, des_t, en_name, model, parent, self 
         )
     

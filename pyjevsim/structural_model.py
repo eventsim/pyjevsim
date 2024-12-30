@@ -10,13 +10,13 @@ This module contains a StructuralModel object that allows you to implement the D
 
 from .core_model import CoreModel
 from .definition import ModelType
-
+from .system_message import SysMessage
 
 class StructuralModel(CoreModel):
     def __init__(self, _name=""):
         super().__init__(_name, ModelType.STRUCTURAL)
 
-        self._models = []
+        self.model_map = {}#(name, model)
 
         self.external_input_coupling_map = {}
         self.external_output_coupling_map = {}
@@ -24,12 +24,31 @@ class StructuralModel(CoreModel):
 
         self.port_map = {}
 
-    def register_entity(self, _obj):
-        self._models.append(_obj)
+    def register_entity(self, obj):
+        self.model_map[obj.get_name()] = obj
+        
+    def remove_model(self, obj) :
+        del self.model_map[obj.get_name()]
+        
+    def find_model(self, name) :
+        return self.model_map[name]
 
     def get_models(self):
-        return self._models
+        return self.model_map
 
+    def coupling_relation(self, src_obj, src_port, dst_obj, dst_port):
+        src = (src_obj, src_port)
+        dst = (dst_obj, dst_port)
+
+        # If the source is not in the map, initialize it with an empty list
+        if src not in self.port_map:
+            self.port_map[src] = []
+
+        # Add the destination to the source's list of destinations
+        self.port_map[src].append(dst)
+        pass
+    
+    """
     def coupling_relation(self, src_obj, src_port, dst_obj, dst_port):
         if src_obj == self:
             if (self, src_port) not in self.external_input_coupling_map:
@@ -45,3 +64,4 @@ class StructuralModel(CoreModel):
             else:
                 self.port_map[(src_obj, src_port)].append((dst_obj, dst_port))
 
+    """
