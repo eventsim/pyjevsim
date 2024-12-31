@@ -112,7 +112,7 @@ class SysExecutor(CoreModel):
             ename (str, optional): SysExecutor name
         """
         sim_obj = self.exec_factory.create_executor(
-            self.global_time, inst_t, dest_t, ename, entity
+            self.global_time, inst_t, dest_t, ename, entity, self
         )
         #if self.snapshot_manager:
         #    if self.snapshot_manager.check_snapshot_executor(entity.get_name()):

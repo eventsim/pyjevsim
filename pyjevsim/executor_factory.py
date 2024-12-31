@@ -10,7 +10,6 @@ This module contains an ExecutorFactory that decorates an object of type Model i
 
 from .definition import ModelType
 from .behavior_executor import BehaviorExecutor
-from .structural_executor import StructuralExecutor
 
 class ExecutorFactory:
     """Factory class to create different types of executors."""
@@ -71,6 +70,7 @@ class ExecutorFactory:
         Returns:
             StructuralModelExecutor: created StructuralModelExecutor 
         """
+        from .structural_executor import StructuralExecutor
         return StructuralExecutor(
             global_time, ins_t, des_t, en_name, model, parent, self 
         )
