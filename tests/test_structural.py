@@ -23,18 +23,17 @@ from .model_stm import STM
 
 
 def test_f():
-    se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
-    se.insert_input_port("start")
+   se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
 
-    #set Structural Model
-    gen = STM("Gen")
-    se.register_entity(gen, inst_t=3)
+   #set Structural Model
+   gen = STM("Gen")
+   se.register_entity(gen)
 
-    #set Model Relation
-    se.coupling_relation(se, "start", gen, "start")
-    se.insert_external_event("start", None)
+   se.insert_input_port("start")
+   #set Model Relation
+   se.coupling_relation(None, "start", gen, "start")
+   
+   se.insert_external_event("start", None)
 
-    se.simulate(5)
-    
-    gen = se.get_entity("Gen")
+   se.simulate(5)
 

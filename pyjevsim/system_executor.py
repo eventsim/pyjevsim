@@ -111,13 +111,10 @@ class SysExecutor(CoreModel):
             dest_t (float, optional): Destruction time
             ename (str, optional): SysExecutor name
         """
+        
         sim_obj = self.exec_factory.create_executor(
             self.global_time, inst_t, dest_t, ename, entity, self
         )
-        #if self.snapshot_manager:
-        #    if self.snapshot_manager.check_snapshot_executor(entity.get_name()):
-        #        sim_obj = self.snapshot_manager.create_snapshot_executor(sim_obj)
-        
         self.product_port_map[entity] = sim_obj
 
         if not sim_obj.get_create_time() in self.waiting_obj_map:
@@ -129,6 +126,8 @@ class SysExecutor(CoreModel):
             self.model_map[sim_obj.get_name()].append(sim_obj)
         else:
             self.model_map[sim_obj.get_name()] = [sim_obj]
+        
+        
 
     def get_entity(self, model_name):
         """
@@ -173,6 +172,7 @@ class SysExecutor(CoreModel):
         """
         if len(self.waiting_obj_map.keys()) != 0:
             key = min(self.waiting_obj_map)
+            print(key)
             if key <= self.global_time:
                 lst = self.waiting_obj_map[key]
                 for obj in lst:
@@ -338,7 +338,7 @@ class SysExecutor(CoreModel):
     def init_sim(self):
         """Initializes the simulation."""
         self.simulation_mode = SimulationMode.SIMULATION_RUNNING
-
+        
         if self.active_obj_map is None:
             self.global_time = min(self.waiting_obj_map)
 
@@ -378,8 +378,9 @@ class SysExecutor(CoreModel):
             )
 
             tuple_obj = self.min_schedule_item.popleft()
-
+            
         self.min_schedule_item.appendleft(tuple_obj)
+
 
         self.global_time += self.time_resolution
 

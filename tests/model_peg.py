@@ -38,6 +38,7 @@ class PEG(BehaviorModel):
             port (str): The port that received the message
             msg (SysMessage): The received message
         """
+        print("input start")
         if port == "start":
             print(f"[Gen][IN]: started")
             self._cur_state = "Generate"  # Transition state to "Generate"

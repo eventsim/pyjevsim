@@ -1,0 +1,6 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-7.4.2, pluggy-1.5.0
+rootdir: /home/jylee/pyjevsim
+collected 2 items
+
+tests/test_behavioral_model.py F

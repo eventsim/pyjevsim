@@ -48,6 +48,9 @@ class StructuralModel(CoreModel):
         self.port_map[src].append(dst)
         pass
     
+    def get_couplings(self) : 
+        return self.internal_coupling_map
+    
     """
     def coupling_relation(self, src_obj, src_port, dst_obj, dst_port):
         if src_obj == self:
