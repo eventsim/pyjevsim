@@ -99,7 +99,10 @@ class BehaviorExecutor(Executor):
     # Time Advance Function
     def time_advance(self):
         """Returns the time advance value for the current state"""
-        if self.behavior_model._cur_state in self.behavior_model._states:
+        time_adv_fn = getattr(self.behavior_model, "time_advance", None)
+        if callable(time_adv_fn):
+            return self.behavior_model.time_advance()
+        elif self.behavior_model._cur_state in self.behavior_model._states:
             return self.behavior_model._states[self.behavior_model._cur_state]
 
         return -1
