@@ -6,7 +6,7 @@ License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 """
-from dill import load, loads
+import dill
 from .definition import ModelType, ExecutionType
 import json
 import ast
@@ -56,7 +56,7 @@ class RestoreHandler():
         """
         for model_name in model_list:
             with open(f"{self.path}/{model_name}.simx", "rb") as f:
-                model = load(f)
+                model = dill.load(f)
             
             if model["type"] != ModelType.BEHAVIORAL:
                 raise TypeError("Model Type is not BehaviorModel")
@@ -105,7 +105,7 @@ class RestoreHandler():
         Raises:
             Exception: If the model type is not ModelType.BEHAVIORAL
         """
-        model_info = loads(shotmodel)
+        model_info = dill.loads(shotmodel)
         
         if model_info["type"] != ModelType.BEHAVIORAL:
             raise Exception(f"{model_info['name']} is not of BehaviorModel type")

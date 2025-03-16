@@ -67,3 +67,29 @@ def test_execution_mode():
     after = time.perf_counter()
     diff = after - before
     assert math.isclose(diff, 3, rel_tol=0.05)
+
+def test_classical_devs(capsys):
+    from .model_classic_peg import PEG as CPEG
+    se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
+    se.insert_input_port("start")
+
+     # Model Creation
+    gen = CPEG("Gen")
+    proc = MsgRecv("Proc")
+
+    # Register Model to Engine
+    se.register_entity(gen)
+    se.register_entity(proc)
+
+    # Set up relation among models
+    se.coupling_relation(se, "start", gen, "start")
+    se.coupling_relation(gen, "process", proc, "recv")
+
+    # Inject External Event to Engine
+    se.insert_external_event("start", None)
+
+    for _ in range(3):
+        se.simulate(1)
+
+    captured = capsys.readouterr()
+    assert "classic" in captured.out

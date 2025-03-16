@@ -5,17 +5,17 @@
  License: MIT.  The full license text is available at:
   - https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 """
-
 __author__ = "me@cbchoi.info"
 __all__ = [
     "behavior_model",
     "behavior_executor",
-    "behavior_model_executor",
+    "core_model",
     "default_message_catcher",
     "definition",
+    "executor_factory",
+    "executor",
     "structural_model",
     "structural_executor",
-    "structural_executor_model",
     "executor_factory",
     "system_executor",
     "system_message",
@@ -30,5 +30,6 @@ from .definition import (
     SimulationMode,
     SingletonType,
 )
+
 from .system_executor import SysExecutor
 from .system_message import SysMessage

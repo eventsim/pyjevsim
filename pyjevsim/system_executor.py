@@ -360,6 +360,7 @@ class SysExecutor(CoreModel):
         before = time.perf_counter()  # Record time before processing
         
         while math.isclose(tuple_obj.get_req_time(), self.global_time, rel_tol=1e-9):
+            
             msg = tuple_obj.output()
             if msg is not None:
                 self.output_handling(tuple_obj, (self.global_time, msg))
@@ -378,12 +379,11 @@ class SysExecutor(CoreModel):
             )
 
             tuple_obj = self.min_schedule_item.popleft()
-            
+
         self.min_schedule_item.appendleft(tuple_obj)
 
 
         self.global_time += self.time_resolution
-
         self.destroy_active_entity()
 
         if self.ex_mode == ExecutionType.R_TIME:
