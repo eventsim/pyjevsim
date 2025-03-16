@@ -104,7 +104,7 @@ class BehaviorExecutor(Executor):
             return self.behavior_model.time_advance()
         elif self.behavior_model._cur_state in self.behavior_model._states:
             return self.behavior_model._states[self.behavior_model._cur_state]
-
+        
         return -1
 
     def set_req_time(self, global_time):

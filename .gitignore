@@ -179,6 +179,7 @@ graph.py
 
 .DS_Store
 
+output/
 test_run.py
 testcase_log
 snapshot_test

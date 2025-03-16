@@ -28,15 +28,15 @@ from .model_user_gen import BankUserGenerator
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
         
-    gen_num = 10            #Number of BankUserGenerators 
-    queue_size = 100        #BankQueue size
-    proc_num = 30           #Number of BankAccountant
+    gen_num = 2            #Number of BankUserGenerators 
+    queue_size = 10        #BankQueue size
+    proc_num = 3           #Number of BankAccountant
     
-    user_process_time = 5   #BankUser's processing speed
+    user_process_time = 3   #BankUser's processing speed
     gen_cycle = 2           #BankUser Generattion cycle
-    max_user = 500000       #Total number of users generated
+    max_user = 10       #Total number of users generated
     
-    max_simtime = 150000    #simulation time
+    max_simtime = 10    #simulation time
     wiq_time = 100000       #what-if-question poinst
         
         
@@ -75,6 +75,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     for i in range(max_simtime):
         print("[time] : ", i)
         ss.simulate(1)
+        print()
         
         if i == wiq_time : # what if question point
             #Please check the journal or document for "test case"
