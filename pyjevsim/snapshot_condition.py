@@ -32,6 +32,7 @@ class SnapshotCondition:
         """
         self.behavior_executor = behavior_executor
         
+    
     @abstractmethod
     def snapshot_time_condition(self, global_time):
         """Abstract method for snapshot time condition.
