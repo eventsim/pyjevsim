@@ -15,7 +15,7 @@ from .model_buffer import Buffer
 
 class STM(StructuralModel):
     def __init__(self, name):
-        StructuralModel.__init__(self, name)
+        super().__init__(name)
 
         self.insert_input_port("start")
         self.insert_output_port("output")

@@ -10,7 +10,7 @@ This module contains Executor, the parent class of all Executor Types.
 
 class Executor:
     """Base class for executors."""
-    def __init__(self, itime, dtime, ename):
+    def __init__(self, itime, dtime, ename, model, parent):
         """
         Args:
             itime (float): Instance creation time
@@ -20,3 +20,5 @@ class Executor:
         self.engine_name = ename 
         self._instance_t = itime 
         self._destruct_t = dtime
+        self.model = model
+        self.parent = parent

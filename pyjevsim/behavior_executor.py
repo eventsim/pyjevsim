@@ -22,8 +22,8 @@ class BehaviorExecutor(Executor):
         ename (str): SysExecutor name
         behavior_model (ModelType.BEHAVIORAL): Behavior Model
     """
-    def __init__(self, itime=Infinite, dtime=Infinite, ename="default", behavior_model=None):
-        super().__init__(itime, dtime, ename)
+    def __init__(self, itime=Infinite, dtime=Infinite, ename="default", behavior_model=None, parent=None):
+        super().__init__(itime, dtime, ename, behavior_model, parent)
 
         self._next_event_t = 0  # Next event time
         self._cur_state = ""  # Current state of the behavior executor
@@ -81,6 +81,7 @@ class BehaviorExecutor(Executor):
     # External Transition
     def ext_trans(self, port, msg):
         """Handles external transition based on port and message"""
+        print("test")
         if self.behavior_model.get_cancel_flag():
             self._cancel_reschedule_f = True
 
