@@ -63,10 +63,9 @@ class PEG(AtomicModel):
             self.msg_no += 1  # Increment message number
 
     def time_advance(self):
-    	print("classic")
     	if self._cur_state == "Wait":
-    		return Infinite
-    	elif self._cur_state == "Generate":
-    		return 1
-    	else:
+            return Infinite
+        elif self._cur_state == "Generate":
+            return 1
+        else:
     		return -1

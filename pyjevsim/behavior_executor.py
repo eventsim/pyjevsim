@@ -93,19 +93,16 @@ class BehaviorExecutor(Executor):
         self.behavior_model.int_trans()
 
     # Output Function
-    def output(self):
+    def output(self, msg_deliver):
         """Executes the output function of the behavior model"""
-        return self.behavior_model.output()
+        return self.behavior_model.output(msg_deliver)
 
     # Time Advance Function
     def time_advance(self):
         """Returns the time advance value for the current state"""
-        time_adv_fn = getattr(self.behavior_model, "time_advance", None)
-        if callable(time_adv_fn):
-            return self.behavior_model.time_advance()
-        elif self.behavior_model._cur_state in self.behavior_model._states:
+        if self.behavior_model._cur_state in self.behavior_model._states:
             return self.behavior_model._states[self.behavior_model._cur_state]
-        
+
         return -1
 
     def set_req_time(self, global_time):

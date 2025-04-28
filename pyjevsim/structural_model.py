@@ -18,10 +18,6 @@ class StructuralModel(CoreModel):
 
         self.model_map = {}#(name, model)
 
-        self.external_input_coupling_map = {}
-        self.external_output_coupling_map = {}
-        self.internal_coupling_map = {}
-
         self.port_map = {}
 
     def register_entity(self, obj):
@@ -49,22 +45,4 @@ class StructuralModel(CoreModel):
         pass
     
     def get_couplings(self) : 
-        return self.internal_coupling_map
-    
-    """
-    def coupling_relation(self, src_obj, src_port, dst_obj, dst_port):
-        if src_obj == self:
-            if (self, src_port) not in self.external_input_coupling_map:
-                self.port_map[(self, src_port)] = [(dst_obj, dst_port)]
-            else:
-                self.port_map[(self, src_port)].append((dst_obj, dst_port))
-        elif dst_obj == self:
-            self.port_map[(src_obj, src_port)] = [(self, dst_port)]
-            #self.port_map[(src_obj, src_port)] = (self, dst_port)
-        else:  # TODO: check redundant port pairs.
-            if (src_obj, src_port) not in self.internal_coupling_map:
-                self.port_map[(src_obj, src_port)] = [(dst_obj, dst_port)]
-            else:
-                self.port_map[(src_obj, src_port)].append((dst_obj, dst_port))
-
-    """
+        return self.port_map

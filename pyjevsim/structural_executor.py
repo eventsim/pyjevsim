@@ -72,14 +72,14 @@ class StructuralExecutor(Executor) :
 
                 msg_deliver = MessageDeliverer()
                 msg_deliver.insert_message(msg)
-                self.parent.output_function(msg_deliver)
+                self.parent.output(msg_deliver)
             else:
                 # Handle internal coupling
                 dst_executor = self.model_executor_map.get(coupling[0])
                 if dst_executor:
                     self.min_schedule_item = [item for item in self.min_schedule_item if item[1] != dst_executor]
 
-                    dst_executor.external_transition(coupling[1], msg)
+                    dst_executor.ext_trans(coupling[1], msg)
                     dst_executor.set_req_time(self.request_time)
 
                     self.min_schedule_item.append((dst_executor.time_advance(), dst_executor))
@@ -127,10 +127,10 @@ class StructuralExecutor(Executor) :
                 key=lambda bm: (bm[1].get_create_time(), bm[1].get_obj_id()),
             )
         )
-        time_advance, executor = self.min_schedule_item.pop(0)
+        time_advance, executor = self.min_schedule_item.popleft()
 
         # Perform internal transition
-        executor.internal_transition()
+        executor.int_trans()
         executor.set_req_time(self.request_time)
 
         # Update next event time and reinsert into schedule list
@@ -138,6 +138,7 @@ class StructuralExecutor(Executor) :
         self.min_schedule_item.append((next_event_time, executor))
 
     def output(self, msg_deliver):
+        print(self.__str__())
         if not msg_deliver.has_contents():
             # Invoke output function of the first executor in schedule list
             self.min_schedule_item = deque(
@@ -147,10 +148,10 @@ class StructuralExecutor(Executor) :
                 )
             )
             _, executor = self.min_schedule_item[0]
-            executor.output_function(msg_deliver)
+            executor.output(msg_deliver)
 
         while msg_deliver.has_contents():
-            msg = msg_deliver.get_contents().pop(0)
+            msg = msg_deliver.get_contents().popleft()
             cr = (msg.get_source(), msg.get_out_port())
 
             couplings = self.behavior_object.get_couplings().get(cr, [])

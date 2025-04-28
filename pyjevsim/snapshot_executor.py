@@ -28,7 +28,6 @@ class SnapshotExecutor(Executor):
         
         self.behavior_executor = behavior_executor
         self.condition = condition
-        self.global_time = 0
 
     def get_core_model(self):
         """Returns BehaviorModel of SnapshotExecutor.
@@ -170,7 +169,6 @@ class SnapshotExecutor(Executor):
         Args:
             global_time (float): Simulation time
         """
-        self.global_time = global_time
         if self.condition.snapshot_time_condition(global_time):
             self.snapshot("time")
         #Snapshot conditions over time
@@ -199,7 +197,7 @@ class SnapshotExecutor(Executor):
             if not os.path.exists(_path):
                 os.makedirs(_path)
                 
-            with open(f"{_path}/[{_prefix}][{int(self.global_time)}]{self.behavior_executor.get_name()}.simx", "wb") as f :
+            with open(f"{_path}/[{_prefix}]{self.behavior_executor.get_name()}.simx", "wb") as f :
                 f.write(model_data)
 
     def model_dump(self):
