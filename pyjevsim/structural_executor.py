@@ -53,7 +53,7 @@ class StructuralExecutor(Executor) :
         return "[N]:{0}, [S]:{1}".format(self.get_name(), "")
         
     def time_advance(self):
-        print(self.__str__())
+        #print(self.__str__())
         self.min_schedule_item = deque(
             sorted(
                 self.min_schedule_item,
@@ -109,7 +109,7 @@ class StructuralExecutor(Executor) :
         return self.request_time
     
     def ext_trans(self, port, msg):
-        print(self.__str__())
+        #print(self.__str__())
         source = self.parent  
         cr = (self.behavior_object, port)  
 
