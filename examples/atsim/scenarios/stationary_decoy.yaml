@@ -37,7 +37,7 @@ Torpedo:
       x: 20
       y: 20
       z: -10
-      heading: 0
+      heading: 270
       xy_speed: 10
       z_speed: 1
     DetectorObject:

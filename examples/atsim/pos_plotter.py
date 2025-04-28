@@ -22,9 +22,9 @@ class PositionPlotter:
         self.ax.set_title('Object Trajectory')
 
         # Set initial limits
-        self.ax.set_xlim(-50, 50)
-        self.ax.set_ylim(-50, 50)
-        self.ax.set_zlim(0, 100)
+        self.ax.set_xlim(-150, 150)
+        self.ax.set_ylim(-150, 150)
+        self.ax.set_zlim(-50, 100)
 
         plt.ion()  # Turn on interactive mode
         plt.show()
@@ -47,20 +47,33 @@ class PositionPlotter:
             self.y_positions[obj_id].append(y)
             self.z_positions[obj_id].append(z)
 
-        #self.ax.clear()
+        self.ax.clear()
 
         # Redraw the updated trajectory
-        self.ax.plot(self.x_positions[obj_id], self.y_positions[obj_id], self.z_positions[obj_id], color=tcolor, label='Trajectory')
-        self.ax.scatter(x, y, z, color=ocolor, s=50, label='Manuever Object')
+        for oid in self.x_positions:
+            self.ax.plot(
+            self.x_positions[oid],
+            self.y_positions[oid],
+            self.z_positions[oid],
+            label=f'Trajectory {oid}'
+            )
+            # 최신 위치 점 찍기 (색은 구분하려면 별도 관리 필요)
+            self.ax.scatter(
+            self.x_positions[oid][-1],
+            self.y_positions[oid][-1],
+            self.z_positions[oid][-1],
+            s=50,
+            label=f'Object {oid}'
+            )
 
         # Auto scale axis limits
         margin = 10
-        self.ax.set_xlim(min((min(v) for k, v in self.x_positions.items()),key=lambda x: x) - margin, 
-                         max((max(v) for k, v in self.x_positions.items()),key=lambda x: x) + margin)
-        self.ax.set_ylim(min((min(v) for k, v in self.y_positions.items()),key=lambda x: x) - margin, 
-                         max((max(v) for k, v in self.y_positions.items()),key=lambda x: x) + margin)
-        self.ax.set_zlim(min((min(v) for k, v in self.z_positions.items()),key=lambda x: x) - margin, 
-                         max((max(v) for k, v in self.z_positions.items()),key=lambda x: x) + margin)
+        all_x = sum(self.x_positions.values(), [])
+        all_y = sum(self.y_positions.values(), [])
+        all_z = sum(self.z_positions.values(), [])
+        self.ax.set_xlim(min(all_x) - margin, max(all_x) + margin)
+        self.ax.set_ylim(min(all_y) - margin, max(all_y) + margin)
+        self.ax.set_zlim(min(all_z) - margin, max(all_z) + margin)
 
         #self.ax.legend()
         plt.draw()
