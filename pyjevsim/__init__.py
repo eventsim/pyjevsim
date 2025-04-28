@@ -27,9 +27,12 @@ from .definition import (
     AttributeType,
     Infinite,
     ModelType,
+    ExecutionType,
     SimulationMode,
     SingletonType,
 )
 
 from .system_executor import SysExecutor
 from .system_message import SysMessage
+from .behavior_model import BehaviorModel
+from .structural_model import StructuralModel
