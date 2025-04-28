@@ -1,15 +1,13 @@
 import math
 
 class ManueverObject:
-	def __init__(self, name, init_x, init_y, init_z, heading, spd, z_spd):
-		self.name = name
-		self.x = init_x
-		self.y = init_y
-		self.z = init_z
-
+	def __init__(self, x, y, z, heading, xy_speed, z_speed):
+		self.x = x
+		self.y = y
+		self.z = z
 		self.heading = heading
-		self.xy_speed = spd
-		self.z_speed = z_spd
+		self.xy_speed = xy_speed
+		self.z_speed = z_speed
 
 	def get_position(self):
 		return (self.x, self.y, self.z)
