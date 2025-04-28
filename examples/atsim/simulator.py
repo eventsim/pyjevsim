@@ -1,3 +1,5 @@
+import project_config
+
 from pyjevsim import SysExecutor, ExecutionType, Infinite
 from manuever import Manuever
 from manuever_object import ManueverObject
