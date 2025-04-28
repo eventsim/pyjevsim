@@ -120,7 +120,7 @@ class StructuralExecutor(Executor) :
         
     def int_trans(self):
         # Get the earliest executor from the schedule list
-        print("!!!!!!", self.min_schedule_item)
+        #print("!!!!!!", self.min_schedule_item)
         self.min_schedule_item = deque(
             sorted(
                 self.min_schedule_item,
@@ -138,7 +138,7 @@ class StructuralExecutor(Executor) :
         self.min_schedule_item.append((next_event_time, executor))
 
     def output(self, msg_deliver):
-        print(self.__str__())
+        #print(self.__str__())
         if not msg_deliver.has_contents():
             # Invoke output function of the first executor in schedule list
             self.min_schedule_item = deque(

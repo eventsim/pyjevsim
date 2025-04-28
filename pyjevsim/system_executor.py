@@ -174,7 +174,7 @@ class SysExecutor(CoreModel):
         """
         if len(self.waiting_obj_map.keys()) != 0:
             key = min(self.waiting_obj_map)
-            print(key)
+            #print(key)
             if key <= self.global_time:
                 lst = self.waiting_obj_map[key]
                 for obj in lst:

@@ -10,7 +10,7 @@ from surfaceship import SurfaceShip
 se = SysExecutor(1, ex_mode=ExecutionType.R_TIME)
 
 se.insert_input_port("start")
-gen = Manuever(0, Infinite, "SurfaceShip", "first")
+gen = SurfaceShip(0, Infinite, "SurfaceShip", "first")
 se.register_entity(gen)
 
 se.coupling_relation(se, "start", gen, "start")
