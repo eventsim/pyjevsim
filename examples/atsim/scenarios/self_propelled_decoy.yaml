@@ -1,0 +1,60 @@
+Common:
+  Name: self_propelled_decoy
+SurfaceShip:
+  - ManueverObject:
+      x: 0
+      y: 0
+      z: 0
+      heading: 0
+      xy_speed: 1
+      z_speed: 0
+    LauncherObjects:
+      - elevation: 45
+        azimuth: 45
+        speed: 10
+        lifespan: 5
+        ManueverObject:
+          heading: 0
+          xy_speed: 1
+          z_speed: 0
+      - elevation: 45
+        azimuth: 135
+        speed: 10
+        lifespan: 5
+        ManueverObject:
+          heading: 0
+          xy_speed: 1
+          z_speed: 0
+      - elevation: 45
+        azimuth: 225
+        speed: 10
+        lifespan: 5
+        ManueverObject:
+          heading: 0
+          xy_speed: 1
+          z_speed: 0
+      - elevation: 45
+        azimuth: 315
+        speed: 10
+        lifespan: 5
+        ManueverObject:
+          heading: 0
+          xy_speed: 1
+          z_speed: 0
+    DetectorObject:
+      detection_range: 10
+    CommandControlObject:
+      evation_heading: 270
+
+Torpedo:
+  - ManueverObject:
+      x: 20
+      y: 20
+      z: -10
+      heading: 0
+      xy_speed: 10
+      z_speed: 1
+    DetectorObject:
+      detection_range: 30
+    DamageAssessment:
+      range:1  
