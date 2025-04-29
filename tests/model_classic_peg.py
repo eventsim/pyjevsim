@@ -42,7 +42,7 @@ class PEG(AtomicModel):
             print(f"[Gen][IN]: started")
             self._cur_state = "Generate"  # Transition state to "Generate"
 
-    def output(self):
+    def output(self, msg_deliver):
         """
         Generates the output message when in the "Generate" state.
         

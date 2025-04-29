@@ -42,7 +42,7 @@ class MsgRecv(BehaviorModel):
             print(f"[MsgRecv][IN]: {data[0]}")  # Print received message
             self.msg_recv += 1  # Increment received message count
 
-    def output(self):
+    def output(self, msg_deliver):
         """No output function for MsgRecv."""
         return None
 

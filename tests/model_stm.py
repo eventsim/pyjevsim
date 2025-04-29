@@ -11,7 +11,7 @@ This module contains Structural Model
 from pyjevsim.structural_model import StructuralModel
 
 from .model_peg import PEG
-from .model_buffer import Buffer
+from .model_msg_recv import MsgRecv
 
 class STM(StructuralModel):
     def __init__(self, name):
@@ -22,7 +22,7 @@ class STM(StructuralModel):
         
         # Model Creation
         peg = PEG("GEN") #PEG Model(Behavior Model type)
-        proc = Buffer("Buf") #Buffer Model(Behavior Model type)
+        proc = MsgRecv("Proc")
 
         # Register Model to StructuralModel
         self.register_entity(peg)        
@@ -31,4 +31,3 @@ class STM(StructuralModel):
         # Set up relation among models
         self.coupling_relation(self, "start", peg, "start")
         self.coupling_relation(peg, "process", proc, "recv")
-        self.coupling_relation(proc, "output", self, "output")

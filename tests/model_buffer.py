@@ -42,7 +42,7 @@ class Buffer(BehaviorModel):
             self._msg = msg  # Store message
             self._cur_state = "Delay"  # Transition state to "Delay"
 
-    def output(self):
+    def output(self, msg_deliver):
         """
         Generates the output message when in the "Delay" state.
 
