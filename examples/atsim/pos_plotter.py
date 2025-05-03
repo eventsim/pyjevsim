@@ -57,7 +57,7 @@ class PositionPlotter:
             self.z_positions[oid],
             label=f'Trajectory {oid}'
             )
-            # 최신 위치 점 찍기 (색은 구분하려면 별도 관리 필요)
+
             self.ax.scatter(
             self.x_positions[oid][-1],
             self.y_positions[oid][-1],
