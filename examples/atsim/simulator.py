@@ -5,10 +5,12 @@ from model.manuever import Manuever
 from model.surfaceship import SurfaceShip
 from utils.scenario_manager import ScenarioManager
 from utils.pos_plotter import PositionPlotter
+from utils.object_db import ObjectDB
 
 pos_plot = PositionPlotter()
 sm = ScenarioManager('./examples/atsim/scenarios/stationary_decoy.yaml')
 se = SysExecutor(1, ex_mode=ExecutionType.R_TIME)
+ObjectDB().set_executor(se)
 
 se.insert_input_port("start")
 
@@ -48,4 +50,4 @@ for _ in range(20):
 	pos_plot.update_position('torpedo', x+10, y+10, z+10, 'black', 'orange')
 '''
 
-se.terminate_simulation()
+#se.terminate_simulation()

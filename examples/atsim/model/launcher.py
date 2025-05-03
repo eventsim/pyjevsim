@@ -1,5 +1,6 @@
 from pyjevsim import BehaviorModel, Infinite
 import datetime
+from utils.object_db import ObjectDB
 
 class Launcher(BehaviorModel):
     def __init__(self, name, platform):
@@ -9,19 +10,19 @@ class Launcher(BehaviorModel):
         
         self.init_state("Wait")
         self.insert_state("Wait", Infinite)
-        self.insert_state("Generate", 1)
+        self.insert_state("Launch", 0)
 
-        self.insert_input_port("start")
+        self.insert_input_port("order")
 
     def ext_trans(self,port, msg):
-        if port == "start":
-            print(f"{self.get_name()}[start_recv]: {datetime.datetime.now()}")
-            self._cur_state = "Generate"
+        if port == "order":
+            print(f"{self.get_name()}[order_recv]: {datetime.datetime.now()}")
+            self._cur_state = "Launch"
 
     def output(self, msg):
-        self.platform.mo.calc_next_pos_with_heading(1)
+        se = ObjectDB().get_executor()
         return None
         
     def int_trans(self):
-        if self._cur_state == "Generate":
-            self._cur_state = "Generate"
+        if self._cur_state == "Launch":
+            self._cur_state = "Wait"

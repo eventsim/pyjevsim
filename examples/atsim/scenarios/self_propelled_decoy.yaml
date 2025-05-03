@@ -8,39 +8,40 @@ SurfaceShip:
       heading: 0
       xy_speed: 1
       z_speed: 0
-    LauncherObjects:
-      - elevation: 45
-        azimuth: 45
-        speed: 10
-        lifespan: 5
-        ManueverObject:
-          heading: 0
-          xy_speed: 1
-          z_speed: 0
-      - elevation: 45
-        azimuth: 135
-        speed: 10
-        lifespan: 5
-        ManueverObject:
-          heading: 0
-          xy_speed: 1
-          z_speed: 0
-      - elevation: 45
-        azimuth: 225
-        speed: 10
-        lifespan: 5
-        ManueverObject:
-          heading: 0
-          xy_speed: 1
-          z_speed: 0
-      - elevation: 45
-        azimuth: 315
-        speed: 10
-        lifespan: 5
-        ManueverObject:
-          heading: 0
-          xy_speed: 1
-          z_speed: 0
+    LauncherObject:
+      DecoyObjects:
+        - elevation: 45
+          azimuth: 45
+          speed: 10
+          lifespan: 5
+          ManueverObject:
+            heading: 0
+            xy_speed: 1
+            z_speed: 0
+        - elevation: 45
+          azimuth: 135
+          speed: 10
+          lifespan: 5
+          ManueverObject:
+            heading: 0
+            xy_speed: 1
+            z_speed: 0
+        - elevation: 45
+          azimuth: 225
+          speed: 10
+          lifespan: 5
+          ManueverObject:
+            heading: 0
+            xy_speed: 1
+            z_speed: 0
+        - elevation: 45
+          azimuth: 315
+          speed: 10
+          lifespan: 5
+          ManueverObject:
+            heading: 0
+            xy_speed: 1
+            z_speed: 0
     DetectorObject:
       detection_range: 15
     CommandControlObject:

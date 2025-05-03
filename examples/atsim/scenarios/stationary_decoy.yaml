@@ -9,7 +9,7 @@ SurfaceShip:
       heading: 0
       xy_speed: 3
       z_speed: 0
-    LauncherObjects:
+    LauncherObject:
       DecoyObjects:
         - elevation: 45
           azimuth: 45

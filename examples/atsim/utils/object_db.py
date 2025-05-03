@@ -2,6 +2,7 @@ import threading
 
 class ObjectDB:
     _instance = None
+    _system_executor = None
     _lock = threading.Lock()
 
     _obj_list = []
@@ -17,3 +18,8 @@ class ObjectDB:
         if not hasattr(self, 'items'):
             self.items = [] 
 
+    def set_executor(self, executor):
+       self._system_executor = executor
+    
+    def get_executor(self):
+        return self._system_executor
