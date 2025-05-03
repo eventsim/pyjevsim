@@ -8,7 +8,7 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module includes SysExecutor, a simulation engine that manages models over time. 
 """
 
-import copy
+import copy, os
 import datetime
 import heapq
 import math
@@ -539,3 +539,5 @@ class SysExecutor(CoreModel):
         
         self.snapshot_manager.snapshot_simulation(self.port_map, self.model_map, name, directory_path)
         
+    def terminate_simulation(self):
+        os._exit(0)

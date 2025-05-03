@@ -35,7 +35,7 @@ class StructuralExecutor(Executor) :
         self.ex_factory = factory
         self.behavior_object = model
         
-        self.min_schedule_item = []
+        self.min_schedule_item = deque([])
         self.model_executor_map = {}
         self.sm = model
                
@@ -53,13 +53,6 @@ class StructuralExecutor(Executor) :
         return "[N]:{0}, [S]:{1}".format(self.get_name(), "")
         
     def time_advance(self):
-        #print(self.__str__())
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm[1].get_create_time(), bm[1].get_obj_id()),
-            )
-        )
         return self.min_schedule_item[0][0]  # Return the earliest time_advance
     
     def route_message(self, cr, msg):
@@ -77,7 +70,7 @@ class StructuralExecutor(Executor) :
                 # Handle internal coupling
                 dst_executor = self.model_executor_map.get(coupling[0])
                 if dst_executor:
-                    self.min_schedule_item = [item for item in self.min_schedule_item if item[1] != dst_executor]
+                    self.min_schedule_item = deque([item for item in self.min_schedule_item if item[1] != dst_executor])
 
                     dst_executor.ext_trans(coupling[1], msg)
                     dst_executor.set_req_time(self.request_time)
@@ -89,7 +82,7 @@ class StructuralExecutor(Executor) :
             self.next_event_time = Infinite
             self.request_time = Infinite
         else:
-            self.request_time = global_time + self.time_advance()
+            self.request_time = global_time + self.min_schedule_item[0][1].time_advance()
 
     def get_create_time(self):
         self.next_event_time = self.request_time
@@ -104,9 +97,9 @@ class StructuralExecutor(Executor) :
     def get_obj_id(self):
         return self.sm.get_obj_id()
 
-
     def get_req_time(self):
-        return self.request_time
+        self._next_event_t = self.min_schedule_item[0][0]
+        return self._next_event_t
     
     def ext_trans(self, port, msg):
         #print(self.__str__())
@@ -120,33 +113,27 @@ class StructuralExecutor(Executor) :
         
     def int_trans(self):
         # Get the earliest executor from the schedule list
-        #print("!!!!!!", self.min_schedule_item)
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm[1].get_create_time(), bm[1].get_obj_id()),
-            )
-        )
         time_advance, executor = self.min_schedule_item.popleft()
 
         # Perform internal transition
         executor.int_trans()
-        executor.set_req_time(self.request_time)
+        #req_t = executor.get_req_time()
+        executor.set_req_time(time_advance)
 
         # Update next event time and reinsert into schedule list
-        next_event_time = executor.time_advance()
-        self.min_schedule_item.append((next_event_time, executor))
+        #next_event_time = executor.time_advance()
+        self.min_schedule_item.append((executor.get_req_time(), executor))
+        self.min_schedule_item = deque(
+            sorted(
+                self.min_schedule_item,
+                key=lambda bm: (bm[0], bm[1].get_obj_id()),
+            )
+        )
+        #self._next_event_t = self.min_schedule_item[0][0]
 
     def output(self, msg_deliver):
-        #print(self.__str__())
         if not msg_deliver.has_contents():
             # Invoke output function of the first executor in schedule list
-            self.min_schedule_item = deque(
-                sorted(
-                    self.min_schedule_item,
-                    key=lambda bm: (bm[1].get_create_time(), bm[1].get_obj_id()),
-                )
-            )
             _, executor = self.min_schedule_item[0]
             executor.output(msg_deliver)
 

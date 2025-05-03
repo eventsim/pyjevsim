@@ -14,7 +14,7 @@ class MessageDeliverer:
         """
         self.data_list.append(msg) #SysMessage type
 
-        self.data_list.sort(key=lambda m: m.get_scheduled_time())
+        #self.data_list.sort(key=lambda m: m.get_scheduled_time())
 
     def has_contents(self):
         """
@@ -23,7 +23,7 @@ class MessageDeliverer:
         Returns:
             bool: True if the list is not empty, otherwise False.
         """
-        return bool(self.data_list)
+        return not self.data_list
 
     def get_contents(self):
         """
