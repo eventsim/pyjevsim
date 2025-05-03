@@ -23,7 +23,7 @@ class MessageDeliverer:
         Returns:
             bool: True if the list is not empty, otherwise False.
         """
-        return not self.data_list
+        return len(self.data_list) > 0
 
     def get_contents(self):
         """
