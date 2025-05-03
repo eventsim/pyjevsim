@@ -55,7 +55,7 @@ class GarbageTruck(BehaviorModel):
         return self.garbage_map
         
     def ext_trans(self, port, msg):
-        print(port)    
+        #print(port)    
         if port == "start":
             self._cur_state = "INITAL_APPROACH"
         elif port == "end":
@@ -67,7 +67,7 @@ class GarbageTruck(BehaviorModel):
             self.accummulated_garbage += self.truck_current_storage
 
             ev_t = self.global_time
-            print(ev_t)
+            #print(ev_t)
 
             if self.outname is not None:
                 with open("{0}/truck.csv".format(self.outname),'a') as file: 
@@ -79,8 +79,8 @@ class GarbageTruck(BehaviorModel):
                     file.write(",")
                     file.write(str(self.accummulated_garbage))
                     file.write("\n")
-            print(self.cur_index)
-            print("[truck_storage]"+  str(port) + ":" +str(self.garbage_port_map[port]),self.truck_current_storage)
+            #print(self.cur_index)
+            #print("[truck_storage]"+  str(port) + ":" +str(self.garbage_port_map[port]),self.truck_current_storage)
             
     def output(self, msg_deliver):
         if self._cur_state == "REQUEST":

@@ -25,7 +25,7 @@ class Clock(BehaviorModel):
         if port == "start":
             self._cur_state = "WAKE"
         if port == "end":
-            print("end")
+            #print("end")
             self._cur_state = "IDLE"
                         
     def output(self, msg_deliver):
@@ -36,7 +36,7 @@ class Clock(BehaviorModel):
             #    print('-'*40,self.convert_unit_time(),'-'*40)
             
             #return msg
-            print("progress")
+            #print("progress")
 
     def int_trans(self):
         if self._cur_state == "WAKE":

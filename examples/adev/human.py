@@ -37,18 +37,18 @@ class Human(BehaviorModel):
                         
     def output(self, msg_deliver):
         if self._cur_state == "WAIT":
-            print("[human] " + self.get_name())
+            #print("[human] " + self.get_name())
             msg = SysMessage(self.get_name(), "trash")
             msg.insert(self.human)
             
-            print("start?")
+            #print("start?")
             return msg
 
     def int_trans(self):
-        print(self._cur_state)
+        #print(self._cur_state)
         if self._cur_state == "WAIT":
             self._cur_state = "WAIT"
             unit_t = self.human.get_out().get_unit_time()
-            print(self.human.get_type(), " out time:", unit_t)
+            #print(self.human.get_type(), " out time:", unit_t)
             self.update_state("WAIT", unit_t)
             #self.update_state("WAIT", 1)

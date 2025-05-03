@@ -44,7 +44,7 @@ class Family(BehaviorModel):
     def output(self, msg_deliver):
         msg = SysMessage(self.get_name(), "takeout_trash")
         msg.insert(copy.deepcopy(self.family_type.get_members()))
-        print(self.family_type.get_stack_amount())
+        #print(self.family_type.get_stack_amount())
         self.family_type.empty_stack()
         
         return msg
