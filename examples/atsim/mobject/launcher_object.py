@@ -4,8 +4,9 @@ class LauncherObject:
 	def __init__(self, DecoyObjects):
 		self.decoy_list = DecoyObjects
 
-		print(self.decoy_list)
-
+	def get_decoy_list(self):
+		return self.decoy_list
+	
 	def get_decoy_count(self):
 		return len(self.decoy_list)
 

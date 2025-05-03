@@ -13,25 +13,25 @@ SurfaceShip:
       DecoyObjects:
         - elevation: 45
           azimuth: 45
-          speed: 10
-          lifespan: 5
+          speed: 15
+          lifespan: 3
         - elevation: 45
           azimuth: 135
-          speed: 10
-          lifespan: 5
+          speed: 15
+          lifespan: 3
         - elevation: 45
           azimuth: 225
-          speed: 10
-          lifespan: 5
+          speed: 15
+          lifespan: 3
         - elevation: 45
           azimuth: 315
-          speed: 10
-          lifespan: 5  
+          speed: 15
+          lifespan: 3
     DetectorObject:
-      detection_range: 50
+      detection_range: 40
     CommandControlObject:
       evation_heading: 270
-      decoy_deployment_range: 15
+      decoy_deployment_range: 35
 
 Torpedo:
   - ManueverObject:
@@ -39,12 +39,11 @@ Torpedo:
       y: 20
       z: -20
       heading: 180
-      xy_speed: 5
+      xy_speed: 3
       z_speed: 1
     DetectorObject:
-      detection_range: 30
+      detection_range: 35 
     TorpedoControlObject:
-      evation_heading: 270
-      decoy_deployment_range: 15
-    DamageAssessment:
-      range:1
+      range: 1
+    
+      

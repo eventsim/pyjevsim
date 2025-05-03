@@ -8,6 +8,10 @@ class ManueverObject:
 		self.heading = heading
 		self.xy_speed = xy_speed
 		self.z_speed = z_speed
+		self.active = True
+
+	def check_active(self):
+		return self.active
 
 	def get_position(self):
 		return (self.x, self.y, self.z)
@@ -22,7 +26,7 @@ class ManueverObject:
 		self.heading = heading
 
 	def calc_next_pos_with_heading(self, dt):
-		print("h", self.x, self.y, self.z)
+		#print("h", self.x, self.y, self.z)
 		# Convert heading from degrees to radians
 		heading_radians = math.radians(self.heading)
 
@@ -31,9 +35,11 @@ class ManueverObject:
 		self.x += dt * self.xy_speed * math.sin(heading_radians)
 		self.y += dt * self.xy_speed * math.cos(heading_radians)
 		self.z += dt * self.z_speed
+		if self.z >= 0:
+			self.z = 0
 
 	def calc_next_pos_with_pos(self, target, dt):
-		print("p", self.x, self.y, self.z)
+		#print("p", self.x, self.y, self.z)
 		# Calculate the vector from current position to target
 		dx = target[0] - self.x
 		dy = target[1] - self.y
@@ -68,3 +74,6 @@ class ManueverObject:
 			self.z = target[2]
 		else:
 			self.z += z_move_distance
+
+		return z_move_distance + xy_move_distance
+			

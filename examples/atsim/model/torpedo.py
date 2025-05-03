@@ -9,7 +9,7 @@ from .detector import Detector
 from mobject.detector_object import DetectorObject
 
 from .torpedo_controller import TorpedoCommandControl as CommandControl
-from mobject.comand_control_object import CommandControlObject
+from mobject.torpedo_control_object import TorpedoControlObject
 
 from utils.object_db import ObjectDB
 
@@ -20,7 +20,7 @@ class Torpedo(StructuralModel):
         # Model Object Instantiation        
         self.mo = ManueverObject(**yaml_data["ManueverObject"])
         self.do = DetectorObject(**yaml_data["DetectorObject"])
-        self.co = CommandControlObject(**yaml_data["TorpedoControlObject"])
+        self.co = TorpedoControlObject(**yaml_data["TorpedoControlObject"])
         
         ObjectDB().items.append(self.mo)
         

@@ -49,6 +49,12 @@ class PositionPlotter:
 
         self.ax.clear()
 
+        # Set up plot
+        self.ax.set_xlabel('X (meters)')
+        self.ax.set_ylabel('Y (meters)')
+        self.ax.set_zlabel('Z (meters)')
+        self.ax.set_title('Object Trajectory')
+
         # Redraw the updated trajectory
         for oid in self.x_positions:
             self.ax.plot(
