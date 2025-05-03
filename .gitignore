@@ -183,3 +183,5 @@ output/
 test_run.py
 testcase_log
 snapshot_test
+
+.vs

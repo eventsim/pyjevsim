@@ -8,7 +8,7 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module includes SysExecutor, a simulation engine that manages models over time. 
 """
 
-import copy
+import copy, os
 import datetime
 import heapq
 import math
@@ -361,7 +361,7 @@ class SysExecutor(CoreModel):
         tuple_obj = self.min_schedule_item.popleft()
         before = time.perf_counter()  # Record time before processing
         msg_deliver = MessageDeliverer()
-        while math.isclose(tuple_obj.get_req_time(), self.global_time, rel_tol=1e-9):
+        while tuple_obj.get_req_time() <=  self.global_time:
             msg = tuple_obj.output(msg_deliver)
             if msg is not None:
                 self.output_handling(tuple_obj, (self.global_time, msg))
@@ -382,7 +382,6 @@ class SysExecutor(CoreModel):
             tuple_obj = self.min_schedule_item.popleft()
             
         self.min_schedule_item.appendleft(tuple_obj)
-
 
         self.global_time += self.time_resolution
 
@@ -539,3 +538,5 @@ class SysExecutor(CoreModel):
         
         self.snapshot_manager.snapshot_simulation(self.port_map, self.model_map, name, directory_path)
         
+    def terminate_simulation(self):
+        os._exit(0)
