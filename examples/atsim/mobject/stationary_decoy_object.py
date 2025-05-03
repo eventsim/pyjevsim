@@ -27,7 +27,7 @@ class StationaryDecoyObject:
 		return self.active
 
 	def calc_next_pos(self, dt):
-		 # Convert degrees ¡æ radians
+		 # Convert degrees to radians
 		theta = math.radians(self.elevation)
 		phi   = math.radians(self.azimuth)
 		    
