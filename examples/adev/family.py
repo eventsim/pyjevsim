@@ -41,10 +41,10 @@ class Family(BehaviorModel):
                 if self.family_type.is_flush(data[0]):
                     self._cur_state = "FLUSH"
 
-    def output(self):
+    def output(self, msg_deliver):
         msg = SysMessage(self.get_name(), "takeout_trash")
         msg.insert(copy.deepcopy(self.family_type.get_members()))
-        #print(self.family_type.get_stack_amount())
+        print(self.family_type.get_stack_amount())
         self.family_type.empty_stack()
         
         return msg

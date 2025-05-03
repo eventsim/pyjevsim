@@ -8,18 +8,18 @@ from pyjevsim.definition import *
 
 from config import *
 
-from test_adev.clock import Clock
-from test_adev.core_component import HumanType
-from test_adev.core_component import FamilyType
+from examples.adev.clock import Clock
+from examples.adev.core_component import HumanType
+from examples.adev.core_component import FamilyType
 
-from test_adev.job import *
+from examples.adev.job import *
 
-from test_adev.human import Human
-from test_adev.check import Check
-from test_adev.government import Government
-from test_adev.garbagecan import GarbageCan
-from test_adev.garbage_truck import GarbageTruck
-from test_adev.family import Family
+from examples.adev.human import Human
+from examples.adev.check import Check
+from examples.adev.government import Government
+from examples.adev.garbagecan import GarbageCan
+from examples.adev.garbage_truck import GarbageTruck
+from examples.adev.family import Family
 
 for kndx in range(1):
     blist=[]
@@ -50,6 +50,8 @@ for kndx in range(1):
         if i == len(lines)-1:
             blist.append(hlist)
 
+    #print(blist)
+    
     se = SysExecutor(TIME_DENSITY, f"sname{kndx}", SIMULATION_MODE)
 
     c = Clock("clock")
@@ -123,8 +125,10 @@ for kndx in range(1):
 
     # Connect Truck & Can
 
+    #print(se.model_map)
     se.insert_external_event("start", None)
     #print(se.port_map)
-    se.simulate()
+    
+    se.simulate(1000)
 
 

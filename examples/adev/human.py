@@ -20,7 +20,7 @@ class Human(BehaviorModel):
         self.insert_state("IDLE", Infinite)
 ##
         unit_t = self.human.get_out().get_unit_time()
-        #print(self.human.get_type(), " out time:", unit_t)
+        print(self.human.get_type(), " out time:", unit_t)
         self.insert_state("WAIT", unit_t)
         #self.insert_state("WAIT", 1)
   
@@ -35,7 +35,7 @@ class Human(BehaviorModel):
         if port == "end":
             self._cur_state = "IDLE"
                         
-    def output(self):
+    def output(self, msg_deliver):
         if self._cur_state == "WAIT":
             print("[human] " + self.get_name())
             msg = SysMessage(self.get_name(), "trash")

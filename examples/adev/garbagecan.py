@@ -205,7 +205,7 @@ class GarbageCan(BehaviorModel):
             self.avaliable_amount = msg.retrieve()[0]
             self._cur_state = "PROC_TRUCK"
 
-    def output(self):
+    def output(self, msg_deliver):
         if self._cur_state == "PROCESS":  
             #print('[check]$')
             #print(self.human_port_map[self.recv_checker_port])

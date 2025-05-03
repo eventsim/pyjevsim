@@ -58,10 +58,10 @@ class Check(BehaviorModel):
                 if self.htype.satisfaction < 0:
                     self.htype.satisfaction += self.stat.get_delta()
                     self._cur_state = "REPORT"
-                #print(self.htype.)
-                #print(SystemSimulator().get_engine("sname").get_global_time(),"[check] "+self.get_name() + ":" + str(self.htype.satisfaction))
+                print(self.htype)
+                print(SystemSimulator().get_engine("sname").get_global_time(),"[check] "+self.get_name() + ":" + str(self.htype.satisfaction))
 
-    def output(self):
+    def output(self, msg_deliver):
         if self._cur_state=="CHECK":
             if self.htype.is_vacation():
                 self.htype.satisfaction=None
