@@ -32,7 +32,7 @@ class Government(BehaviorModel):
         output_str = ""
         for k, v in self.reported.items():
             output_str += f"{k},{v},"
-        print(output_str)
+        #print(output_str)
         #print(self.report)
 
     def output(self, msg_deliver):
