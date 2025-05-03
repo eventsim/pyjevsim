@@ -1,10 +1,10 @@
 import project_config
 
-from pos_plotter import PositionPlotter
 from pyjevsim import SysExecutor, ExecutionType, Infinite
 from model.manuever import Manuever
 from model.surfaceship import SurfaceShip
-from scenario_manager import ScenarioManager
+from utils.scenario_manager import ScenarioManager
+from utils.pos_plotter import PositionPlotter
 
 pos_plot = PositionPlotter()
 sm = ScenarioManager('./examples/atsim/scenarios/stationary_decoy.yaml')

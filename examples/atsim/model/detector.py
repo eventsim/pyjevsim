@@ -1,7 +1,9 @@
 import project_config
 from pyjevsim import BehaviorModel, Infinite
-from object_db import ObjectDB
+from utils.object_db import ObjectDB
 import datetime
+
+from pyjevsim.system_message import SysMessage
 
 class Detector(BehaviorModel):
     def __init__(self, name, platform):
@@ -14,6 +16,7 @@ class Detector(BehaviorModel):
         self.insert_state("Detect", 1)
 
         self.insert_input_port("start")
+        self.insert_output_port("threat_list")
 
     def ext_trans(self,port, msg):
         if port == "start":
@@ -22,14 +25,15 @@ class Detector(BehaviorModel):
             self._cur_state = "Detect"
 
     def output(self, msg):
-        threat_lst = []
+        message = SysMessage(self.get_name(),  "threat_list")
+        message.insert([])
         for target in ObjectDB().items:
             if self.platform.mo != target:
                 if self.platform.do.detect(self.platform.mo, target):
-                    #print(f"[Detected]({target.x}, {target.y}, {target.z})")
-                    threat_lst.append(target)
-
-        return msg.insert_message(threat_lst)
+                    message.retrieve()[0].append(target)
+        if message.retrieve()[0]:
+            msg.insert_message(message)
+        return msg
         
     def int_trans(self):
         if self._cur_state == "Detect":
