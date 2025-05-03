@@ -115,7 +115,7 @@ class SysExecutor(CoreModel):
         """
         
         sim_obj = self.exec_factory.create_executor(
-            self.global_time, self.global_time + inst_t, self.global_time + dest_t, ename, entity, self
+            self.global_time, inst_t, self.global_time + dest_t, ename, entity, self
         )
         self.product_port_map[entity] = sim_obj
 

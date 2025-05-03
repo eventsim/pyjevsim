@@ -5,7 +5,7 @@ from pyjevsim import BehaviorModel, Infinite
 from utils.object_db import ObjectDB
 
 from .decoy import Decoy
-from mobject.staationary_decoy_object import StationaryDecoyObject
+from mobject.stationary_decoy_object import StationaryDecoyObject
 
 class Launcher(BehaviorModel):
     def __init__(self, name, platform):
@@ -33,7 +33,8 @@ class Launcher(BehaviorModel):
             for idx, decoy in enumerate(self.platform.lo.get_decoy_list()):
                 destroy_t = math.ceil(self.platform.lo.get_time_of_flight(decoy) + decoy['lifespan'])
                 sdo = StationaryDecoyObject(self.platform.get_position(), decoy)
-                ObjectDB().decoys.append(sdo)
+                ObjectDB().decoys.append((f"[Decoy][{idx}]", sdo))
+                ObjectDB().items.append(sdo)
                 decoy_model = Decoy(f"[Decoy][{idx}]", sdo)
                 se.register_entity(decoy_model, 0, destroy_t)
 
