@@ -18,6 +18,9 @@ class ObjectDB:
         if not hasattr(self, 'items'):
             self.items = [] 
 
+        if not hasattr(self, 'decoys'):
+            self.decoys = [] 
+
     def set_executor(self, executor):
        self._system_executor = executor
     

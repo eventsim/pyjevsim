@@ -32,12 +32,18 @@ for _ in range(20):
 	for ship in sm.get_surface_ships():
 		x, y, z = ship.get_position()
 		pos_plot.update_position('ship', x, y, z)
+		print('s', x, y, z)
 		#file.write(f"ship, {x},{y},{z},\n")
 	for torpedo in sm.get_torpedoes():
 		x, y, z = torpedo.get_position()
+		print('t', x, y, z)
 		pos_plot.update_position('torpedo', x, y, z, 'black', 'orange')
 		#file.write(f"torpedo, {x},{y},{z},\n")
 
+	for decoy in ObjectDB().decoys:
+		x, y, z = decoy.get_position()
+		print('d', x, y, z)
+		pos_plot.update_position('decoy', x, y, z, 'black', 'green')
 '''
 x = 0
 y = 0

@@ -1,6 +1,11 @@
-from pyjevsim import BehaviorModel, Infinite
 import datetime
+import math
+
+from pyjevsim import BehaviorModel, Infinite
 from utils.object_db import ObjectDB
+
+from .decoy import Decoy
+from mobject.staationary_decoy_object import StationaryDecoyObject
 
 class Launcher(BehaviorModel):
     def __init__(self, name, platform):
@@ -14,13 +19,27 @@ class Launcher(BehaviorModel):
 
         self.insert_input_port("order")
 
+        self.launch_flag = False
+
     def ext_trans(self,port, msg):
         if port == "order":
             print(f"{self.get_name()}[order_recv]: {datetime.datetime.now()}")
             self._cur_state = "Launch"
 
     def output(self, msg):
-        se = ObjectDB().get_executor()
+        if not self.launch_flag:
+            se = ObjectDB().get_executor()
+
+            for idx, decoy in enumerate(self.platform.lo.get_decoy_list()):
+                destroy_t = math.ceil(self.platform.lo.get_time_of_flight(decoy) + decoy['lifespan'])
+                sdo = StationaryDecoyObject(self.platform.get_position(), decoy)
+                ObjectDB().decoys.append(sdo)
+                decoy_model = Decoy(f"[Decoy][{idx}]", sdo)
+                se.register_entity(decoy_model, 0, destroy_t)
+
+        self.launch_flag = True
+
+        #se.register_entity()
         return None
         
     def int_trans(self):
