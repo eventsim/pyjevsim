@@ -19,6 +19,7 @@ In a terminal in the parent directory, run the following command.
    pytest -s ./test_banksim/banksim_restore.py 
 """
 import time
+import contexts
 
 from pyjevsim.definition import *
 from pyjevsim.snapshot_manager import SnapshotManager

@@ -117,7 +117,7 @@ class BankUserGenerator(BehaviorModel):
             print(f"[Gen][IN]: started")
             self._cur_state = "GEN"  # Transition state to "GEN"
 
-    def output(self):
+    def output(self, msg_deliver):
         """
         Generates the output message when in the "GEN" state.
 

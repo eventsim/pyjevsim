@@ -50,7 +50,7 @@ class BankAccountant(BehaviorModel):
             self.update_state("PROC", self.user.get_service_time())  # Update "PROC" state duration
             print(f"[A][arrive] ID:{self.user.get_id()} Time:{_time}")
 
-    def output(self):
+    def output(self, msg_deliver):
         """
         Generates the output message when in the "PROC" state.
 

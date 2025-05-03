@@ -35,7 +35,7 @@ class Government(BehaviorModel):
         print(output_str)
         #print(self.report)
 
-    def output(self):
+    def output(self, msg_deliver):
         self.report += 1
             
         return None
