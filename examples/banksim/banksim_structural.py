@@ -17,11 +17,12 @@ In a terminal in the parent directory, run the following command.
    pytest -s ./test_banksim/banksim_classic.py 
 """
 import time
+import contexts
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 
-from .model_banksim import Banksim
+from examples.banksim.model_banksim import Banksim
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)

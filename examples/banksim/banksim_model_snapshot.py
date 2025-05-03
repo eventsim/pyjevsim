@@ -17,6 +17,7 @@ In a terminal in the parent directory, run the following command.
    pytest -s ./test_banksim/banksim_model_snapshot.py 
 """
 import time
+import contexts
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
@@ -24,9 +25,9 @@ from pyjevsim.system_executor import SysExecutor
 from pyjevsim.snapshot_condition import SnapshotCondition
 from pyjevsim.snapshot_manager import SnapshotManager
 
-from .model_accountant import BankAccountant
-from .model_queue import BankQueue
-from .model_user_gen import BankUserGenerator
+from examples.banksim.model_accountant import BankAccountant
+from examples.banksim.model_queue import BankQueue
+from examples.banksim.model_user_gen import BankUserGenerator
 
 class BankGenModelCondition(SnapshotCondition) :
     @staticmethod

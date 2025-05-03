@@ -73,7 +73,7 @@ class BankQueue(BehaviorModel):
         if not self.usable_proc or not self.user:
             self._cur_state = "WAIT"  # Transition to "WAIT" state if no users or processors
 
-    def output(self):
+    def output(self, msg_deliver):
         """
         Generates the output message when in the "SEND" state.
 
