@@ -26,11 +26,13 @@ class TorpedoCommandControl(BehaviorModel):
 
     def output(self, msg):
         target = None
-        for target in self.threat_list:
-            target =  self.platform.co.get_target(self.platform.mo, target)
+        
+        for t in self.threat_list:
+            target =  self.platform.co.get_target(self.platform.mo, t)
                 
         # house keeping
         self.threat_list = []
+        self.platform.co.reset_target()
         
         if target:
             message = SysMessage(self.get_name(), "target")

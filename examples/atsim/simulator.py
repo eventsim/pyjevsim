@@ -27,23 +27,32 @@ se.insert_external_event("start", None)
 
 #with open("output.csv", 'w') as file:
 #file.write("id,x,y,z,\n")
-for _ in range(20):
+for _ in range(30):
 	se.simulate(1)
 	for ship in sm.get_surface_ships():
 		x, y, z = ship.get_position()
 		pos_plot.update_position('ship', x, y, z)
-		print('s', x, y, z)
+<<<<<<< Updated upstream
 		#file.write(f"ship, {x},{y},{z},\n")
 	for torpedo in sm.get_torpedoes():
 		x, y, z = torpedo.get_position()
-		print('t', x, y, z)
 		pos_plot.update_position('torpedo', x, y, z, 'black', 'orange')
 		#file.write(f"torpedo, {x},{y},{z},\n")
 
-	for decoy in ObjectDB().decoys:
+=======
+		#print('s', x, y, z)
+		#file.write(f"ship, {x},{y},{z},\n")
+	for torpedo in sm.get_torpedoes():
+		x, y, z = torpedo.get_position()
+		#print('t', x, y, z)
+		pos_plot.update_position('torpedo', x, y, z, 'black', 'orange')
+		#file.write(f"torpedo, {x},{y},{z},\n")
+
+	for name, decoy in ObjectDB().decoys:
 		x, y, z = decoy.get_position()
-		print('d', x, y, z)
-		pos_plot.update_position('decoy', x, y, z, 'black', 'green')
+		#print('d', x, y, z)
+		pos_plot.update_position(name, x, y, z, 'black', 'green')
+>>>>>>> Stashed changes
 '''
 x = 0
 y = 0

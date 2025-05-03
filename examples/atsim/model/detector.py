@@ -27,8 +27,9 @@ class Detector(BehaviorModel):
     def output(self, msg):
         message = SysMessage(self.get_name(),  "threat_list")
         message.insert([])
+        
         for target in ObjectDB().items:
-            if self.platform.mo != target:
+            if self.platform.mo != target and target.check_active():
                 if self.platform.do.detect(self.platform.mo, target):
                     message.retrieve()[0].append(target)
         if message.retrieve()[0]:

@@ -1,3 +1,4 @@
+from utils.object_db import ObjectDB
 from pyjevsim import BehaviorModel, Infinite
 import datetime
 
@@ -15,6 +16,9 @@ class Decoy(BehaviorModel):
 
     def output(self, msg):
         self.platform.calc_next_pos(1)
+        if not self.platform.check_lifespan(1):
+            ObjectDB().items = [item for item in ObjectDB().items if item != self.platform]
+
         return None
         
     def int_trans(self):
