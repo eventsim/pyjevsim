@@ -42,7 +42,7 @@ SurfaceShip:
           xy_speed: 1
           z_speed: 0
     DetectorObject:
-      detection_range: 10
+      detection_range: 15
     CommandControlObject:
       evation_heading: 270
 

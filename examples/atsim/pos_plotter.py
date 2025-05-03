@@ -78,3 +78,6 @@ class PositionPlotter:
         #self.ax.legend()
         plt.draw()
         plt.pause(0.01)  # Pause to update the plot
+
+    def terminate_plot(self):
+        plt.close()

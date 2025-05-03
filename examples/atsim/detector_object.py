@@ -8,9 +8,9 @@ class DetectorObject:
 		sx, sy, sz = ref_obj.get_position()
 		tx, ty, tz = target_obj.get_position()
 
-		print( math.sqrt((sx-tx)**2, (sy-ty)**2, (sz-tz)**2), self.detection_range)
+		print( math.sqrt((sx-tx)**2 + (sy-ty)**2 + (sz-tz)**2), self.detect_range)
 
-		if math.sqrt((sx-tx)**2, (sy-ty)**2, (sz-tz)**2) <= self.detection_range:
+		if math.sqrt((sx-tx)**2 + (sy-ty)**2 + (sz-tz)**2) <= self.detect_range:
 			return True
 		else:
 			return False

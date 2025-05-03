@@ -15,5 +15,5 @@ class ObjectDB:
 
     def __init__(self):
         if not hasattr(self, 'items'):
-            self.items = []  # 리스트 초기화 (한 번만)
+            self.items = [] 
 

@@ -19,7 +19,7 @@ class SurfaceShip(StructuralModel):
         detect = Detector(f"[{name}][Detector]", self)
 
         self.register_entity(man)
-       # self.register_entity(detect)
+        self.register_entity(detect)
 
         self.insert_input_port("start")
         self.coupling_relation(self, "start", man, "start")

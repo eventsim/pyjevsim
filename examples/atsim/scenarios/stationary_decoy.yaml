@@ -27,8 +27,10 @@ SurfaceShip:
           azimuth: 315
           speed: 10
           lifespan: 5
+    FireControlSystem:
+      decoy_deployment_range: 10
     DetectorObject:
-      detection_range: 10
+      detection_range: 15
     CommandControlObject:
       evation_heading: 270
 
