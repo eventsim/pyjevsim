@@ -2,10 +2,8 @@ import project_config
 
 from pos_plotter import PositionPlotter
 from pyjevsim import SysExecutor, ExecutionType, Infinite
-from manuever import Manuever
-from manuever_object import ManueverObject
-
-from surfaceship import SurfaceShip
+from model.manuever import Manuever
+from model.surfaceship import SurfaceShip
 from scenario_manager import ScenarioManager
 
 pos_plot = PositionPlotter()

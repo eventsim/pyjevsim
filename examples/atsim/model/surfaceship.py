@@ -1,10 +1,10 @@
 import project_config
 
 from pyjevsim import StructuralModel, Infinite
-from manuever import Manuever
-from detector import Detector
-from manuever_object import ManueverObject
-from detector_object import DetectorObject
+from .manuever import Manuever
+from .detector import Detector
+from mobject.manuever_object import ManueverObject
+from mobject.detector_object import DetectorObject
 from object_db import ObjectDB
 
 class SurfaceShip(StructuralModel):

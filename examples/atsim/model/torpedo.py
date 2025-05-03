@@ -1,8 +1,8 @@
 import project_config
 
 from pyjevsim import StructuralModel, Infinite
-from manuever import Manuever
-from manuever_object import ManueverObject
+from .manuever import Manuever
+from mobject.manuever_object import ManueverObject
 from object_db import ObjectDB
 
 class Torpedo(StructuralModel):

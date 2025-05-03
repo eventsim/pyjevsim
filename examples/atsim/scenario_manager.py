@@ -1,8 +1,7 @@
 import yaml
 
-from manuever_object import ManueverObject
-from surfaceship import SurfaceShip
-from torpedo import Torpedo
+from model.surfaceship import SurfaceShip
+from model.torpedo import Torpedo
 
 class ScenarioManager:
     def __init__(self, _path):
