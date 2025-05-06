@@ -1,18 +1,26 @@
 import math
 
 class StationaryDecoyObject:
-	def __init__(self, pos, decoy_info):
+	def __init__(self, pos, tof, decoy_info):
 		self.x, self.y, self.z = pos
 		self.g = 9.8
-		self.elevation = decoy_info['elevation']
-		self.azimuth   = decoy_info['azimuth']
-		self.speed     = decoy_info['speed']
-		self.z_speed   = decoy_info['speed']
-		self.lifespan  = decoy_info['lifespan']
-		self.active    = True
+		self.time_of_flight   = tof
+		self.elevation		  = decoy_info['elevation']
+		self.azimuth		  = decoy_info['azimuth']
+		self.launch_speed     = decoy_info['speed']
+		self.z_speed		  = decoy_info['speed']
+		self.lifespan		  = decoy_info['lifespan']
+		self.active			  = True
 
 	def get_position(self):
 		return (self.x, self.y, self.z)
+
+	def check_flight(self, dt):
+		self.time_of_flight -= dt
+		if self.time_of_flight < 0:
+			return False
+		else:
+			return True
 
 	def check_lifespan(self, dt):
 		self.lifespan -= dt
@@ -31,8 +39,8 @@ class StationaryDecoyObject:
 		theta = math.radians(self.elevation)
 		phi   = math.radians(self.azimuth)
 		    
-		vx0 = self.speed * math.cos(theta) * math.sin(phi)
-		vy0 = self.speed * math.cos(theta) * math.cos(phi)
+		vx0 = self.launch_speed * math.cos(theta) * math.sin(phi)
+		vy0 = self.launch_speed * math.cos(theta) * math.cos(phi)
 		vz0 = self.z_speed * math.sin(theta)
 
 		self.x = self.x + vx0 * dt
@@ -42,4 +50,5 @@ class StationaryDecoyObject:
 		if self.z < 0:
 			self.z = 0
 
-		self.z_speed -= self.g * dt
+		if self.z_speed >= 0:
+			self.z_speed -= self.g * dt

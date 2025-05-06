@@ -11,22 +11,26 @@ SurfaceShip:
       z_speed: 0
     LauncherObject:
       DecoyObjects:
-        - elevation: 45
+        - type: "stationary"
+          elevation: 45
           azimuth: 45
           speed: 15
-          lifespan: 3
-        - elevation: 45
+          lifespan: 5
+        - type: "stationary"
+          elevation: 45
           azimuth: 135
           speed: 15
-          lifespan: 3
-        - elevation: 45
+          lifespan: 5
+        - type: "stationary"
+          elevation: 45
           azimuth: 225
           speed: 15
-          lifespan: 3
-        - elevation: 45
+          lifespan: 5
+        - type: "stationary"
+          elevation: 45
           azimuth: 315
           speed: 15
-          lifespan: 3
+          lifespan: 5
     DetectorObject:
       detection_range: 40
     CommandControlObject:
@@ -37,9 +41,9 @@ Torpedo:
   - ManueverObject:
       x: 20
       y: 20
-      z: -20
-      heading: 180
-      xy_speed: 3
+      z: -10
+      heading: 270
+      xy_speed: 5
       z_speed: 1
     DetectorObject:
       detection_range: 35 

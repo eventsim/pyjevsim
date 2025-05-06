@@ -8,7 +8,8 @@ from utils.pos_plotter import PositionPlotter
 from utils.object_db import ObjectDB
 
 pos_plot = PositionPlotter()
-sm = ScenarioManager('./examples/atsim/scenarios/stationary_decoy.yaml')
+#sm = ScenarioManager('./examples/atsim/scenarios/stationary_decoy.yaml')
+sm = ScenarioManager('./examples/atsim/scenarios/self_propelled_decoy.yaml')
 se = SysExecutor(1, ex_mode=ExecutionType.R_TIME)
 ObjectDB().set_executor(se)
 
