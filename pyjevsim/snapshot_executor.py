@@ -16,7 +16,7 @@ class SnapshotExecutor(Executor):
     """
     Set the model you want to snapshot to a SnapshotExecutor in a form that can be executed by a SystemExecutor.
     """
-    def __init__(self, behavior_executor, condition):
+    def __init__(self, behavior_executor, condition, parent):
         """
         Args:
             behavior_executor (BehaviorExecutor): BehaviorExecutor to decorate
@@ -24,7 +24,9 @@ class SnapshotExecutor(Executor):
         Executor.__init__(self,
                          behavior_executor.get_create_time(),
                          behavior_executor.get_destruct_time(),
-                         behavior_executor.get_engine_name())        
+                         behavior_executor.get_engine_name(),
+                         behavior_executor.get_core_model(),
+                         parent)        
         
         self.behavior_executor = behavior_executor
         self.condition = condition
@@ -138,7 +140,7 @@ class SnapshotExecutor(Executor):
         #Conditions generated after int_trans function
 
     # Output Function
-    def output(self):
+    def output(self, msg_deliver):
         """Handles the output function.
 
         Returns:
@@ -147,7 +149,7 @@ class SnapshotExecutor(Executor):
         if self.condition.snapshot_pre_condition_out(self.get_cur_state()):
             self.snapshot("output_before")
         #Conditions created before output function 
-        out_msg = self.behavior_executor.output()
+        out_msg = self.behavior_executor.output(msg_deliver)
         if self.condition.snapshot_post_condition_out(self.get_cur_state(), out_msg):
             self.snapshot("output_after")
         #Conditions generated after output function
