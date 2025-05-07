@@ -25,6 +25,7 @@ from pyjevsim.system_executor import SysExecutor
 from examples.banksim.model_accountant import BankAccountant
 from examples.banksim.model_queue import BankQueue
 from examples.banksim.model_user_gen import BankUserGenerator
+from examples.banksim.model_result import BankResult
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
@@ -35,18 +36,15 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     
     #user_process_time = random.randint(1, 10)   #BankUser's processing speed
     gen_cycle = 2           #BankUser Generattion cycle
-    max_user = 500000       #Total number of users generated
+    max_user = 100       #Total number of users generated
     
     max_simtime = 100000    #simulation time
     
     
     ## model set & register entity
     gen_list = []
-    user = int(max_user / gen_num)
     for i in range(gen_num) :
-        if i == gen_num-1:
-            user += max_user % gen_num
-        gen = BankUserGenerator(f'gen{i}', gen_cycle, user)
+        gen = BankUserGenerator(f'gen{i}', gen_cycle)
         gen_list.append(gen)    
         ss.register_entity(gen)    
         
@@ -59,6 +57,9 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         account_list.append(account)
         ss.register_entity(account)
         
+    result = BankResult('result', max_user)
+    ss.register_entity(result)
+        
     ## Model Relation
     ss.insert_input_port('start')
 
@@ -68,6 +69,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     for i in range(proc_num) : 
         ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
         ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
+        ss.coupling_relation(account_list[i], 'next', result, 'process')
         
     ss.insert_external_event('start', None)
 

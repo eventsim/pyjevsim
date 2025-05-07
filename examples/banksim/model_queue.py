@@ -88,8 +88,9 @@ class BankQueue(BehaviorModel):
             
             msg = SysMessage(self.get_name(), self.usable_proc.pop(0))
             msg.insert(user)  # Insert user into message
+            msg_deliver.insert(msg)
 
-        return msg
+        return msg_deliver
 
     def int_trans(self):
         """Handles internal transitions based on the current state."""

@@ -85,7 +85,7 @@ class BankUser:
 class BankUserGenerator(BehaviorModel):
     """A Model representing a bank user generator."""
 
-    def __init__(self, name, cycle, max_user):
+    def __init__(self, name, cycle):
         """
         Args:
             name (str): Name of Model
@@ -103,7 +103,7 @@ class BankUserGenerator(BehaviorModel):
 
         self.cycle = cycle  # Generation cycle time
         self.generated_user = 0  # Counter for generated users
-        self.max_user = max_user  # Maximum number of users to generate
+        #self.max_user = max_user  # Maximum number of users to generate
         #self.proc_time = proc_time  # Processing time for each user
         
     def ext_trans(self, port, msg):
@@ -117,6 +117,8 @@ class BankUserGenerator(BehaviorModel):
         if port == "start":
             print(f"[Gen][IN]: started")
             self._cur_state = "GEN"  # Transition state to "GEN"
+        if port == "stop" :
+            self._cur_satate = "WAIT"
 
     def output(self, msg_deliver):
         """
@@ -135,15 +137,14 @@ class BankUserGenerator(BehaviorModel):
         msg.insert(bu)  # Insert BankUser into message
 
         self.generated_user += 1  # Increment generated user count
-        return msg
+        msg_deliver.insert(msg)
+        return msg_deliver
 
     def int_trans(self):
         """Handles internal transitions based on the current state."""
-        if self._cur_state == "GEN" and self.generated_user >= self.max_user:
-            self._cur_state = "WAIT"  # Transition state to "WAIT"
-        else:
-            self.update_state("GEN", self.cycle)  # Update "GEN" state with cycle time
-            
+        if self._cur_state == "GEN" :
+            self.update_state("GEN", random.randint(1,10))  # Update "GEN" state with cycle time
+
     def set_cycle(self, cycle):
         """
         Sets the generation cycle time.
@@ -155,4 +156,4 @@ class BankUserGenerator(BehaviorModel):
         print("set cycle")
         
     def get_user(self) : 
-        return self.max_user - self.generated_user
+        return self.generated_user

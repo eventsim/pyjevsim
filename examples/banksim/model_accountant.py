@@ -67,8 +67,10 @@ class BankAccountant(BehaviorModel):
 
             msg = SysMessage(self.get_name(), "next")
             msg.insert(self.proc_num)  # Insert processor number
+            msg.insert(self.user)
+            msg_deliver.insert_message(msg)
 
-        return msg
+        return msg_deliver
 
     def int_trans(self):
         """Handles internal transitions based on the current state."""

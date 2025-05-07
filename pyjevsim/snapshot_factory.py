@@ -30,6 +30,7 @@ class SnapshotFactory(ExecutorFactory):
         des_t,
         en_name,
         model,
+        parent
     ):
         """Creates an executor based on the model type.
 
@@ -43,7 +44,7 @@ class SnapshotFactory(ExecutorFactory):
         Returns:
             Executor: The created executor
         """
-        model = super().create_executor(global_time, ins_t, des_t, en_name, model)
+        model = super().create_executor(global_time, ins_t, des_t, en_name, model, parent)
         
         return self.create_snapshot_executor(model)
     
@@ -57,6 +58,6 @@ class SnapshotFactory(ExecutorFactory):
             _type_: _description_
         """
         if model.get_name() in self.snapshot_condition_map:
-            return SnapshotExecutor(model, self.snapshot_condition_map[model.get_name()](model))
+            return SnapshotExecutor(model, self.snapshot_condition_map[model.get_name()](model), model.parent)
         else:
             return model

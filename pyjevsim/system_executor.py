@@ -302,7 +302,8 @@ class SysExecutor(CoreModel):
             obj (BehaviorModel or StructuralModel): Model
             msg (SysMessage): The message
         """
-        pair = (obj, msg[1].get_dst())
+        print(obj.get_name())    
+        pair = (obj, msg.get_dst())
         if pair not in self.port_map:
             self.port_map[pair] = [
                 (self.active_obj_map[self.dmc.get_obj_id()], "uncaught")
@@ -315,13 +316,13 @@ class SysExecutor(CoreModel):
                 raise AssertionError
 
             if destination[0] is self:
-                self.output_event_queue.append((self.global_time, msg[1].retrieve()))
+                self.output_event_queue.append((self.global_time, msg.retrieve()))
             else:
                 if destination[0].get_obj_id() in self.active_obj_map:
-                    destination[0].ext_trans(destination[1], msg[1])
+                    destination[0].ext_trans(destination[1], msg)
                     destination[0].set_req_time(self.global_time)
 
-    def output_handling(self, obj, msg):
+    def output_handling(self, obj, msg_deliver):
         """
         Handles output messages.
 
@@ -329,13 +330,14 @@ class SysExecutor(CoreModel):
             obj (BehaviorModel or StructuralModel): Model
             msg (SysMessage): The message
         """
-        if msg is not None:
-            if isinstance(msg[1], list):
-                for ith_msg in msg[1]:
-                    pair = (msg[0], ith_msg)
-                    self.single_output_handling(obj, copy.deepcopy(pair))
-            else:
-                self.single_output_handling(obj, msg)
+        if msg_deliver[1].has_contents():
+            for msg in msg_deliver[1].get_contents():
+                if isinstance(msg, list):
+                    for ith_msg in msg:
+                        pair = (obj, ith_msg)
+                        self.single_output_handling(obj, copy.deepcopy(pair))
+                else:
+                    self.single_output_handling(obj, msg)
 
     def init_sim(self):
         """Initializes the simulation."""
@@ -362,9 +364,10 @@ class SysExecutor(CoreModel):
         before = time.perf_counter()  # Record time before processing
         msg_deliver = MessageDeliverer()
         while tuple_obj.get_req_time() <=  self.global_time:
-            msg = tuple_obj.output(msg_deliver)
-            if msg is not None:
-                self.output_handling(tuple_obj, (self.global_time, msg))
+            #msg = tuple_obj.output(msg_deliver)
+            tuple_obj.output(msg_deliver)
+            if msg_deliver.has_contents():
+                self.output_handling(tuple_obj, (self.global_time, msg_deliver))
 
             tuple_obj.int_trans()
             req_t = tuple_obj.get_req_time()
