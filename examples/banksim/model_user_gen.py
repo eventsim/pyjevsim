@@ -137,7 +137,7 @@ class BankUserGenerator(BehaviorModel):
         msg.insert(bu)  # Insert BankUser into message
 
         self.generated_user += 1  # Increment generated user count
-        msg_deliver.insert(msg)
+        msg_deliver.insert_message(msg)
         return msg_deliver
 
     def int_trans(self):

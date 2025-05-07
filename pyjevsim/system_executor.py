@@ -316,7 +316,7 @@ class SysExecutor(CoreModel):
                 raise AssertionError
 
             if destination[0] is self:
-                self.output_event_queue.append((self.global_time, msg.retrieve()))
+                self.output_event_queue.append((self.global_time, msg[1].retrieve()))
             else:
                 if destination[0].get_obj_id() in self.active_obj_map:
                     destination[0].ext_trans(destination[1], msg)
@@ -330,8 +330,8 @@ class SysExecutor(CoreModel):
             obj (BehaviorModel or StructuralModel): Model
             msg (SysMessage): The message
         """
-        if msg_deliver[1].has_contents():
-            for msg in msg_deliver[1].get_contents():
+        if msg_deliver.has_contents():
+            for msg in msg_deliver.get_contents():
                 if isinstance(msg, list):
                     for ith_msg in msg:
                         pair = (obj, ith_msg)
@@ -367,7 +367,7 @@ class SysExecutor(CoreModel):
             #msg = tuple_obj.output(msg_deliver)
             tuple_obj.output(msg_deliver)
             if msg_deliver.has_contents():
-                self.output_handling(tuple_obj, (self.global_time, msg_deliver))
+                self.output_handling(tuple_obj, msg_deliver)
 
             tuple_obj.int_trans()
             req_t = tuple_obj.get_req_time()
@@ -489,9 +489,11 @@ class SysExecutor(CoreModel):
 
     def handle_external_input_event(self):
         """Handles external input events."""
-        event_list = [ev for ev in self.input_event_queue if ev[0] <= self.global_time]
-        for event in event_list:
-            self.output_handling(self, event)
+        msg_deliver = MessageDeliverer()
+        msg_deliver.data_list = [ev[1] for ev in self.input_event_queue if ev[0] <= self.global_time]
+
+        self.output_handling(self, msg_deliver)
+        if self.input_event_queue:
             with self.lock:
                 heapq.heappop(self.input_event_queue)
 
