@@ -32,31 +32,49 @@ from examples.banksim.model_user_gen import BankUserGenerator
 class BankGenModelCondition(SnapshotCondition) :
     @staticmethod
     def create_executor(behavior_executor) :
-        return BankGenModelCondition(behavior_executor)
+        return BankGenModelCondition(behavior_executor) #
     
     def __init__(self, behavior_executor):
         super().__init__(behavior_executor) #set behavior_executor
         self.check = True
         
     def snapshot_time_condition(self, global_time):
-        #snapshot model
-        if global_time >= 10000 and self.check:
+        if global_time >= 50000 and self.check: #Snapshot at simulation time 10000
             self.check = False
             return True
+    """
+    def snapshot_post_condition_int(self, cur_state):
+        if cur_state != "WAIT" or cur_state != "GEN":
+            return True
+        #설정된 state가 아닐경우 저장
+    
+    def snapshot_pre_condition_ext(self, port, msg, cur_state):
+        if port != "start" : 
+            return True
+        #올바른 port가 아닐경우 저장
+        
+    def snapshot_post_condition_out(self, port, msg, cur_state):
+        user = msg.retrieve()[0]
+        if user.service_t > 10 :
+            return True
+        #생성된 user의 service time이 설정 값보다 클경우
+        #randomseed로 생성되었으며 1~10 사이
+    """
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     snapshot_manager = SnapshotManager()
+    #Snapshot manager을 SysExecutor에 설정
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
     
     gen_num = 10            #Number of BankUserGenerators 
     queue_size = 100        #BankQueue size
     proc_num = 30           #Number of BankAccountant
     
-    user_process_time = 5   #BankUser's processing speed
+    #user_process_time = 5   #BankUser's processing speed
     gen_cycle = 2           #BankUser Generattion cycle
     max_user = 500000       #Total number of users generated
     
-    max_simtime = 50001     #simulation time
+    max_simtime = 70000    #simulation time
            
     
     ## model set & register entity
@@ -65,11 +83,13 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     for i in range(gen_num) :
         if i == gen_num-1:
             user += max_user % gen_num
-        gen = BankUserGenerator(f'gen{i}', gen_cycle, user, user_process_time)
+        gen = BankUserGenerator(f'gen{i}', gen_cycle, user)
         gen_list.append(gen)    
         
         #Associating snapshot conditions with models 
         snapshot_manager.register_snapshot_condition(f"gen{i}", BankGenModelCondition.create_executor)
+        #그 후 Condition과 해당 Condition에 Snapshot할 모델을 연결
+        #snapshot_manager.register_snapshot_condition(모델명(str), Condition.create_executor)
         ss.register_entity(gen)    
         
         

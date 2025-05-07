@@ -26,27 +26,24 @@ from pyjevsim.snapshot_manager import SnapshotManager
 from pyjevsim.restore_handler import RestoreHandler
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):   
-    clssic_gen_num = 10     #Number of BankUserGenerators
+    clssic_gen_num = 10             #Number of BankUserGenerators
     gen_cycle = 3           #BankUser Generattion cycle
     max_simtime = 100000    #simulation time
     
-    
-    #Restore a snapshot simulation
     snapshot_manager = SnapshotManager(RestoreHandler(t_resol, ex_mode=execution_mode, name = "banksim", path = "./snapshot"))  
-    ss = snapshot_manager.get_engine() 
+    ss = snapshot_manager.get_engine() #Restore a snapshot simulation
+
 
     ss.insert_input_port('start')
 
-    # what if question point
-    #Please check the journal or document for "test case"
-            
-    ##test case2 or 3
-    ##wiq : parameter 
+    ## Adding a new model to an existing simulation
+    
+    #case 2 3
     #for i in range(clssic_gen_num) : 
     #    gen = ss.get_model(f"gen{i}")        
     #    gen.set_cycle(gen_cycle)
-
     ss.insert_external_event('start', None)
+
     
     ## simulation run
     for i in range(max_simtime):

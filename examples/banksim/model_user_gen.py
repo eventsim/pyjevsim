@@ -12,6 +12,7 @@ from pyjevsim.behavior_model import BehaviorModel
 from pyjevsim.definition import *
 from pyjevsim.system_message import SysMessage
 from pyjevsim.system_executor import SysExecutor
+import random
 
 class BankUser:  
     def __init__(self, _id: int, s_t: float):
@@ -84,7 +85,7 @@ class BankUser:
 class BankUserGenerator(BehaviorModel):
     """A Model representing a bank user generator."""
 
-    def __init__(self, name, cycle, max_user, proc_time):
+    def __init__(self, name, cycle, max_user):
         """
         Args:
             name (str): Name of Model
@@ -103,7 +104,7 @@ class BankUserGenerator(BehaviorModel):
         self.cycle = cycle  # Generation cycle time
         self.generated_user = 0  # Counter for generated users
         self.max_user = max_user  # Maximum number of users to generate
-        self.proc_time = proc_time  # Processing time for each user
+        #self.proc_time = proc_time  # Processing time for each user
         
     def ext_trans(self, port, msg):
         """
@@ -129,7 +130,7 @@ class BankUserGenerator(BehaviorModel):
 
         msg = SysMessage(self.get_name(), "user_out")
 
-        bu = BankUser(f"{self.get_name()}-{self.generated_user}", self.proc_time)
+        bu = BankUser(f"{self.get_name()}-{self.generated_user}", random.randint(1, 10))
         bu.set_arrival_time(_time)
         msg.insert(bu)  # Insert BankUser into message
 

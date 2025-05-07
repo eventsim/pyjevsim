@@ -31,16 +31,15 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     snapshot_manager = SnapshotManager()
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=snapshot_manager)
     
-    gen_num = 10            #Number of BankUserGenerators 
-    queue_size = 100        #BankQueue size
-    proc_num = 30           #Number of BankAccountant
+    gen_num = 10             #Number of BankUserGenerators 
+    queue_size = 100         #BankQueue size
+    proc_num = 30            #Number of BankAccountant
     
     user_process_time = 5   #BankUser's processing speed
     gen_cycle = 2           #BankUser Generattion cycle
-    max_user = 500000       #Total number of users generated
+    max_user = 500000        #Total number of users generated
     
     max_simtime = 100010    #simulation time
-    snapshot_time = 10000   #snapshot time
     
     ## model set & register entity
     gen_list = []
@@ -78,7 +77,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         
     for i in range(max_simtime):        
         # Snapshot when simulation time is 10000 
-        if i == snapshot_time : 
+        if i == 10000 : 
             ##snapshot at simtime 10000(path ./snapshot/banksim)
             ss.snapshot_simulation(name = "banksim", directory_path = "./snapshot")
             break

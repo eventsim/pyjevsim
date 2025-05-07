@@ -30,30 +30,33 @@ from examples.banksim.model_queue import BankQueue
 from examples.banksim.model_accountant import BankAccountant
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):    
-    snapshot_manager = SnapshotManager(restore_handler=RestoreHandler())
+    snapshot_manager = SnapshotManager(restore_handler=RestoreHandler()) 
+    #Restored via Snapshotmanager
+    #Specifying restore_handler in Snapshot Manager when restoring a model
+    
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
                
-    gen_num = 10            #Number of BankUserGenerators 
-    queue_size = 100        #BankQueue size(reset queue size)
+    gen_num = 10             #Number of BankUserGenerators 
+    queue_size = 100         #BankQueue size(reset queue size)
     proc_num = 30           #Number of BankAccountant
     gen_cycle = 2           #BankUser Generattion cycle(reset cycle)
     
-    max_simtime = 100000    #simulation time
+    load_time = 50000   
+    max_simtime = 100000-load_time
+
     
     ## model restore & set register entity
     #BankUserGenerator Restore
     gen_list = []
     for i in range(gen_num) :
         #BankUserGenerator Restore
-        if i < 10 :
-            with open(f"./snapshot/[time]gen{i}.simx", "rb") as f :
-                gen = snapshot_manager.load_snapshot(f"gen{i}", f.read())  
-        else : 
-            with open(f"./snapshot/[time]gen{0}.simx", "rb") as f :
-                gen = snapshot_manager.load_snapshot(f"gen{i}", f.read())  
+        with open(f"./snapshot/[time][{load_time}]gen{i}.simx", "rb") as f :
+            gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
+            #snapshot_manager.load_snapshot(set_model_name, model_binary_data)
+        
+        #Modification Model Parameter
         #gen cycle set
-        gen.set_cycle(gen_cycle)
-    
+        #gen.set_cycle(gen_cycle)
         gen_list.append(gen)
         ss.register_entity(gen)    
        
