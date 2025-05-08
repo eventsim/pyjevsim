@@ -26,7 +26,8 @@ class BankQueue(BehaviorModel):
         self.init_state("WAIT")                 # Initialize initial state
         self.insert_state("WAIT", Infinite)     # Add "WAIT" state
         self.insert_state("SEND", 0)            # Add "SEND" state with duration 0
-
+        self.insert_state("DROP", 0) 
+        
         self.insert_input_port("user_in")       # Add input port "user_in"
         self.insert_input_port("proc_checked")  # Add input port "proc_checked"
 
@@ -35,11 +36,13 @@ class BankQueue(BehaviorModel):
         for i in range(proc_num):
             self.insert_output_port(f"proc{i}") # Add output port for each processor
             self.usable_proc.append(f"proc{i}") # Add processor to usable list
+        self.insert_output_port("result")
 
         self.proc_num = proc_num                # Number of processors
         self.queue_size = queue_size            # Maximum queue size
         self.user = []                          # List of users in the queue
-
+        self.dropped_user = []
+        
     def set_queue_size(self, queue_size):
         """
         Sets the maximum size of the queue.
@@ -62,10 +65,13 @@ class BankQueue(BehaviorModel):
             if len(self.user) < self.queue_size:
                 user = msg.retrieve()[0]
                 self.user.append(user)  # Add user to the queue
-                print(f"{self.get_name()}[in] ID:{user.get_id()} Time:{_time}")
+                print(f"[Q][in] ID:{user.get_id()} Time:{_time}")
+                self._cur_state = "SEND"
             else:
-                print(f"User Dropped: {msg.retrieve()[0]}")
-            self._cur_state = "SEND"
+                user = msg.retrieve()[0]
+                #print(f"User Dropped: {user}")
+                self._cur_state = "DROP"
+                self.dropped_user.append(user)
         elif port == "proc_checked":
             self.usable_proc.append(msg.retrieve()[0])  # Add processor to usable list
             self._cur_state = "SEND"
@@ -84,11 +90,21 @@ class BankQueue(BehaviorModel):
         _time = self.global_time
         if self._cur_state == "SEND":
             user = self.user.pop(0)  # Get the first user in the queue
-            print(f"{self.get_name()}[out] ID:{user.get_id()} Time:{_time}")
+            print(f"[Q][out] ID:{user.get_id()} Time:{_time}")
             
             msg = SysMessage(self.get_name(), self.usable_proc.pop(0))
             msg.insert(user)  # Insert user into message
-            msg_deliver.insert(msg)
+            msg_deliver.insert_message(msg)
+        
+        if self._cur_state == "DROP":
+            #user = self.user.pop(0)  # Get the first user in the queue
+            print(f"[Q][out] Dropped")
+            
+            msg = SysMessage(self.get_name(), "result")
+            #msg.insert(user)  # Insert user into message
+            msg.insert(self.dropped_user)
+            self.dropped_user = []
+            msg_deliver.insert_message(msg)
 
         return msg_deliver
 
@@ -96,6 +112,8 @@ class BankQueue(BehaviorModel):
         """Handles internal transitions based on the current state."""
         if self._cur_state == "SEND":
             self._cur_state = "SEND"  # Remain in "SEND" state
+        if self._cur_state == "DROP" : 
+            self._cur_state = "SEND"
         if not self.usable_proc or not self.user:
             self._cur_state = "WAIT"  # Transition to "WAIT" state if no users or processors
 

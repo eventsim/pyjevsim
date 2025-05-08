@@ -1,10 +1,9 @@
 import math
 
 class SelfPropelledDecoyObject:
-	def __init__(self, pos, tof, decoy_info):
+	def __init__(self, pos, decoy_info):
 		self.x, self.y, self.z = pos
 		self.g = 9.8
-		self.time_of_flight		= tof
 		self.elevation			= decoy_info['elevation']
 		self.azimuth			= decoy_info['azimuth']
 		self.launch_speed		= decoy_info['speed']
@@ -14,10 +13,22 @@ class SelfPropelledDecoyObject:
 		self.xy_speed			= decoy_info['xy_speed']
 		self.active				= True
 		self.propelled_mode		= False
+		self.time_of_flight		= self.get_time_of_flight()
 
 	def get_position(self):
 		return (self.x, self.y, self.z)
 
+	def set_decoy_info(self, pos, decoy_info):
+		self.x, self.y, self.z = pos
+		self.g = 9.8
+		self.elevation			= decoy_info['elevation']
+		self.azimuth			= decoy_info['azimuth']
+		self.launch_speed		= decoy_info['speed']
+		self.z_speed			= decoy_info['speed']
+		self.lifespan			= decoy_info['lifespan']
+		self.heading			= decoy_info['heading']
+		self.xy_speed			= decoy_info['xy_speed']
+  
 	def check_flight(self, dt):
 		self.time_of_flight -= dt
 		if self.time_of_flight < 0:
@@ -69,3 +80,17 @@ class SelfPropelledDecoyObject:
 		# In this coordinate system: x is based on sin, y is based on cos
 		self.x += dt * self.xy_speed * math.sin(heading_radians)
 		self.y += dt * self.xy_speed * math.cos(heading_radians)
+  
+	
+	def get_time_of_flight(self, init_height= 0, g = 9.8):
+		# Convert degrees to radians for trigonometric functions
+		theta = math.radians(self.elevation)
+
+		# Initial vertical velocity component
+		v_z0 = self.launch_speed * math.sin(theta)
+
+		# Quadratic discriminant for z(t) = 0
+		discriminant = v_z0**2 + 2 * g * init_height
+
+		# Positive root gives the physical flight time
+		return (v_z0 + math.sqrt(discriminant)) / g

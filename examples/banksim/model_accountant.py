@@ -78,11 +78,12 @@ class BankAccountant(BehaviorModel):
             self._cur_state = "WAIT"  # Transition state to "WAIT"
 
     def __del__(self):
-        """Destructor to print the log of processed users."""
-        print(f"[{self.get_name()}-{self.proc_num} log]")
-        print("user-name, process_time, arrival_time, done_time, wait_time")
-        for user in self.proc_user:
-            print(user)
+        #"""Destructor to print the log of processed users."""
+        #print(f"[{self.get_name()}-{self.proc_num} log]")
+        #print("user-name, process_time, arrival_time, done_time, wait_time")
+        #for user in self.proc_user:
+        #    print(user)
+        pass
 
     def __str__(self):
         """

@@ -10,6 +10,7 @@ This module contains Banksim User Generator Model
 import os
 from pyjevsim.behavior_model import BehaviorModel
 from pyjevsim.definition import *
+import time
 
 class BankResult(BehaviorModel):
     """A Model representing a bank user generator."""
@@ -36,6 +37,7 @@ class BankResult(BehaviorModel):
         self.user = []
         self.drop_user = []
         self.drop_user_count = 0
+        self.start_time = time.time()
         
     def ext_trans(self, port, msg):
         """
@@ -53,9 +55,10 @@ class BankResult(BehaviorModel):
                 self.get_result()
                 os._exit(0)
         if port == "drop" :
-            _user = msg.retrieve()[0]
-            self.drop_user.append(_user)
-            self.drop_user_count += 1
+            drop_user_list = msg.retrieve()[0]
+            for _user in drop_user_list : 
+                self.drop_user.append(_user)
+                self.drop_user_count += 1
 
     def output(self, msg_deliver):
         pass
@@ -64,9 +67,15 @@ class BankResult(BehaviorModel):
         pass
         
     def get_result(self) :
-        print("[result]")
-        print("user : ", self.user_count, ", drop_user : ", self.drop_user_count)
+        print("[BANKSIM RESULT]")
+        end_time = time.time()
+        print("- Run time : ", end_time - self.start_time)
+        print("- Accountant user : ", self.user_count)
+        print("- Dropped user : ", self.drop_user_count)
+        
+        print("\n [Accountant user list]")
         for user in self.user :
             print(user.__str__())
+        print("\n [Dropped user list]")
         for drop_user in self.drop_user :
             print(drop_user.__str__())

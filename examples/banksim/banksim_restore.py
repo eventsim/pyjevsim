@@ -28,7 +28,7 @@ from pyjevsim.restore_handler import RestoreHandler
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):   
     clssic_gen_num = 10             #Number of BankUserGenerators
     gen_cycle = 3           #BankUser Generattion cycle
-    max_simtime = 100000    #simulation time
+    max_simtime = 1000000    #simulation time
     
     snapshot_manager = SnapshotManager(RestoreHandler(t_resol, ex_mode=execution_mode, name = "banksim", path = "./snapshot"))  
     ss = snapshot_manager.get_engine() #Restore a snapshot simulation

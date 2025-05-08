@@ -1,0 +1,29 @@
+DecoyObjects:
+  - type: "self_propelled"
+    elevation: 45
+    azimuth: 45
+    speed: 10
+    lifespan: 10
+    heading: 0
+    xy_speed: 2
+  - type: "self_propelled"
+    elevation: 45
+    azimuth: 135
+    speed: 10
+    lifespan: 10
+    heading: 0
+    xy_speed: 2
+  - type: "self_propelled"
+    elevation: 45
+    azimuth: 225
+    speed: 10
+    lifespan: 10
+    heading: 0
+    xy_speed: 2
+  - type: "self_propelled"
+    elevation: 45
+    azimuth: 315
+    speed: 10
+    lifespan: 10
+    heading: 0
+    xy_speed: 2

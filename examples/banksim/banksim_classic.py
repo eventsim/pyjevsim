@@ -16,7 +16,6 @@ In a terminal in the parent directory, run the following command.
 
    pytest -s ./test_banksim/banksim_classic.py 
 """
-import time
 import contexts
 
 from pyjevsim.definition import *
@@ -31,20 +30,20 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
         
     gen_num = 10            #Number of BankUserGenerators 
-    queue_size = 100        #BankQueue size
+    queue_size = 30        #BankQueue size
     proc_num = 30           #Number of BankAccountant
     
     #user_process_time = random.randint(1, 10)   #BankUser's processing speed
-    gen_cycle = 2           #BankUser Generattion cycle
-    max_user = 100       #Total number of users generated
+    #gen_cycle = 2           #BankUser Generattion cycle
+    max_user = 500000        #Total number of users generated
     
-    max_simtime = 100000    #simulation time
+    max_simtime = 1000000    #simulation time
     
     
     ## model set & register entity
     gen_list = []
     for i in range(gen_num) :
-        gen = BankUserGenerator(f'gen{i}', gen_cycle)
+        gen = BankUserGenerator(f'gen{i}')
         gen_list.append(gen)    
         ss.register_entity(gen)    
         
@@ -66,23 +65,20 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     for gen in gen_list : 
         ss.coupling_relation(None, 'start', gen, 'start')
         ss.coupling_relation(gen, 'user_out', que, 'user_in')
+    ss.coupling_relation(que, "result", result, "drop")
     for i in range(proc_num) : 
         ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
         ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
         ss.coupling_relation(account_list[i], 'next', result, 'process')
         
     ss.insert_external_event('start', None)
-
+    #print()
     ## simulation run  
     for i in range(max_simtime):
-        print("[time] : ", i)
+        #print("[time] : ", i)
         ss.simulate(1)
                
                 
 
-start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"run time: {execution_time} sec")
     

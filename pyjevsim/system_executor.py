@@ -302,7 +302,7 @@ class SysExecutor(CoreModel):
             obj (BehaviorModel or StructuralModel): Model
             msg (SysMessage): The message
         """
-        print(obj.get_name())    
+        #print(obj.get_name())    
         pair = (obj, msg.get_dst())
         if pair not in self.port_map:
             self.port_map[pair] = [

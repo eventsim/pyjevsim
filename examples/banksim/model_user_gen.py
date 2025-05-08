@@ -85,7 +85,7 @@ class BankUser:
 class BankUserGenerator(BehaviorModel):
     """A Model representing a bank user generator."""
 
-    def __init__(self, name, cycle):
+    def __init__(self, name):
         """
         Args:
             name (str): Name of Model
@@ -96,12 +96,12 @@ class BankUserGenerator(BehaviorModel):
         BehaviorModel.__init__(self, name)
         self.init_state("WAIT")  # Initialize initial state
         self.insert_state("WAIT", Infinite)  # Add "WAIT" state
-        self.insert_state("GEN", cycle)  # Add "GEN" state with cycle time
+        self.insert_state("GEN", random.randint(1,10))  # Add "GEN" state with cycle time
 
         self.insert_input_port("start")  # Add input port "start"
         self.insert_output_port("user_out")  # Add output port "user_out"
 
-        self.cycle = cycle  # Generation cycle time
+        #self.cycle = cycle  # Generation cycle time
         self.generated_user = 0  # Counter for generated users
         #self.max_user = max_user  # Maximum number of users to generate
         #self.proc_time = proc_time  # Processing time for each user

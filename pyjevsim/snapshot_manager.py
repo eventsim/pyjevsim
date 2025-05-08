@@ -108,12 +108,13 @@ class SnapshotManager:
         dump_model = {}
         with open(f"{path}/model_map.json", "w") as f:
             dump_model["model_name"] = list(model_map.keys())
-            dump_model["model_name"].remove('dc')
+            #dump_model["model_name"].remove('dc')
             json.dump(dump_model, f)
             
         for key, value in model_map.items():
-            if key == 'dc':
-                continue
+            #if key == 'dc':
+            #    continue
             with open(f"{path}/{key}.simx", "wb") as f:
                 dump(value[0].get_core_model().model_snapshot(), f)
+                
         return    
