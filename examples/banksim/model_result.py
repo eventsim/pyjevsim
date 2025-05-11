@@ -26,7 +26,6 @@ class BankResult(BehaviorModel):
         BehaviorModel.__init__(self, name)
         self.init_state("WAIT")  # Initialize initial state
         self.insert_state("WAIT", Infinite)  # Add "WAIT" state
-        self.insert_state("STOP", Infinite)
         
         self.insert_input_port("process")  # Add input port "process"
         self.insert_input_port("drop")  # Add input port "drop"
@@ -52,8 +51,9 @@ class BankResult(BehaviorModel):
             self.user.append(_user)
             self.user_count += 1
             if self.user_count >= self.max_user :
-                self.get_result()
+                self.print_result()
                 os._exit(0)
+                
         if port == "drop" :
             drop_user_list = msg.retrieve()[0]
             for _user in drop_user_list : 
@@ -66,16 +66,21 @@ class BankResult(BehaviorModel):
     def int_trans(self):
         pass
         
-    def get_result(self) :
-        print("[BANKSIM RESULT]")
-        end_time = time.time()
-        print("- Run time : ", end_time - self.start_time)
-        print("- Accountant user : ", self.user_count)
-        print("- Dropped user : ", self.drop_user_count)
+    def print_result(self) :
+        user_count = 0
+        drop_user_count = 0
         
         print("\n [Accountant user list]")
         for user in self.user :
+            user_count += 1
             print(user.__str__())
         print("\n [Dropped user list]")
         for drop_user in self.drop_user :
+            drop_user_count += 1
             print(drop_user.__str__())
+            
+        print("[BANKSIM RESULT]")
+        end_time = time.time()
+        print("- Run time : ", end_time - self.start_time)
+        print("- Accountant user : ", user_count)
+        print("- Dropped user : ", drop_user_count)

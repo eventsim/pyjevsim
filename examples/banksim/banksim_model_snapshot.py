@@ -28,6 +28,7 @@ from pyjevsim.snapshot_manager import SnapshotManager
 from examples.banksim.model_accountant import BankAccountant
 from examples.banksim.model_queue import BankQueue
 from examples.banksim.model_user_gen import BankUserGenerator
+from examples.banksim.model_result import BankResult
 
 class BankGenModelCondition(SnapshotCondition) :
     @staticmethod
@@ -39,7 +40,7 @@ class BankGenModelCondition(SnapshotCondition) :
         self.check = True
         
     def snapshot_time_condition(self, global_time):
-        if global_time >= 50000 and self.check: #Snapshot at simulation time 10000
+        if global_time >= 10000 and self.check: #Snapshot at simulation time 10000
             self.check = False
             return True
     """
@@ -71,25 +72,21 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     proc_num = 30           #Number of BankAccountant
     
     #user_process_time = 5   #BankUser's processing speed
-    gen_cycle = 2           #BankUser Generattion cycle
+    #gen_cycle = 2           #BankUser Generattion cycle
     max_user = 500000       #Total number of users generated
     
-    max_simtime = 70000    #simulation time
+    max_simtime = 10010    #simulation time
            
     
     ## model set & register entity
     gen_list = []
-    user = int(max_user / gen_num)
     for i in range(gen_num) :
-        if i == gen_num-1:
-            user += max_user % gen_num
-        gen = BankUserGenerator(f'gen{i}', gen_cycle, user)
+        gen = BankUserGenerator(f'gen{i}')
         gen_list.append(gen)    
+        ss.register_entity(gen)    
         
         #Associating snapshot conditions with models 
         snapshot_manager.register_snapshot_condition(f"gen{i}", BankGenModelCondition.create_executor)
-        #그 후 Condition과 해당 Condition에 Snapshot할 모델을 연결
-        #snapshot_manager.register_snapshot_condition(모델명(str), Condition.create_executor)
         ss.register_entity(gen)    
         
         
@@ -103,6 +100,10 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         account_list.append(account)
         ss.register_entity(account)
         
+    result = BankResult('result', max_user)
+    snapshot_manager.register_snapshot_condition(f"result", BankGenModelCondition.create_executor)
+
+    ss.register_entity(result)
     
     ## Model Relation
     ss.insert_input_port('start')
@@ -110,20 +111,19 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     for gen in gen_list : 
         ss.coupling_relation(None, 'start', gen, 'start')
         ss.coupling_relation(gen, 'user_out', que, 'user_in')
+        
+    ss.coupling_relation(que, "result", result, "drop")
+    
     for i in range(proc_num) : 
         ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
         ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
+        ss.coupling_relation(account_list[i], 'next', result, 'process')
         
     ss.insert_external_event('start', None)
 
     ## simulation run
     for i in range(max_simtime):
-        print("[time] : ", i)
         ss.simulate(1)
     
-start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"run time: {execution_time} sec")
     

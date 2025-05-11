@@ -278,11 +278,12 @@ class SysExecutor(CoreModel):
         Removes a coupling relation.
 
         Args:
-            src_obj (BehaviorMdoel or StructuralModel): Models that remove relationships as output port
+            src_obj (str): BehaviorMdoel or StructuralModel name, Models that remove relationships as output port
             out_port (str): src_obj's output port
             dst_obj (CoreModel): Models that remove relationships as input port
             in_port (str): dst_obj's input port
         """
+        print(self.model_map)
         in_tuple = (self.model_map[src][0], out_port)
         found = self.port_map[in_tuple].index((self.model_map[dst][0], in_port))
         del self.port_map[in_tuple][found]

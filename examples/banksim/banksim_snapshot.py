@@ -44,13 +44,10 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     
     ## model set & register entity
     gen_list = []
-    user = int(max_user / gen_num)
     for i in range(gen_num) :
-        if i == gen_num-1:
-            user += max_user % gen_num
         gen = BankUserGenerator(f'gen{i}')
-        gen_list.append(gen)
-        ss.register_entity(gen)  
+        gen_list.append(gen)    
+        ss.register_entity(gen)    
             
     que = BankQueue('Queue', queue_size, proc_num)
     ss.register_entity(que)
@@ -64,19 +61,22 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         
     result = BankResult('result', max_user)
     ss.register_entity(result)
-    
+            
+    result = BankResult('result', max_user)
+    ss.register_entity(result)
+        
     ## Model Relation
     ss.insert_input_port('start')
 
     for gen in gen_list : 
         ss.coupling_relation(None, 'start', gen, 'start')
         ss.coupling_relation(gen, 'user_out', que, 'user_in')
+    ss.coupling_relation(que, "result", result, "drop")
     for i in range(proc_num) : 
         ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
         ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
         ss.coupling_relation(account_list[i], 'next', result, 'process')
         
-    
     ss.insert_external_event('start', None)
     
     # simulation run
@@ -88,13 +88,8 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
             ss.snapshot_simulation(name = "banksim", directory_path = "./snapshot")
             break
             
-        print("[time] : ", i)
+        #print("[time] : ", i)
         ss.simulate(1)
         
         
-start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"run time: {execution_time} sec")
-    

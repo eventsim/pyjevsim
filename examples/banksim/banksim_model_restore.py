@@ -35,24 +35,24 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     #Specifying restore_handler in Snapshot Manager when restoring a model
     
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
-               
-    gen_num = 10             #Number of BankUserGenerators 
+    
+    #case 1 gen 10          
+    #case 2 gen 5
+    #case 3 gen 15
+    gen_num = 15             #Number of BankUserGenerators 
     queue_size = 100         #BankQueue size(reset queue size)
     proc_num = 30           #Number of BankAccountant
-    gen_cycle = 2           #BankUser Generattion cycle(reset cycle)
+    #gen_cycle = 2           #BankUser Generattion cycle(reset cycle)
     
-    load_time = 50000   
-    max_simtime = 100000-load_time
+    max_simtime = 10000000
 
-    
     ## model restore & set register entity
     #BankUserGenerator Restore
     gen_list = []
     for i in range(gen_num) :
         #BankUserGenerator Restore
-        with open(f"./snapshot/[time][{load_time}]gen{i}.simx", "rb") as f :
+        with open(f"./snapshot/[time]gen0.simx", "rb") as f :
             gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
-            #snapshot_manager.load_snapshot(set_model_name, model_binary_data)
         
         #Modification Model Parameter
         #gen cycle set
@@ -66,6 +66,12 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     que.set_queue_size(queue_size)
     que.set_proc_num(proc_num)
     ss.register_entity(que)
+
+
+    with open(f"./snapshot/[time]result.simx", "rb") as f :
+        result = snapshot_manager.load_snapshot(f"result", f.read()) #restore model   
+    ss.register_entity(result)
+
      
     account_list = []
     for i in range(proc_num) :
@@ -77,21 +83,17 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     for gen in gen_list : 
         ss.coupling_relation(None, 'start', gen, 'start')
         ss.coupling_relation(gen, 'user_out', que, 'user_in')
-    
+    ss.coupling_relation(que, "result", result, "drop")
     for i in range(proc_num) : 
         ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
         ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
+        ss.coupling_relation(account_list[i], 'next', result, 'process')
         
     ss.insert_external_event('start', None)
     
     ## simulation run
     for i in range(max_simtime):
-        print("[time] : ", i)
         ss.simulate(1)
        
 
-start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"run time: {execution_time} sec")

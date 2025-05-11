@@ -33,12 +33,12 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     queue_size = 30        #BankQueue size
     proc_num = 30           #Number of BankAccountant
     
-    #user_process_time = random.randint(1, 10)   #BankUser's processing speed
-    #gen_cycle = 2           #BankUser Generattion cycle
-    max_user = 500000        #Total number of users generated
-    
+    max_user = 500000        #Total number of users generated    
     max_simtime = 1000000    #simulation time
     
+    ## what-if-question set
+    wiq_time = 10000
+    wiq_gen_num = 5
     
     ## model set & register entity
     gen_list = []
@@ -72,10 +72,28 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         ss.coupling_relation(account_list[i], 'next', result, 'process')
         
     ss.insert_external_event('start', None)
-    #print()
+    
+    print()
     ## simulation run  
     for i in range(max_simtime):
-        #print("[time] : ", i)
+        ## case 2
+        """
+        if i == wiq_time : 
+            print("wiq_time")
+            for j in range(wiq_gen_num) :
+                gen = gen_list.pop()
+                ss.remove_relation(gen.get_name(), 'user_out', que.get_name(), 'user_in')
+                ss.remove_entity(gen.get_name())
+        """
+        ## case 3 
+        if i == wiq_time : 
+            print("wiq_time")
+            for j in range(wiq_gen_num-gen_num) :
+                gen = BankUserGenerator(f'gen{i}')
+                gen_list.append(gen)    
+                ss.register_entity(gen)    
+                ss.coupling_relation(None, 'start', gen, 'start')
+                ss.coupling_relation(gen, 'user_out', que, 'user_in')
         ss.simulate(1)
                
                 

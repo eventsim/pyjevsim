@@ -27,7 +27,6 @@ from pyjevsim.restore_handler import RestoreHandler
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):   
     clssic_gen_num = 10             #Number of BankUserGenerators
-    gen_cycle = 3           #BankUser Generattion cycle
     max_simtime = 1000000    #simulation time
     
     snapshot_manager = SnapshotManager(RestoreHandler(t_resol, ex_mode=execution_mode, name = "banksim", path = "./snapshot"))  
@@ -47,11 +46,6 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     
     ## simulation run
     for i in range(max_simtime):
-        print("[time] : ", i)
         ss.simulate(1)
         
-start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"run time: {execution_time} sec")

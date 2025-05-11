@@ -138,22 +138,15 @@ class BankUserGenerator(BehaviorModel):
 
         self.generated_user += 1  # Increment generated user count
         msg_deliver.insert_message(msg)
+        self.update_state("GEN", random.randint(1,10))
         return msg_deliver
 
     def int_trans(self):
         """Handles internal transitions based on the current state."""
-        if self._cur_state == "GEN" :
-            self.update_state("GEN", random.randint(1,10))  # Update "GEN" state with cycle time
-
-    def set_cycle(self, cycle):
-        """
-        Sets the generation cycle time.
-
-        Args:
-            cycle (float): Generation cycle time
-        """
-        self.cycle = cycle
-        print("set cycle")
+        self.update_state("GEN", random.randint(1,10))  # Update "GEN" state with cycle time
         
     def get_user(self) : 
         return self.generated_user
+    
+    def set_state_idle(self) :
+        self._cur_satate = "WAIT"
