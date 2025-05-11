@@ -66,21 +66,18 @@ class BankResult(BehaviorModel):
     def int_trans(self):
         pass
         
-    def print_result(self) :
-        user_count = 0
-        drop_user_count = 0
+    def print_result(self) :        
+        print("[BANKSIM RESULT]")
+        end_time = time.time()
+        print("- Run time : ", end_time - self.start_time, flush=True)
+        print("- Accountant user : ", self.user_count, flush=True)
+        print("- Dropped user : ", self.drop_user_count, flush=True)
+        
         
         print("\n [Accountant user list]")
         for user in self.user :
-            user_count += 1
-            print(user.__str__())
-        print("\n [Dropped user list]")
+            print(user.__str__(), flush=True)
+        print("\n [Dropped user list]", flush=True)
         for drop_user in self.drop_user :
-            drop_user_count += 1
-            print(drop_user.__str__())
+            print(drop_user.__str__(), flush=True)
             
-        print("[BANKSIM RESULT]")
-        end_time = time.time()
-        print("- Run time : ", end_time - self.start_time)
-        print("- Accountant user : ", user_count)
-        print("- Dropped user : ", drop_user_count)

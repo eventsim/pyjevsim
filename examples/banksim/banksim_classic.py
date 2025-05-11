@@ -33,11 +33,11 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     queue_size = 30        #BankQueue size
     proc_num = 30           #Number of BankAccountant
     
-    max_user = 500000        #Total number of users generated    
+    max_user = 10000        #Total number of users generated    
     max_simtime = 1000000    #simulation time
     
     ## what-if-question set
-    wiq_time = 10000
+    wiq_time = 5000
     wiq_gen_num = 5
     
     ## model set & register entity
