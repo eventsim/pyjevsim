@@ -40,6 +40,6 @@ for _ in range(30):
 		x, y, z = decoy.get_position()
 		pos_plot.update_position(name, x, y, z, 'black', 'green')
 
-print(se.model_map)
+#print(se.model_map)
 se.terminate_simulation()
 
