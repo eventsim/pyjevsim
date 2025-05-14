@@ -283,7 +283,6 @@ class SysExecutor(CoreModel):
             dst_obj (CoreModel): Models that remove relationships as input port
             in_port (str): dst_obj's input port
         """
-        print(self.model_map)
         in_tuple = (self.model_map[src][0], out_port)
         found = self.port_map[in_tuple].index((self.model_map[dst][0], in_port))
         del self.port_map[in_tuple][found]
@@ -363,8 +362,9 @@ class SysExecutor(CoreModel):
         
         tuple_obj = self.min_schedule_item.popleft()
         before = time.perf_counter()  # Record time before processing
-        msg_deliver = MessageDeliverer()
+        
         while tuple_obj.get_req_time() <=  self.global_time:
+            msg_deliver = MessageDeliverer()
             #msg = tuple_obj.output(msg_deliver)
             tuple_obj.output(msg_deliver)
             if msg_deliver.has_contents():

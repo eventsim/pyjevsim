@@ -65,7 +65,7 @@ class BankQueue(BehaviorModel):
             if len(self.user) < self.queue_size:
                 user = msg.retrieve()[0]
                 self.user.append(user)  # Add user to the queue
-                print(f"[Q][in] ID:{user.get_id()} Time:{_time}")
+                #print(f"[Q][in] ID:{user.get_id()} Time:{_time}")
                 self._cur_state = "SEND"
             else:
                 user = msg.retrieve()[0]
@@ -73,6 +73,7 @@ class BankQueue(BehaviorModel):
                 self._cur_state = "DROP"
                 self.dropped_user.append(user)
         elif port == "proc_checked":
+            #print("proc_checked")
             self.usable_proc.append(msg.retrieve()[0])  # Add processor to usable list
             self._cur_state = "SEND"
 
@@ -90,19 +91,26 @@ class BankQueue(BehaviorModel):
         _time = self.global_time
         if self._cur_state == "SEND":
             user = self.user.pop(0)  # Get the first user in the queue
-            print(f"[Q][out] ID:{user.get_id()} Time:{_time}")
+            #print(f"[Q][out] ID:{user.get_id()} Time:{_time}")
             
             msg = SysMessage(self.get_name(), self.usable_proc.pop(0))
             msg.insert(user)  # Insert user into message
+            
+            msg2 = SysMessage(self.get_name(), "result")
+            msg2.insert(self.dropped_user)
+            self.dropped_user = []
+            
             msg_deliver.insert_message(msg)
+            msg_deliver.insert_message(msg2)
         
         if self._cur_state == "DROP":
             #user = self.user.pop(0)  # Get the first user in the queue
-            print(f"[Q][out] Dropped")
+            #print(f"[Q][out] Dropped")
             
             msg = SysMessage(self.get_name(), "result")
             #msg.insert(user)  # Insert user into message
-            msg.insert(self.dropped_user)
+            drop_user = self.dropped_user
+            msg.insert(drop_user)
             self.dropped_user = []
             msg_deliver.insert_message(msg)
 
@@ -135,7 +143,8 @@ class BankQueue(BehaviorModel):
         self.proc_num = proc_num
         while len(self.user) > self.queue_size:
             print(f"User Dropped: {self.user.pop()}")
-
+            pass
+        
     def __str__(self):
         """Returns a string representation of the BankQueue.
 

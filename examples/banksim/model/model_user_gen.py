@@ -115,8 +115,9 @@ class BankUserGenerator(BehaviorModel):
             msg (SysMessage): The received message
         """
         if port == "start":
-            print(f"[Gen][IN]: started")
-            self._cur_state = "GEN"  # Transition state to "GEN"
+            #print(f"[Gen][IN]: started")
+            self._cur_state = "GEN"  # Transition state to "GEN"        
+            self.update_state("GEN", random.randint(1,10))
         if port == "stop" :
             self._cur_satate = "WAIT"
 
@@ -128,7 +129,7 @@ class BankUserGenerator(BehaviorModel):
             SysMessage: The output message
         """
         _time = self.global_time
-        print(f"[G] ID:{self.get_name()}-{self.generated_user} Time:{_time}")
+        #print(f"[G] ID:{self.get_name()}-{self.generated_user} Time:{_time}")
 
         msg = SysMessage(self.get_name(), "user_out")
 
@@ -138,15 +139,17 @@ class BankUserGenerator(BehaviorModel):
 
         self.generated_user += 1  # Increment generated user count
         msg_deliver.insert_message(msg)
-        self.update_state("GEN", random.randint(1,10))
+        
         return msg_deliver
 
     def int_trans(self):
         """Handles internal transitions based on the current state."""
         self.update_state("GEN", random.randint(1,10))  # Update "GEN" state with cycle time
         
+        #xprint("state update : ", self._states["GEN"])
+        
     def get_user(self) : 
         return self.generated_user
     
     def set_state_idle(self) :
-        self._cur_satate = "WAIT"
+        self._cur_state = "WAIT"

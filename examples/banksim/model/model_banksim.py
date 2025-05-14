@@ -59,4 +59,4 @@ class Banksim(StructuralModel):
             self.coupling_relation(que, f'proc{i}', account_list[i], 'in')
             self.coupling_relation(account_list[i], 'next', que, 'proc_checked')
             
-        print(self.port_map)
+        #print(self.port_map)

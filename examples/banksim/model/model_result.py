@@ -10,7 +10,6 @@ This module contains Banksim User Generator Model
 import os
 from pyjevsim.behavior_model import BehaviorModel
 from pyjevsim.definition import *
-import time
 
 class BankResult(BehaviorModel):
     """A Model representing a bank user generator."""
@@ -36,7 +35,6 @@ class BankResult(BehaviorModel):
         self.user = []
         self.drop_user = []
         self.drop_user_count = 0
-        self.start_time = time.time()
         
     def ext_trans(self, port, msg):
         """
@@ -47,11 +45,24 @@ class BankResult(BehaviorModel):
             msg (SysMessage): The received message
         """
         if port == "process":
+            proc = msg.retrieve()[0]
             _user = msg.retrieve()[1]
-            self.user.append(_user)
+                
+            self.user.append((proc, _user))
             self.user_count += 1
             if self.user_count >= self.max_user :
-                self.print_result()
+                print("[BANKSIM RESULT]")
+                print("- Accountant user : ", self.user_count)
+                print("- Dropped user : ", self.drop_user_count)
+                
+                print("\n [Accountant user list]")
+                for p, u in self.user :
+                    print(p, u.__str__(), flush=True)
+                    
+                print("\n [Dropped user list]", flush=True)
+                for d in self.drop_user :
+                    print(d.__str__(), flush=True)
+                
                 os._exit(0)
                 
         if port == "drop" :
@@ -66,21 +77,3 @@ class BankResult(BehaviorModel):
     def int_trans(self):
         pass
         
-    def print_result(self) :
-        user_count = 0
-        drop_user_count = 0
-        
-        print("\n [Accountant user list]")
-        for user in self.user :
-            user_count += 1
-            print(user.__str__())
-        print("\n [Dropped user list]")
-        for drop_user in self.drop_user :
-            drop_user_count += 1
-            print(drop_user.__str__())
-            
-        print("[BANKSIM RESULT]")
-        end_time = time.time()
-        print("- Run time : ", end_time - self.start_time)
-        print("- Accountant user : ", user_count)
-        print("- Dropped user : ", drop_user_count)

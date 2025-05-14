@@ -22,7 +22,7 @@ import contexts
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 
-from examples.banksim.model_banksim import Banksim
+from examples.banksim.model.model_banksim import Banksim
 
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
@@ -36,9 +36,9 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
 
     ## simulation run  
     for i in range(10):
-        print("[time] : ", i)
+        #print("[time] : ", i)
         ss.simulate(1)
-        print()
+        #print()
         
 start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)

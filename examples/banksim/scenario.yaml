@@ -1,0 +1,8 @@
+gen_num : 20            #Number of BankUserGenerators 
+queue_size : 10        #BankQueue size
+proc_num : 10           #Number of BankAccountant
+max_user : 500000        #Total number of users generated    
+max_simtime : 10000000
+
+#wiq_time = sys.argv[1]
+#wiq_gen_num = sys.argv[2]
