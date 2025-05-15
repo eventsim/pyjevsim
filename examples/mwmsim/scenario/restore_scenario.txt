@@ -1,0 +1,6 @@
+Student(83),Blue_collar(84),Student(85)
+Student(86),Housewife(87),Student(88)
+Student(89),Blue_collar(90),Student(91),Blue_collar(92)
+Student(93),Blue_collar(94),Student(95)
+Housewife(96),Blue_collar(97),Blue_collar(98)
+Blue_collar(99),Blue_collar(100)
