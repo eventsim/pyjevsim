@@ -125,9 +125,7 @@ for kndx in range(1):
 
     # Connect Truck & Can
 
-    #print(se.model_map)
     se.insert_external_event("start", None)
-    #print(se.port_map)
     
     se.simulate(1000)
 
