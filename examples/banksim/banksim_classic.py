@@ -30,6 +30,42 @@ from examples.banksim.model.model_result import BankResult
 
 with open("scenario.yaml", "r") as f:
     config = yaml.safe_load(f)
+    
+def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
+    ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
+        
+    gen_num = 10            #Number of BankUserGenerators 
+    queue_size = 30        #BankQueue size
+    proc_num = 30           #Number of BankAccountant
+    
+    max_user = 10000        #Total number of users generated    
+    max_simtime = 1000000    #simulation time
+    
+    ## what-if-question set
+    wiq_time = 5000
+    wiq_gen_num = 5
+    
+    ## model set & register entity
+    gen_list = []
+    for i in range(gen_num) :
+        gen = BankUserGenerator(f'gen{i}')
+        gen_list.append(gen)    
+        ss.register_entity(gen)    
+        
+    que = BankQueue('Queue', queue_size, proc_num)
+    ss.register_entity(que)
+    
+    account_list = []
+    for i in range(proc_num) :
+        account = BankAccountant('BankAccountant', i)
+        account_list.append(account)
+        ss.register_entity(account)
+        
+    result = BankResult('result', max_user)
+    ss.register_entity(result)
+        
+    ## Model Relation
+    ss.insert_input_port('start')
 
 gen_num, queue_size, proc_num, max_user, max_simtime = (
     config["gen_num"],

@@ -44,7 +44,7 @@ class Launcher(BehaviorModel):
                     sdo = None
                 
                 ObjectDB().decoys.append((f"[Decoy][{idx}]", sdo))
-                #ObjectDB().items.append(sdo)
+                ObjectDB().items.append(sdo)
                 se.register_entity(decoy_model, 0, destroy_t)
                 
         self.launch_flag = True
