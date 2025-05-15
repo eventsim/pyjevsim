@@ -44,5 +44,4 @@ start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)
 end_time = time.time()
 execution_time = end_time - start_time
-print(f"run time: {execution_time} sec")
     

@@ -53,8 +53,6 @@ if wiq_gen_num > gen_num :
         ss.insert_input_port('start')
         ss.insert_external_event('start', None)
 
-#print(ss.get_model('result').drop_user)
-
 if wiq_gen_num < gen_num :
     for i in range(wiq_gen_num) :
         gen = ss.get_model(f'gen{i}')

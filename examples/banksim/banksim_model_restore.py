@@ -48,8 +48,7 @@ ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
 
 ## model restore & set register entity
 #BankUserGenerator Restore
-start_time = time.time()
-print()
+
 gen_list = []
 for i in range(wiq_gen_num) :
     #BankUserGenerator Restore
@@ -64,15 +63,9 @@ for i in range(wiq_gen_num) :
 
 with open(f"./snapshot/[time]result.simx", "rb") as f :
     result = snapshot_manager.load_snapshot(f"result", f.read()) #restore model   
-    
-end_time = time.time()
-print("snapshot time :", end_time-start_time)
 
-que = BankQueue('Queue', queue_size, proc_num)
-
-#queue size set
-#que.set_queue_size(queue_size)
-#que.set_proc_num(proc_num)
+with open(f"./snapshot/[time]Queue.simx", "rb") as f :
+    que = snapshot_manager.load_snapshot(f"result", f.read()) #restore model   
 ss.register_entity(que)
 
 ss.register_entity(result)
@@ -93,6 +86,7 @@ for i in range(proc_num) :
     ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
     ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
     ss.coupling_relation(account_list[i], 'next', result, 'process')
+    
 ss.insert_input_port('start')
 ss.insert_external_event('start', None)
 
