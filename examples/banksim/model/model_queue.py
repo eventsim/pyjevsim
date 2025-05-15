@@ -71,7 +71,9 @@ class BankQueue(BehaviorModel):
                 user = msg.retrieve()[0]
                 #print(f"User Dropped: {user}")
                 self._cur_state = "DROP"
+                user.set_drop_time(self.global_time)
                 self.dropped_user.append(user)
+
         elif port == "proc_checked":
             #print("proc_checked")
             self.usable_proc.append(msg.retrieve()[0])  # Add processor to usable list
@@ -141,10 +143,9 @@ class BankQueue(BehaviorModel):
                 self.usable_proc.remove(f"proc{i}")
 
         self.proc_num = proc_num
-        while len(self.user) > self.queue_size:
-            print(f"User Dropped: {self.user.pop()}")
-            pass
-        
+        #while len(self.user) > self.queue_size:
+        #    print(f"User Dropped: {self.user.pop()}")
+
     def __str__(self):
         """Returns a string representation of the BankQueue.
 

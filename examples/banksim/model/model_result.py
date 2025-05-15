@@ -51,18 +51,7 @@ class BankResult(BehaviorModel):
             self.user.append((proc, _user))
             self.user_count += 1
             if self.user_count >= self.max_user :
-                print("[BANKSIM RESULT]")
-                print("- Accountant user : ", self.user_count)
-                print("- Dropped user : ", self.drop_user_count)
-                
-                print("\n [Accountant user list]")
-                for p, u in self.user :
-                    print(p, u.__str__(), flush=True)
-                    
-                print("\n [Dropped user list]", flush=True)
-                for d in self.drop_user :
-                    print(d.__str__(), flush=True)
-                
+                self.get_result()
                 os._exit(0)
                 
         if port == "drop" :
@@ -77,3 +66,16 @@ class BankResult(BehaviorModel):
     def int_trans(self):
         pass
         
+    def get_result(self) : 
+        #print("sim time", self.global_time, flush = True)
+        print("[BANKSIM RESULT]")
+        print("- Accountant user : ", self.user_count,  flush = True)
+        print("- Dropped user : ", self.drop_user_count,  flush = True)
+        
+        print("\n [Accountant user list]")
+        for p, u in self.user :
+            print(p, u.__str__(), flush=True)
+            
+        print("\n [Dropped user list]", flush=True)
+        for d in self.drop_user :
+            print(d.__str__(), flush=True)

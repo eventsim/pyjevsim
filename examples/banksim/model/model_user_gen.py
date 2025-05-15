@@ -26,6 +26,7 @@ class BankUser:
         self.done_t = 0.0       # Done time
         self.arrival_t = 0.0    # Arrival time
         self.service_t = s_t    # Service time
+        self.drop_t = 0
 
     def get_id(self) -> int:
         """        
@@ -71,6 +72,13 @@ class BankUser:
         """
         self.done_t = w_t
         self.wait_t = w_t - self.arrival_t
+        
+    def set_drop_time(self, d_t: float) -> None:
+        """
+        Args:
+            a_t (float): Arrival time
+        """
+        self.drop_t = d_t
 
     def __str__(self):
         """

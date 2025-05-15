@@ -21,7 +21,7 @@ In a terminal in the parent directory, run the following command.
 import sys
 import contexts
 import yaml
-
+import time 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 from pyjevsim.snapshot_manager import SnapshotManager
@@ -48,25 +48,34 @@ ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
 
 ## model restore & set register entity
 #BankUserGenerator Restore
+start_time = time.time()
+print()
 gen_list = []
 for i in range(wiq_gen_num) :
     #BankUserGenerator Restore
-    with open(f"./snapshot/[time]gen0.simx", "rb") as f :
+    with open(f"./snapshot/[time]gen{i}.simx", "rb") as f :
         gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
+    if i > gen_num :
+        with open(f"./snapshot/[time]gen0.simx", "rb") as f :
+            gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
     gen_list.append(gen)
-    ss.register_entity(gen)    
+    ss.register_entity(gen)  
     
-que = BankQueue('Queue', queue_size, proc_num)
-
-#queue size set
-que.set_queue_size(queue_size)
-que.set_proc_num(proc_num)
-ss.register_entity(que)
 
 with open(f"./snapshot/[time]result.simx", "rb") as f :
     result = snapshot_manager.load_snapshot(f"result", f.read()) #restore model   
-ss.register_entity(result)
+    
+end_time = time.time()
+print("snapshot time :", end_time-start_time)
 
+que = BankQueue('Queue', queue_size, proc_num)
+
+#queue size set
+#que.set_queue_size(queue_size)
+#que.set_proc_num(proc_num)
+ss.register_entity(que)
+
+ss.register_entity(result)
 account_list = []
 for i in range(proc_num) :
     account = BankAccountant(f'processor{i}', i)
@@ -84,7 +93,7 @@ for i in range(proc_num) :
     ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
     ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
     ss.coupling_relation(account_list[i], 'next', result, 'process')
-    
+ss.insert_input_port('start')
 ss.insert_external_event('start', None)
 
 ## simulation run

@@ -5,15 +5,17 @@ import os
 import re
 import sys
 
-name_list = ["classic", "model_snapshot", "model_restore",
-        "snapshot", "restore"]
+#name_list = ["classic", "model_snapshot", "model_restore",
+#        "snapshot", "restore"]
+
+name_list = ["snapshot", "restore"]
 
 #wiq_time = "10000"
 wiq_time = int(sys.argv[1])
 gen_num = ["20", "10", "30"] ## case1, case2, case3
 
 # 실행 횟수
-iterations = 30
+iterations = 1
 
 for i in range(iterations) :
     for name in name_list :
