@@ -21,6 +21,7 @@ __all__ = [
     "system_message",
     "system_object",
     "termination_manager",
+    "snapshot_manager"
 ]
 
 from .definition import (
@@ -36,3 +37,5 @@ from .system_executor import SysExecutor
 from .system_message import SysMessage
 from .behavior_model import BehaviorModel
 from .structural_model import StructuralModel
+from .snapshot_manager import SnapshotManager
+from .restore_handler import RestoreHandler

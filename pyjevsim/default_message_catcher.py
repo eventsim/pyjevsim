@@ -37,6 +37,6 @@ class DefaultMessageCatcher(BehaviorModel):
     def int_trans(self):
         return
 
-    def output(self):
-        return None
+    def output(self, msg_deliver):
+        return msg_deliver
     

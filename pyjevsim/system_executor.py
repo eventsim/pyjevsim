@@ -278,7 +278,7 @@ class SysExecutor(CoreModel):
         Removes a coupling relation.
 
         Args:
-            src_obj (BehaviorMdoel or StructuralModel): Models that remove relationships as output port
+            src_obj (str): BehaviorMdoel or StructuralModel name, Models that remove relationships as output port
             out_port (str): src_obj's output port
             dst_obj (CoreModel): Models that remove relationships as input port
             in_port (str): dst_obj's input port
@@ -302,7 +302,8 @@ class SysExecutor(CoreModel):
             obj (BehaviorModel or StructuralModel): Model
             msg (SysMessage): The message
         """
-        pair = (obj, msg[1].get_dst())
+        #print(obj.get_name())    
+        pair = (obj, msg.get_dst())
         if pair not in self.port_map:
             self.port_map[pair] = [
                 (self.active_obj_map[self.dmc.get_obj_id()], "uncaught")
@@ -318,10 +319,10 @@ class SysExecutor(CoreModel):
                 self.output_event_queue.append((self.global_time, msg[1].retrieve()))
             else:
                 if destination[0].get_obj_id() in self.active_obj_map:
-                    destination[0].ext_trans(destination[1], msg[1])
+                    destination[0].ext_trans(destination[1], msg)
                     destination[0].set_req_time(self.global_time)
 
-    def output_handling(self, obj, msg):
+    def output_handling(self, obj, msg_deliver):
         """
         Handles output messages.
 
@@ -329,13 +330,14 @@ class SysExecutor(CoreModel):
             obj (BehaviorModel or StructuralModel): Model
             msg (SysMessage): The message
         """
-        if msg is not None:
-            if isinstance(msg[1], list):
-                for ith_msg in msg[1]:
-                    pair = (msg[0], ith_msg)
-                    self.single_output_handling(obj, copy.deepcopy(pair))
-            else:
-                self.single_output_handling(obj, msg)
+        if msg_deliver.has_contents():
+            for msg in msg_deliver.get_contents():
+                if isinstance(msg, list):
+                    for ith_msg in msg:
+                        pair = (obj, ith_msg)
+                        self.single_output_handling(obj, copy.deepcopy(pair))
+                else:
+                    self.single_output_handling(obj, msg)
 
     def init_sim(self):
         """Initializes the simulation."""
@@ -360,11 +362,13 @@ class SysExecutor(CoreModel):
         
         tuple_obj = self.min_schedule_item.popleft()
         before = time.perf_counter()  # Record time before processing
-        msg_deliver = MessageDeliverer()
+        
         while tuple_obj.get_req_time() <=  self.global_time:
-            msg = tuple_obj.output(msg_deliver)
-            if msg is not None:
-                self.output_handling(tuple_obj, (self.global_time, msg))
+            msg_deliver = MessageDeliverer()
+            #msg = tuple_obj.output(msg_deliver)
+            tuple_obj.output(msg_deliver)
+            if msg_deliver.has_contents():
+                self.output_handling(tuple_obj, msg_deliver)
 
             tuple_obj.int_trans()
             req_t = tuple_obj.get_req_time()
@@ -486,9 +490,11 @@ class SysExecutor(CoreModel):
 
     def handle_external_input_event(self):
         """Handles external input events."""
-        event_list = [ev for ev in self.input_event_queue if ev[0] <= self.global_time]
-        for event in event_list:
-            self.output_handling(self, event)
+        msg_deliver = MessageDeliverer()
+        msg_deliver.data_list = [ev[1] for ev in self.input_event_queue if ev[0] <= self.global_time]
+
+        self.output_handling(self, msg_deliver)
+        if self.input_event_queue:
             with self.lock:
                 heapq.heappop(self.input_event_queue)
 

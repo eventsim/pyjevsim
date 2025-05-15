@@ -16,6 +16,7 @@ from mobject.launcher_object import LauncherObject
 
 from utils.object_db import ObjectDB
 
+
 class SurfaceShip(StructuralModel):
     def __init__(self, name, yaml_data):
         StructuralModel.__init__(self, name)

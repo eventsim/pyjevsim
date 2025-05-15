@@ -29,7 +29,7 @@ class AtomicModel(BehaviorModel):
 		pass
 
 	@abstractmethod
-	def output(self):
+	def output(self, msg_deliver):
 		"""Defines the output function, to be implemented by subclasses"""
 		pass
 

@@ -18,43 +18,49 @@ In a terminal in the parent directory, run the following command.
 
    pytest -s ./test_banksim/banksim_restore.py 
 """
-import time
+import sys
 import contexts
+import yaml
 
 from pyjevsim.definition import *
 from pyjevsim.snapshot_manager import SnapshotManager
 from pyjevsim.restore_handler import RestoreHandler
+from examples.banksim.model.model_user_gen import BankUserGenerator
 
-def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):   
-    clssic_gen_num = 10     #Number of BankUserGenerators
-    gen_cycle = 3           #BankUser Generattion cycle
-    max_simtime = 100000    #simulation time
-    
-    
-    #Restore a snapshot simulation
-    snapshot_manager = SnapshotManager(RestoreHandler(t_resol, ex_mode=execution_mode, name = "banksim", path = "./snapshot"))  
-    ss = snapshot_manager.get_engine() 
+with open("scenario.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
-    ss.insert_input_port('start')
+gen_num, queue_size, proc_num, max_user, max_simtime = (
+    config["gen_num"],
+    config["queue_size"],
+    config["proc_num"],
+    config["max_user"],
+    config["max_simtime"],
+)
+wiq_time = int(sys.argv[1])
+wiq_gen_num = int(sys.argv[2])
 
-    # what if question point
-    #Please check the journal or document for "test case"
-            
-    ##test case2 or 3
-    ##wiq : parameter 
-    #for i in range(clssic_gen_num) : 
-    #    gen = ss.get_model(f"gen{i}")        
-    #    gen.set_cycle(gen_cycle)
-
-    ss.insert_external_event('start', None)
-    
-    ## simulation run
-    for i in range(max_simtime):
-        print("[time] : ", i)
-        ss.simulate(1)
+snapshot_manager = SnapshotManager(RestoreHandler(1, ex_mode=ExecutionType.V_TIME, name = "banksim", path = "./snapshot"))  
+ss = snapshot_manager.get_engine() #Restore a snapshot simulation
         
-start_time = time.time()
-execute_simulation(1, ExecutionType.V_TIME)
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"run time: {execution_time} sec")
+if wiq_gen_num > gen_num :
+    que = ss.get_model('Queue')
+    for i in range(gen_num, wiq_gen_num) :
+        gen = BankUserGenerator(f'gen{i}')
+        ss.register_entity(gen)    
+        ss.coupling_relation(None, 'start', gen, 'start')
+        ss.coupling_relation(gen, 'user_out', que, 'user_in')
+        ss.insert_input_port('start')
+        ss.insert_external_event('start', None)
+
+#print(ss.get_model('result').drop_user)
+
+if wiq_gen_num < gen_num :
+    for i in range(wiq_gen_num) :
+        gen = ss.get_model(f'gen{i}')
+        #ss.remove_entity(gen)
+        gen.set_state_idle()
+
+## simulation run
+for i in range(max_simtime):
+    ss.simulate(1)

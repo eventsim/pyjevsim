@@ -67,7 +67,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
 
     ## simulation run  
     for i in range(max_simtime):
-        print("[time] : ", i)
+        #print("[time] : ", i)
         ss.simulate(1)
         
         if i == wiq_time : # what if question point

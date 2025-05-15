@@ -27,7 +27,7 @@ class RestoreHandler():
         """
         self.path = f"{path}/{name}"
         self.sim_name = name
-        self.engine = SysExecutor(t_resol, ex_mode, snapshot_manager=None)
+        self.engine = SysExecutor(t_resol, name, ex_mode, snapshot_manager=None)
         self.model_map = {}
         pass
         
@@ -58,9 +58,6 @@ class RestoreHandler():
             with open(f"{self.path}/{model_name}.simx", "rb") as f:
                 model = load(f)
             
-            if model["type"] != ModelType.BEHAVIORAL:
-                raise TypeError("Model Type is not BehaviorModel")
-            
             self.model_map[model_name] = model["data"]
             self.engine.register_entity(model["data"])
 
@@ -72,7 +69,7 @@ class RestoreHandler():
             relation_map (dict): The relation map / 관계 맵
         """
         for key, value in relation_map.items():
-            if key[0] != 'default' and key[0]:
+            if key[0] in self.model_map.keys():
                 output_model = self.model_map[key[0]]
             else:
                 output_model = self.engine
@@ -107,8 +104,8 @@ class RestoreHandler():
         """
         model_info = loads(shotmodel)
         
-        if model_info["type"] != ModelType.BEHAVIORAL:
-            raise Exception(f"{model_info['name']} is not of BehaviorModel type")
+        if model_info["type"] != ModelType.BEHAVIORAL and model_info["type"] != ModelType.STRUCTURAL :
+            raise Exception(f"{model_info['name']} is not of Model type")
         
         model = model_info["data"]
                     
@@ -116,3 +113,4 @@ class RestoreHandler():
             model.set_name(name)
             
         return model
+    

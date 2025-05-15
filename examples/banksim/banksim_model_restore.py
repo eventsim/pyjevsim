@@ -18,77 +18,84 @@ In a terminal in the parent directory, run the following command.
 
    pytest -s ./test_banksim/banksim_model_restore.py 
 """
-import time
+import sys
 import contexts
-
+import yaml
+import time 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 from pyjevsim.snapshot_manager import SnapshotManager
 from pyjevsim.restore_handler import RestoreHandler
 
-from examples.banksim.model_queue import BankQueue
-from examples.banksim.model_accountant import BankAccountant
+from examples.banksim.model.model_accountant import BankAccountant
+from examples.banksim.model.model_queue import BankQueue
 
-def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):    
-    snapshot_manager = SnapshotManager(restore_handler=RestoreHandler())
-    ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
-               
-    gen_num = 10            #Number of BankUserGenerators 
-    queue_size = 100        #BankQueue size(reset queue size)
-    proc_num = 30           #Number of BankAccountant
-    gen_cycle = 2           #BankUser Generattion cycle(reset cycle)
-    
-    max_simtime = 100000    #simulation time
-    
-    ## model restore & set register entity
-    #BankUserGenerator Restore
-    gen_list = []
-    for i in range(gen_num) :
-        #BankUserGenerator Restore
-        if i < 10 :
-            with open(f"./snapshot/[time]gen{i}.simx", "rb") as f :
-                gen = snapshot_manager.load_snapshot(f"gen{i}", f.read())  
-        else : 
-            with open(f"./snapshot/[time]gen{0}.simx", "rb") as f :
-                gen = snapshot_manager.load_snapshot(f"gen{i}", f.read())  
-        #gen cycle set
-        gen.set_cycle(gen_cycle)
-    
-        gen_list.append(gen)
-        ss.register_entity(gen)    
-       
-    que = BankQueue('Queue', queue_size, proc_num)
-    
-    #queue size set
-    que.set_queue_size(queue_size)
-    que.set_proc_num(proc_num)
-    ss.register_entity(que)
-     
-    account_list = []
-    for i in range(proc_num) :
-        account = BankAccountant(f'processor{i}', i)
-        account_list.append(account)
-        ss.register_entity(account)
-        
-    ## Model Relation
-    for gen in gen_list : 
-        ss.coupling_relation(None, 'start', gen, 'start')
-        ss.coupling_relation(gen, 'user_out', que, 'user_in')
-    
-    for i in range(proc_num) : 
-        ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
-        ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
-        
-    ss.insert_external_event('start', None)
-    
-    ## simulation run
-    for i in range(max_simtime):
-        print("[time] : ", i)
-        ss.simulate(1)
-       
+with open("scenario.yaml", "r") as f:
+    config = yaml.safe_load(f)
 
+gen_num, queue_size, proc_num, max_user, max_simtime = (
+    config["gen_num"],
+    config["queue_size"],
+    config["proc_num"],
+    config["max_user"],
+    config["max_simtime"],
+)
+wiq_time = int(sys.argv[1])
+wiq_gen_num = int(sys.argv[2])
+
+snapshot_manager = SnapshotManager(restore_handler=RestoreHandler()) 
+ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
+
+## model restore & set register entity
+#BankUserGenerator Restore
 start_time = time.time()
-execute_simulation(1, ExecutionType.V_TIME)
+print()
+gen_list = []
+for i in range(wiq_gen_num) :
+    #BankUserGenerator Restore
+    with open(f"./snapshot/[time]gen{i}.simx", "rb") as f :
+        gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
+    if i > gen_num :
+        with open(f"./snapshot/[time]gen0.simx", "rb") as f :
+            gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
+    gen_list.append(gen)
+    ss.register_entity(gen)  
+    
+
+with open(f"./snapshot/[time]result.simx", "rb") as f :
+    result = snapshot_manager.load_snapshot(f"result", f.read()) #restore model   
+    
 end_time = time.time()
-execution_time = end_time - start_time
-print(f"run time: {execution_time} sec")
+print("snapshot time :", end_time-start_time)
+
+que = BankQueue('Queue', queue_size, proc_num)
+
+#queue size set
+#que.set_queue_size(queue_size)
+#que.set_proc_num(proc_num)
+ss.register_entity(que)
+
+ss.register_entity(result)
+account_list = []
+for i in range(proc_num) :
+    account = BankAccountant(f'processor{i}', i)
+    account_list.append(account)
+    ss.register_entity(account)
+    
+## Model Relation
+for gen in gen_list : 
+    ss.coupling_relation(None, 'start', gen, 'start')
+    ss.coupling_relation(gen, 'user_out', que, 'user_in')
+    
+ss.coupling_relation(que, "result", result, "drop")
+
+for i in range(proc_num) : 
+    ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
+    ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
+    ss.coupling_relation(account_list[i], 'next', result, 'process')
+ss.insert_input_port('start')
+ss.insert_external_event('start', None)
+
+## simulation run
+for i in range(max_simtime):
+    ss.simulate(1)

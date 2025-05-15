@@ -16,38 +16,39 @@ In a terminal in the parent directory, run the following command.
 
    pytest -s ./test_banksim/banksim_classic.py 
 """
-import time
+import sys
 import contexts
+import yaml
 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 
-from examples.banksim.model_accountant import BankAccountant
-from examples.banksim.model_queue import BankQueue
-from examples.banksim.model_user_gen import BankUserGenerator
+from examples.banksim.model.model_accountant import BankAccountant
+from examples.banksim.model.model_queue import BankQueue
+from examples.banksim.model.model_user_gen import BankUserGenerator
+from examples.banksim.model.model_result import BankResult
 
+with open("scenario.yaml", "r") as f:
+    config = yaml.safe_load(f)
+    
 def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
     ss = SysExecutor(t_resol, ex_mode=execution_mode, snapshot_manager=None)
         
-    gen_num = 2            #Number of BankUserGenerators 
-    queue_size = 10        #BankQueue size
-    proc_num = 3           #Number of BankAccountant
+    gen_num = 10            #Number of BankUserGenerators 
+    queue_size = 30        #BankQueue size
+    proc_num = 30           #Number of BankAccountant
     
-    user_process_time = 3   #BankUser's processing speed
-    gen_cycle = 2           #BankUser Generattion cycle
-    max_user = 10       #Total number of users generated
+    max_user = 10000        #Total number of users generated    
+    max_simtime = 1000000    #simulation time
     
-    max_simtime = 10    #simulation time
-    wiq_time = 100000       #what-if-question poinst
-        
-        
+    ## what-if-question set
+    wiq_time = 5000
+    wiq_gen_num = 5
+    
     ## model set & register entity
     gen_list = []
-    user = int(max_user / gen_num)
     for i in range(gen_num) :
-        if i == gen_num-1:
-            user += max_user % gen_num
-        gen = BankUserGenerator(f'gen{i}', gen_cycle, user, user_process_time)
+        gen = BankUserGenerator(f'gen{i}')
         gen_list.append(gen)    
         ss.register_entity(gen)    
         
@@ -60,54 +61,72 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
         account_list.append(account)
         ss.register_entity(account)
         
+    result = BankResult('result', max_user)
+    ss.register_entity(result)
+        
     ## Model Relation
     ss.insert_input_port('start')
 
-    for gen in gen_list : 
-        ss.coupling_relation(None, 'start', gen, 'start')
-        ss.coupling_relation(gen, 'user_out', que, 'user_in')
-    for i in range(proc_num) : 
-        ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
-        ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
-        
-    ss.insert_external_event('start', None)
+gen_num, queue_size, proc_num, max_user, max_simtime = (
+    config["gen_num"],
+    config["queue_size"],
+    config["proc_num"],
+    config["max_user"],
+    config["max_simtime"],
+)
+wiq_time = int(sys.argv[1])
+wiq_gen_num = int(sys.argv[2])
 
-    ## simulation run  
-    for i in range(max_simtime):
-        print("[time] : ", i)
-        ss.simulate(1)
-        print()
-        
-        if i == wiq_time : # what if question point
-            #Please check the journal or document for "test case"
-            
-            ##test case2 or 3
-            ##wiq : parameter 
-            #for gen in gen_list : 
-            #    gen.set_cycle(1)
-            #    gen.set_cycle(3)
-            
-            ##test case4 : Generator Model reduction           
-            #for j in range(5, 10) :
-            #    ss.remove_relation(f'gen{j}', 'user_out', 'Queue', 'user_in')
-            #    ss.get_entity(gen_list[j])
-            
-            ## test case5 : Generator Model increase
-            #new_gen_num = 15
-            #user = gen_list[-1].get_user()
-            #print("user test", user)
-            #for j in range(gen_num, new_gen_num) :
-            #    gen = BankUserGenerator(f'gen{j}', gen_cycle, user, user_process_time)
-            #    gen_list.append(gen)    
-            #    ss.register_entity(gen)
-            #    ss.coupling_relation(None, 'start', gen, 'start')
-            #    ss.coupling_relation(gen, 'user_out', que, 'user_in')
-            #ss.insert_external_event('start', None)
-            pass                
+ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
 
-start_time = time.time()
-execute_simulation(1, ExecutionType.V_TIME)
-end_time = time.time()
-execution_time = end_time - start_time
-print(f"run time: {execution_time} sec")
+## model set & register entity
+gen_list = []
+for i in range(gen_num) :
+    gen = BankUserGenerator(f'gen{i}')
+    gen_list.append(gen)    
+    ss.register_entity(gen)    
     
+que = BankQueue('Queue', queue_size, proc_num)
+ss.register_entity(que)
+
+account_list = []
+for i in range(proc_num) :
+    account = BankAccountant('BankAccountant', i)
+    account_list.append(account)
+    ss.register_entity(account)
+    
+result = BankResult('result', max_user)
+ss.register_entity(result)
+    
+## Model Relation
+ss.insert_input_port('start')
+
+for gen in gen_list : 
+    ss.coupling_relation(None, 'start', gen, 'start')
+    ss.coupling_relation(gen, 'user_out', que, 'user_in')
+ss.coupling_relation(que, "result", result, "drop")
+for i in range(proc_num) : 
+    ss.coupling_relation(que, f'proc{i}', account_list[i], 'in')
+    ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
+    ss.coupling_relation(account_list[i], 'next', result, 'process')
+    
+ss.insert_external_event('start', None)
+
+## simulation run  
+for i in range(max_simtime):
+    if wiq_gen_num < gen_num and i == wiq_time : 
+        for _ in range(wiq_gen_num) :
+            gen = gen_list.pop()
+            gen.set_state_idle()
+            
+    if wiq_gen_num > gen_num and i == wiq_time : 
+        for j in range(wiq_gen_num-gen_num) :
+            gen = BankUserGenerator(f'gen{j}')
+            gen_list.append(gen)    
+            ss.register_entity(gen)    
+            ss.coupling_relation(None, 'start', gen, 'start')
+            ss.coupling_relation(gen, 'user_out', que, 'user_in')
+            ss.insert_external_event('start', None)
+    
+    ss.simulate(1)
+            

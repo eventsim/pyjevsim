@@ -35,10 +35,10 @@ class Launcher(BehaviorModel):
             for idx, decoy in enumerate(self.platform.lo.get_decoy_list()):
                 destroy_t = math.ceil(decoy['lifespan'])
                 if decoy["type"] == "stationary":
-                    sdo = StationaryDecoyObject(self.platform.get_position(), self.platform.lo.get_time_of_flight(decoy), decoy)
+                    sdo = StationaryDecoyObject(self.platform.get_position(), decoy)
                     decoy_model = StationaryDecoy(f"[Decoy][{idx}]", sdo)
                 elif decoy["type"] == "self_propelled":
-                    sdo = SelfPropelledDecoyObject(self.platform.get_position(), self.platform.lo.get_time_of_flight(decoy), decoy)
+                    sdo = SelfPropelledDecoyObject(self.platform.get_position(), decoy)
                     decoy_model = SelfPropelledDecoy(f"[Decoy][{idx}]", sdo)
                 else:
                     sdo = None

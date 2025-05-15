@@ -48,7 +48,7 @@ class BankAccountant(BehaviorModel):
             self.user = msg.retrieve()[0]
             self._cur_state = "PROC"  # Transition state to "PROC"
             self.update_state("PROC", self.user.get_service_time())  # Update "PROC" state duration
-            print(f"[A][arrive] ID:{self.user.get_id()} Time:{_time}")
+            #print(f"[A][arrive] ID:{self.user.get_id()} Time:{_time}")
 
     def output(self):
         """
@@ -63,7 +63,7 @@ class BankAccountant(BehaviorModel):
             cur_time = self.global_time
             self.user.calc_wait_time(cur_time)  # Calculate wait time
             self.proc_user.append(self.user)  # Add user to processed list
-            print(f"[A][processed] ID:{self.user.get_id()} Time:{_time}")
+            #print(f"[A][processed] ID:{self.user.get_id()} Time:{_time}")
 
             msg = SysMessage(self.get_name(), "next")
             msg.insert(self.proc_num)  # Insert processor number
@@ -77,10 +77,11 @@ class BankAccountant(BehaviorModel):
 
     def __del__(self):
         """Destructor to print the log of processed users."""
-        print(f"[{self.get_name()}-{self.proc_num} log]")
-        print("user-name, process_time, arrival_time, done_time, wait_time")
+        #print(f"[{self.get_name()}-{self.proc_num} log]")
+        #print("user-name, process_time, arrival_time, done_time, wait_time")
         for user in self.proc_user:
-            print(user)
+            #print(user)
+            pass
 
     def __str__(self):
         """

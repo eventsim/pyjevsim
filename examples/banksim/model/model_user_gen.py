@@ -12,6 +12,7 @@ from pyjevsim.behavior_model import BehaviorModel
 from pyjevsim.definition import *
 from pyjevsim.system_message import SysMessage
 from pyjevsim.system_executor import SysExecutor
+import random
 
 class BankUser:  
     def __init__(self, _id: int, s_t: float):
@@ -25,6 +26,7 @@ class BankUser:
         self.done_t = 0.0       # Done time
         self.arrival_t = 0.0    # Arrival time
         self.service_t = s_t    # Service time
+        self.drop_t = 0
 
     def get_id(self) -> int:
         """        
@@ -70,6 +72,13 @@ class BankUser:
         """
         self.done_t = w_t
         self.wait_t = w_t - self.arrival_t
+        
+    def set_drop_time(self, d_t: float) -> None:
+        """
+        Args:
+            a_t (float): Arrival time
+        """
+        self.drop_t = d_t
 
     def __str__(self):
         """
@@ -84,7 +93,7 @@ class BankUser:
 class BankUserGenerator(BehaviorModel):
     """A Model representing a bank user generator."""
 
-    def __init__(self, name, cycle, max_user, proc_time):
+    def __init__(self, name):
         """
         Args:
             name (str): Name of Model
@@ -95,15 +104,15 @@ class BankUserGenerator(BehaviorModel):
         BehaviorModel.__init__(self, name)
         self.init_state("WAIT")  # Initialize initial state
         self.insert_state("WAIT", Infinite)  # Add "WAIT" state
-        self.insert_state("GEN", cycle)  # Add "GEN" state with cycle time
+        self.insert_state("GEN", random.randint(1,10))  # Add "GEN" state with cycle time
 
         self.insert_input_port("start")  # Add input port "start"
         self.insert_output_port("user_out")  # Add output port "user_out"
 
-        self.cycle = cycle  # Generation cycle time
+        #self.cycle = cycle  # Generation cycle time
         self.generated_user = 0  # Counter for generated users
-        self.max_user = max_user  # Maximum number of users to generate
-        self.proc_time = proc_time  # Processing time for each user
+        #self.max_user = max_user  # Maximum number of users to generate
+        #self.proc_time = proc_time  # Processing time for each user
         
     def ext_trans(self, port, msg):
         """
@@ -114,8 +123,11 @@ class BankUserGenerator(BehaviorModel):
             msg (SysMessage): The received message
         """
         if port == "start":
-            print(f"[Gen][IN]: started")
-            self._cur_state = "GEN"  # Transition state to "GEN"
+            #print(f"[Gen][IN]: started")
+            self._cur_state = "GEN"  # Transition state to "GEN"        
+            self.update_state("GEN", random.randint(1,10))
+        if port == "stop" :
+            self._cur_satate = "WAIT"
 
     def output(self, msg_deliver):
         """
@@ -125,33 +137,27 @@ class BankUserGenerator(BehaviorModel):
             SysMessage: The output message
         """
         _time = self.global_time
-        print(f"[G] ID:{self.get_name()}-{self.generated_user} Time:{_time}")
+        #print(f"[G] ID:{self.get_name()}-{self.generated_user} Time:{_time}")
 
         msg = SysMessage(self.get_name(), "user_out")
 
-        bu = BankUser(f"{self.get_name()}-{self.generated_user}", self.proc_time)
+        bu = BankUser(f"{self.get_name()}-{self.generated_user}", random.randint(1, 10))
         bu.set_arrival_time(_time)
         msg.insert(bu)  # Insert BankUser into message
 
         self.generated_user += 1  # Increment generated user count
-        return msg
+        msg_deliver.insert_message(msg)
+        
+        return msg_deliver
 
     def int_trans(self):
         """Handles internal transitions based on the current state."""
-        if self._cur_state == "GEN" and self.generated_user >= self.max_user:
-            self._cur_state = "WAIT"  # Transition state to "WAIT"
-        else:
-            self.update_state("GEN", self.cycle)  # Update "GEN" state with cycle time
-            
-    def set_cycle(self, cycle):
-        """
-        Sets the generation cycle time.
-
-        Args:
-            cycle (float): Generation cycle time
-        """
-        self.cycle = cycle
-        print("set cycle")
+        self.update_state("GEN", random.randint(1,10))  # Update "GEN" state with cycle time
+        
+        #xprint("state update : ", self._states["GEN"])
         
     def get_user(self) : 
-        return self.max_user - self.generated_user
+        return self.generated_user
+    
+    def set_state_idle(self) :
+        self._cur_state = "WAIT"

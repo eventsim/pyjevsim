@@ -52,7 +52,7 @@ class GarbageTruck(BehaviorModel):
         return (in_p, out_p)
         
     def get_garbage_can_port_map(self):
-        return self.garbage_map
+        return self.garbage_port_map
         
     def ext_trans(self, port, msg):
         #print(port)    
