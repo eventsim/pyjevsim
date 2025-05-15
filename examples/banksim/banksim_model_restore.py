@@ -65,7 +65,7 @@ with open(f"./snapshot/[time]result.simx", "rb") as f :
     result = snapshot_manager.load_snapshot(f"result", f.read()) #restore model   
 
 with open(f"./snapshot/[time]Queue.simx", "rb") as f :
-    que = snapshot_manager.load_snapshot(f"result", f.read()) #restore model   
+    que = snapshot_manager.load_snapshot(f"Queue", f.read()) #restore model   
 ss.register_entity(que)
 
 ss.register_entity(result)
