@@ -143,8 +143,8 @@ class BankQueue(BehaviorModel):
                 self.usable_proc.remove(f"proc{i}")
 
         self.proc_num = proc_num
-        #while len(self.user) > self.queue_size:
-        #    print(f"User Dropped: {self.user.pop()}")
+        while len(self.user) > self.queue_size:
+            print(f"User Dropped: {self.user.pop()}")
 
     def __str__(self):
         """Returns a string representation of the BankQueue.

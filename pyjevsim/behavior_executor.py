@@ -81,7 +81,6 @@ class BehaviorExecutor(Executor):
     # External Transition
     def ext_trans(self, port, msg):
         """Handles external transition based on port and message"""
-        #print("test")
         if self.behavior_model.get_cancel_flag():
             self._cancel_reschedule_f = True
 

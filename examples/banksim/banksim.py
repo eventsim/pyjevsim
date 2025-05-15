@@ -8,7 +8,7 @@ import sys
 #name_list = ["classic", "model_snapshot", "model_restore",
 #        "snapshot", "restore"]
 
-name_list = ["snapshot", "restore"]
+name_list = ["model_snapshot", "model_restore"]
 
 #wiq_time = "10000"
 wiq_time = int(sys.argv[1])

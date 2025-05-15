@@ -43,10 +43,10 @@ gen_num, queue_size, proc_num, max_user, max_simtime = (
 wiq_time = int(sys.argv[1])
 wiq_gen_num = int(sys.argv[2])
 
-class BankGenModelCondition(SnapshotCondition) :
+class BankModelCondition(SnapshotCondition) :
     @staticmethod
     def create_executor(behavior_executor) :
-        return BankGenModelCondition(behavior_executor) #
+        return BankModelCondition(behavior_executor) #
     
     def __init__(self, behavior_executor):
         super().__init__(behavior_executor) #set behavior_executor
@@ -70,10 +70,12 @@ for i in range(gen_num) :
     ss.register_entity(gen)    
     
     #Associating snapshot conditions with models 
-    snapshot_manager.register_snapshot_condition(f"gen{i}", BankGenModelCondition.create_executor)
+    snapshot_manager.register_snapshot_condition(f"gen{i}", BankModelCondition.create_executor)
     ss.register_entity(gen)        
     
 que = BankQueue('Queue', queue_size, proc_num)
+snapshot_manager.register_snapshot_condition(f"Queue", BankModelCondition.create_executor)
+
 ss.register_entity(que)
 
 account_list = []
@@ -83,7 +85,7 @@ for i in range(proc_num) :
     ss.register_entity(account)
     
 result = BankResult('result', max_user)
-snapshot_manager.register_snapshot_condition(f"result", BankGenModelCondition.create_executor)
+snapshot_manager.register_snapshot_condition(f"result", BankModelCondition.create_executor)
 
 ss.register_entity(result)
 
