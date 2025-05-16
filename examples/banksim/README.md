@@ -10,7 +10,7 @@ The simulation model consists of four core components: **User Generator**, **Que
 - **`gen_num`**: Number of `user_generator` models. Each generator randomly creates users and sends them to the queue.  
 - **`queue_size`**: The size of the `BankQueue`. If the queue is full, newly generated users are dropped.  
 - **`proc_num`**: Number of `Accountant` models. Service time differs for each user.  
-- **`max_user` = 500000**: Total number of users to be processed by the `Accountant`.  
+- **`max_user`**: Total number of users to be processed by the `Accountant`.  
 - **`wiq_time`**: The *what-if-question* time point. After this point, the number of generator models can be changed.  
 - **`wiq_gen_num`**: The number of generator models after the what-if-question point.
    
