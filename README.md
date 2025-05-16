@@ -4,7 +4,7 @@ pyjevsim is a DEVS(discrete event system specification) environment that provide
 It provides the ability to snapshot and restore models or simulation engines.
 It's compatible with Python versions 3.10+.
    
-For more information, see the documentation. : [pyjevsim](https://pyjevsim.readthedocs.io/en/latest/index.html)
+For more information, see the documentation. : [pyjevsim](https://pyjevsim.readthedocs.io/en/main/)
    
 ## Installing
 You can install pyjevsim via
@@ -29,18 +29,7 @@ pip install pytest
 Additionally, you can install all necessary libraries, including optional dependencies, by running the following command:
 ```
 pip install -r requirements.txt
-``` 
-
-## Working with pyjevsim
-Once you have installed the library, you can begin working with it.
-
-### Quick Start
-The docs describe how to configure a simulation via pyjevsim's BehaviorModel and SysExecutor.
-Check out the [documentation](link) to configure your simulation.
-
-### Example
-There is a banksim example that uses pyjevsim's DEVS functionality and jouranling features.
-[documentation](link)
+```
 
 ## License   
 Author: Changbeom Choi (@cbchoi)   
