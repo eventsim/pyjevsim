@@ -6,10 +6,26 @@ DEVS Example
 
    tests
 
-Snapshot Example : Bank Simulation 
-==================================
+Anti-Torpedo Simulator 
+======================
 
 .. toctree::
    :maxdepth: 4
 
-   test_banksim
+   atsim
+
+Bank Simulation 
+===============
+
+.. toctree::
+   :maxdepth: 4
+
+   banksim
+
+Municipal Waste Management Simulator 
+====================================
+
+.. toctree::
+   :maxdepth: 4
+
+   mwsim

@@ -6,8 +6,8 @@ Pyjevsim
 
    pyjevsim
 
-Pyjevsim Example
-================
+Pyjevsim Examples
+=================
 
 .. toctree::
    :maxdepth: 4
