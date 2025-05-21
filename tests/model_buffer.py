@@ -47,7 +47,7 @@ class Buffer(BehaviorModel):
         Generates the output message when in the "Delay" state.
 
         Returns:
-            SysMessage: The output message
+            MessageDeliverer: The output message
         """
         print(f"[Buf][OUT]: {self._msg.retrieve()[0]}")
         msg = SysMessage(self.get_name(), "output")

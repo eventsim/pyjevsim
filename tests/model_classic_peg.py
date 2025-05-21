@@ -47,7 +47,7 @@ class PEG(AtomicModel):
         Generates the output message when in the "Generate" state.
         
         Returns:
-            SysMessage: The output message
+            MessageDeliverer: The output message
         """
         msg = SysMessage(self.get_name(), "process")
         msg.insert(f"{self.msg_no}")  # Insert message number
