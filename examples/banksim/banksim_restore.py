@@ -60,5 +60,5 @@ if wiq_gen_num < gen_num :
         gen.set_state_idle()
 
 ## simulation run
-for i in range(max_simtime):
+while(True) : 
     ss.simulate(1)

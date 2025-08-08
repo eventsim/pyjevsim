@@ -80,11 +80,13 @@ for i in range(proc_num) :
 ss.insert_external_event('start', None)
 
 # simulation run
-    
-for i in range(max_simtime):        
+
+i = 0    
+while(True) : 
     # Snapshot when simulation time is what-if-qustion point
     if i == wiq_time : 
         ss.snapshot_simulation(name = "banksim", directory_path = "./snapshot")
         #result.get_result()
         break        
     ss.simulate(1)
+    i+= 1 

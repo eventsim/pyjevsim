@@ -52,10 +52,11 @@ ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
 gen_list = []
 for i in range(wiq_gen_num) :
     #BankUserGenerator Restore
-    with open(f"./snapshot/[time]gen{i}.simx", "rb") as f :
-        gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
-    if i > gen_num :
+    if i >= gen_num :
         with open(f"./snapshot/[time]gen0.simx", "rb") as f :
+            gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
+    else : 
+        with open(f"./snapshot/[time]gen{i}.simx", "rb") as f :
             gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
     gen_list.append(gen)
     ss.register_entity(gen)  
@@ -66,6 +67,8 @@ with open(f"./snapshot/[time]result.simx", "rb") as f :
 
 with open(f"./snapshot/[time]Queue.simx", "rb") as f :
     que = snapshot_manager.load_snapshot(f"Queue", f.read()) #restore model   
+que.que_reset(proc_num)
+    
 ss.register_entity(que)
 
 ss.register_entity(result)
@@ -75,6 +78,7 @@ for i in range(proc_num) :
     account_list.append(account)
     ss.register_entity(account)
     
+ss.insert_input_port('start')
 ## Model Relation
 for gen in gen_list : 
     ss.coupling_relation(None, 'start', gen, 'start')
@@ -87,9 +91,9 @@ for i in range(proc_num) :
     ss.coupling_relation(account_list[i], 'next', que, 'proc_checked')
     ss.coupling_relation(account_list[i], 'next', result, 'process')
     
-ss.insert_input_port('start')
 ss.insert_external_event('start', None)
 
+
 ## simulation run
-for i in range(max_simtime):
+while(True):
     ss.simulate(1)

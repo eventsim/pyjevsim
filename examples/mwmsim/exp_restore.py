@@ -8,18 +8,18 @@ from pyjevsim.restore_handler import RestoreHandler
 
 from config import *
 
-from examples.adev.clock import Clock
-from examples.adev.core_component import HumanType
-from examples.adev.core_component import FamilyType
+from examples.mwmsim.clock import Clock
+from examples.mwmsim.core_component import HumanType
+from examples.mwmsim.core_component import FamilyType
 
-from examples.adev.job import *
+from examples.mwmsim.job import *
 
-from examples.adev.human import Human
-from examples.adev.check import Check
-from examples.adev.government import Government
-from examples.adev.garbagecan import GarbageCan
-from examples.adev.garbage_truck import GarbageTruck
-from examples.adev.family import Family
+from examples.mwmsim.human import Human
+from examples.mwmsim.check import Check
+from examples.mwmsim.government import Government
+from examples.mwmsim.garbagecan import GarbageCan
+from examples.mwmsim.garbage_truck import GarbageTruck
+from examples.mwmsim.family import Family
 
 
 max_simtime = 1000

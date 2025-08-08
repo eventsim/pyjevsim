@@ -1,11 +1,13 @@
 # Anti-Torpedo Simulator
 
 ## Introduction
+
 The **Anti-Torpedo Simulator** is designed to enhance surface ship survivability against torpedo threats. It allows testing of tactical decoy strategies and supports evaluation and acquisition of advanced decoy systems.
 
 For instance, users can compare survivability outcomes by integrating new self-propelled decoy systems against traditional stationary decoy systems, using existing ship and torpedo simulation models.
 
 ## Scenario Explanation
+
 - **Surface Ship Movement:** Moves according to scenario-defined heading parameters.
 - **Detection Model:** Executes detection algorithms based on positional data of surrounding objects and transmits detection results to the ship's Command and Control (C2) system.
 - **Command and Control System:** Calculates distances to detected torpedoes, deploys decoys upon reaching torpedo engagement range, and initiates evasive maneuvers using predefined evasion headings.
@@ -15,7 +17,17 @@ For instance, users can compare survivability outcomes by integrating new self-p
 - **Torpedo Targeting:** The torpedo’s C2 system directs the torpedo toward the closest detected target (ship or decoy).
 
 ## Save and Restore Functionality
+
 The simulator includes a save-and-restore feature enabling repeated experimentation from specific decoy deployment points. This allows comparison and analysis of multiple decoy systems under consistent simulation conditions.
+
+## How to Run the Simulator
+
+다음 명령어를 통해 시뮬레이션을 실행할 수 있습니다:
+
+```bash
+cd pyjevsim
+python3 examples/atsim/simulator.py
+```
 
 ## Important Notes
 The simulation model contains simplified versions of equations of motion, detection algorithms, and Command and Control functionalities. Sensitive information has been deliberately excluded to focus solely on fundamental capabilities.

@@ -153,3 +153,8 @@ class BankQueue(BehaviorModel):
             str: String representation
         """
         return f">> {self.get_name()}, State:{self._cur_state}, {self.user}"
+    
+    def que_reset(self, proc_num) :
+        self.usable_proc = []
+        for i in range(proc_num) :
+            self.usable_proc.append(f"proc{i}")

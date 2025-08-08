@@ -15,9 +15,7 @@ gen_num = ["20", "10", "30"] ## case1, case2, case3
 iterations = 1
 
 for i in range(iterations) :
-    for name in name_list :
-        case = 3
-        
+    for name in name_list :        
         for j in range(len(gen_num)) :
             file_name = f"banksim_{name}_case{j+1}"
             python_name = f"banksim_{name}"
