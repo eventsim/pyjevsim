@@ -32,6 +32,9 @@ class BehaviorExecutor(Executor):
         self.behavior_model = behavior_model #Behavior Model
         self._cancel_reschedule_f = False #cancel reschedule flag
 
+        # Cache destruct time for performance optimization
+        self._cached_destruct_time = self._destruct_t
+
     def set_global_time(self, gtime):
         """Sets the global time for the executor and behavior model"""
         self.global_time = gtime
@@ -62,8 +65,8 @@ class BehaviorExecutor(Executor):
         return self._instance_t
 
     def get_destruct_time(self):
-        """Returns the destruction time"""
-        return self._destruct_t
+        """Returns the destruction time (cached for performance)"""
+        return self._cached_destruct_time
 
     def get_obj_id(self):
         """Returns the object ID of the behavior model"""

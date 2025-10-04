@@ -8,14 +8,11 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module contains a StructuralExecutor, an object for executing a StructuralModel.
 """
 
-import copy
-from collections import deque
-
 from .definition import Infinite
 from .executor import Executor
 
-from .executor_factory import ExecutorFactory
 from .message_deliverer import MessageDeliverer
+from .schedule_queue import ScheduleQueue
 
 class StructuralExecutor(Executor) :
     def __init__(self, global_time, itime, dtime, ename, model, parent, factory):
@@ -35,25 +32,22 @@ class StructuralExecutor(Executor) :
         self.ex_factory = factory
         self.behavior_object = model
         
-        self.min_schedule_item = deque([])
+        self.schedule_queue = ScheduleQueue()
         self.model_executor_map = {}
         self.sm = model
-               
+
         for model_id, model in self.behavior_object.get_models().items() : 
             executor = factory.create_executor(global_time, itime, dtime, ename, model, self)
-            self.min_schedule_item.append(executor)
+            self.schedule_queue.push(executor)
             self.model_executor_map[model] = executor
-                   
+
         self.request_time = 0
         self._next_event_t = 0
 
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-            )
-        )
-        self.next_exec_model = self.min_schedule_item.popleft()
+        # Cache destruct time for performance optimization
+        self._cached_destruct_time = self._destruct_t
+
+        self.next_exec_model = self.schedule_queue.pop()
         self.time_advance()
 
     def __str__(self):
@@ -80,12 +74,9 @@ class StructuralExecutor(Executor) :
                 # Handle internal coupling
                 dst_executor = self.model_executor_map.get(coupling[0])
                 if dst_executor:
-                    self.min_schedule_item = deque([item for item in self.min_schedule_item if item != dst_executor])
-
                     dst_executor.ext_trans(coupling[1], msg)
                     dst_executor.set_req_time(self.global_time)
-
-                    self.min_schedule_item.append(dst_executor)
+                    self.schedule_queue.push(dst_executor)
 
 
     def set_req_time(self, global_time):
@@ -103,7 +94,8 @@ class StructuralExecutor(Executor) :
         return self.sm.get_name()
     
     def get_destruct_time(self):
-        return self._destruct_t
+        """Returns the destruction time (cached for performance)"""
+        return self._cached_destruct_time
 
     def get_obj_id(self):
         return self.sm.get_obj_id()
@@ -115,13 +107,7 @@ class StructuralExecutor(Executor) :
     def ext_trans(self, port, msg):
         # EIC handling
         self.route_message((self.behavior_object, port), msg)
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-            )
-        )
-        self.next_exec_model = self.min_schedule_item.popleft()
+        self.next_exec_model = self.schedule_queue.pop()
 
     def int_trans(self):
         # Perform internal transition
@@ -130,14 +116,8 @@ class StructuralExecutor(Executor) :
         self.next_exec_model.set_req_time(self.global_time)
 
         # Update next event time and reinsert into schedule list
-        self.min_schedule_item.append(self.next_exec_model)
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-            )
-        )
-        self.next_exec_model = self.min_schedule_item.popleft()
+        self.schedule_queue.push(self.next_exec_model)
+        self.next_exec_model = self.schedule_queue.pop()
 
     def output(self, msg_deliver):
         if not msg_deliver.has_contents():
