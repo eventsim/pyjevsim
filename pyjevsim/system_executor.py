@@ -442,21 +442,47 @@ class SysExecutor(CoreModel):
             self.schedule()
 
     def simulation_stop(self):
-        """Stops the simulation and resets SysExecutor."""
+        """
+        Stops the simulation and resets SysExecutor to initial state.
+
+        This method ensures complete cleanup for Design of Experiments,
+        allowing multiple simulation runs with the same executor instance.
+        All model registrations, couplings, and event queues are cleared.
+        """
+        # Reset time
         self.global_time = 0
         self.target_time = 0
-        self.time_resolution = 1
+        # Note: time_resolution is NOT reset - it's a configuration parameter
 
+        # Clear object maps
         self.waiting_obj_map = {}
         self._waiting_heap = []
         self.active_obj_map = {}
         self._destruction_heap = []
-        self.port_map = {}
 
+        # Clear port mappings
+        self.port_map = {}
+        self.product_port_map = {}
+
+        # Clear model registry
+        self.model_map = {}
+        self.hierarchical_structure = {}
+
+        # Reset schedule queue
         self._schedule_queue = ScheduleQueue()
 
+        # Clear event queues
+        with self.lock:
+            self.input_event_queue = []
+        self.output_event_queue.clear()
+
+        # Reset simulation mode
+        self.simulation_mode = SimulationMode.SIMULATION_IDLE
+
+        # Reset timestamp
         self.sim_init_time = datetime.datetime.now()
 
+        # Re-register default message catcher
         self.dmc = DefaultMessageCatcher("dc")
         self.register_entity(self.dmc)
 
