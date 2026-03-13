@@ -42,7 +42,7 @@ class SysExecutor(CoreModel):
             snapshot_manager (ModelSnapshotManager, optional): Manages SnapshotExecutor
         """
         CoreModel.__init__(self, _sim_name, ModelType.UTILITY)
-        self.lock = threading.Lock()
+        self.condition = threading.Condition()
 
         self.global_time = 0
         self.target_time = 0
@@ -411,6 +411,13 @@ class SysExecutor(CoreModel):
         self.init_sim()
 
         while self.global_time < self.target_time:
+            with self.condition:
+                while self.simulation_mode == SimulationMode.SIMULATION_PAUSE:
+                    self.condition.wait()
+
+            if self.simulation_mode == SimulationMode.SIMULATION_TERMINATED:
+                break
+
             if not self.waiting_obj_map:
                 if (
                     self.min_schedule_item[0].get_req_time() == Infinite
@@ -420,6 +427,17 @@ class SysExecutor(CoreModel):
                     break
 
             self.schedule()
+
+    def pause_sim(self):
+        """Pauses the simulation. External threads can still insert events while paused."""
+        with self.condition:
+            self.simulation_mode = SimulationMode.SIMULATION_PAUSE
+
+    def resume_sim(self):
+        """Resumes the simulation from a paused state."""
+        with self.condition:
+            self.simulation_mode = SimulationMode.SIMULATION_RUNNING
+            self.condition.notify_all()
 
     def simulation_stop(self):
         """Stops the simulation and resets SysExecutor."""
@@ -451,7 +469,7 @@ class SysExecutor(CoreModel):
         sys_msg.insert(_msg)
 
         if _port in self.external_input_ports:
-            with self.lock:
+            with self.condition:
                 heapq.heappush(
                     self.input_event_queue, (scheduled_time + self.global_time, sys_msg)
                 )
@@ -471,7 +489,7 @@ class SysExecutor(CoreModel):
         sys_msg.extend(_bodylist)
 
         if _port in self.external_input_ports:
-            with self.lock:
+            with self.condition:
                 heapq.heappush(
                     self.input_event_queue, (scheduled_time + self.global_time, sys_msg)
                 )
@@ -494,7 +512,7 @@ class SysExecutor(CoreModel):
 
         self.output_handling(self, msg_deliver)
         if self.input_event_queue:
-            with self.lock:
+            with self.condition:
                 heapq.heappop(self.input_event_queue)
 
         self.min_schedule_item = deque(
