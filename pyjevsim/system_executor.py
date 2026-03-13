@@ -68,6 +68,7 @@ class SysExecutor(CoreModel):
         # External Interface
         self.input_event_queue = []
         self.output_event_queue = deque()
+        self._output_event_callback = None
 
         # TIME Handling
         self.ex_mode = ex_mode
@@ -315,7 +316,10 @@ class SysExecutor(CoreModel):
                 raise AssertionError
 
             if destination[0] is self:
-                self.output_event_queue.append((self.global_time, msg[1].retrieve()))
+                with self.condition:
+                    self.output_event_queue.append((self.global_time, msg[1].retrieve()))
+                if self._output_event_callback:
+                    self._output_event_callback()
             else:
                 if destination[0].get_obj_id() in self.active_obj_map:
                     destination[0].ext_trans(destination[1], msg)
@@ -386,7 +390,8 @@ class SysExecutor(CoreModel):
             
         self.min_schedule_item.appendleft(tuple_obj)
 
-        self.global_time += self.time_resolution
+        with self.condition:
+            self.global_time += self.time_resolution
 
         self.destroy_active_entity()
 
@@ -496,24 +501,37 @@ class SysExecutor(CoreModel):
         else:
             print("[INSERT_EXTERNAL_EVNT] Port Not Found")
 
+    def set_output_event_callback(self, callback):
+        """
+        Sets a callback to be invoked when an output event is generated.
+        Useful for inter-instance event delivery without polling.
+
+        Args:
+            callback (callable): A callable with no arguments
+        """
+        self._output_event_callback = callback
+
     def get_generated_event(self):
         """
-        Returns the queue of generated events.
-        
+        Returns a snapshot of the generated events queue.
+
         Returns:
-            deque: The queue of generated events
+            deque: A copy of the generated events queue
         """
-        return self.output_event_queue
+        with self.condition:
+            return deque(self.output_event_queue)
 
     def handle_external_input_event(self):
         """Handles external input events."""
+        with self.condition:
+            events = [ev[1] for ev in self.input_event_queue if ev[0] <= self.global_time]
+            self.input_event_queue = [ev for ev in self.input_event_queue if ev[0] > self.global_time]
+            heapq.heapify(self.input_event_queue)
+
         msg_deliver = MessageDeliverer()
-        msg_deliver.data_list = [ev[1] for ev in self.input_event_queue if ev[0] <= self.global_time]
+        msg_deliver.data_list = events
 
         self.output_handling(self, msg_deliver)
-        if self.input_event_queue:
-            with self.condition:
-                heapq.heappop(self.input_event_queue)
 
         self.min_schedule_item = deque(
             sorted(
@@ -525,12 +543,14 @@ class SysExecutor(CoreModel):
     def handle_external_output_event(self):
         """
         Handles external output events and clears the output event queue.
-        
+        Thread-safe: deepcopy and clear are performed atomically.
+
         Returns:
-            list: List of output events
+            deque: List of output events
         """
-        event_lists = copy.deepcopy(self.output_event_queue)
-        self.output_event_queue.clear()
+        with self.condition:
+            event_lists = copy.deepcopy(self.output_event_queue)
+            self.output_event_queue.clear()
         return event_lists
 
     def is_terminated(self):
@@ -562,4 +582,7 @@ class SysExecutor(CoreModel):
         self.snapshot_manager.snapshot_simulation(self.port_map, self.model_map, name, directory_path)
         
     def terminate_simulation(self):
-        os._exit(0)
+        """Gracefully terminates the simulation."""
+        with self.condition:
+            self.simulation_mode = SimulationMode.SIMULATION_TERMINATED
+            self.condition.notify_all()
