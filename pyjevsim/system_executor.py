@@ -391,7 +391,7 @@ class SysExecutor(CoreModel):
         self.destroy_active_entity()
 
         if self.ex_mode == ExecutionType.R_TIME:
-            delta = float(self.time_resolution) - float(before - time.perf_counter())
+            delta = float(self.time_resolution) - float(time.perf_counter() - before)
             if delta > 0:
                 time.sleep(delta)
 
