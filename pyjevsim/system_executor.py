@@ -390,8 +390,9 @@ class SysExecutor(CoreModel):
             
         self.min_schedule_item.appendleft(tuple_obj)
 
-        with self.condition:
-            self.global_time += self.time_resolution
+        if self.ex_mode != ExecutionType.HLA_TIME:
+            with self.condition:
+                self.global_time += self.time_resolution
 
         self.destroy_active_entity()
 
@@ -432,6 +433,72 @@ class SysExecutor(CoreModel):
                     break
 
             self.schedule()
+
+    def get_next_event_time(self):
+        """
+        Returns the next scheduled event time.
+        Used by HLA federate to determine Time Advance Request value.
+
+        Returns:
+            float: The next event time, or Infinite if no events are scheduled
+        """
+        next_internal = Infinite
+        if self.min_schedule_item:
+            next_internal = self.min_schedule_item[0].get_req_time()
+
+        next_external = Infinite
+        with self.condition:
+            if self.input_event_queue:
+                next_external = self.input_event_queue[0][0]
+
+        return min(next_internal, next_external)
+
+    def step(self, granted_time):
+        """
+        Executes one simulation step up to the granted time.
+        Used in HLA_TIME mode where the RTI controls time advancement.
+
+        Args:
+            granted_time (float): The time granted by the RTI
+
+        Returns:
+            deque: Output events generated during this step
+        """
+        with self.condition:
+            self.global_time = granted_time
+
+        self.create_entity()
+        self.handle_external_input_event()
+
+        if self.min_schedule_item:
+            tuple_obj = self.min_schedule_item.popleft()
+
+            while tuple_obj.get_req_time() <= self.global_time:
+                msg_deliver = MessageDeliverer()
+                tuple_obj.output(msg_deliver)
+                if msg_deliver.has_contents():
+                    self.output_handling(tuple_obj, msg_deliver)
+
+                tuple_obj.int_trans()
+                req_t = tuple_obj.get_req_time()
+
+                tuple_obj.set_req_time(req_t)
+                self.min_schedule_item.append(tuple_obj)
+
+                self.min_schedule_item = deque(
+                    sorted(
+                        self.min_schedule_item,
+                        key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
+                    )
+                )
+
+                tuple_obj = self.min_schedule_item.popleft()
+
+            self.min_schedule_item.appendleft(tuple_obj)
+
+        self.destroy_active_entity()
+
+        return self.handle_external_output_event()
 
     def pause_sim(self):
         """Pauses the simulation. External threads can still insert events while paused."""
