@@ -414,7 +414,7 @@ class SysExecutor(CoreModel):
             if not self.waiting_obj_map:
                 if (
                     self.min_schedule_item[0].get_req_time() == Infinite
-                    and self.ex_mode == "VIRTUAL_TIME"
+                    and self.ex_mode == ExecutionType.V_TIME
                 ):
                     self.simulation_mode = SimulationMode.SIMULATION_TERMINATED
                     break
