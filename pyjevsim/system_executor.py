@@ -50,6 +50,7 @@ class SysExecutor(CoreModel):
 
         # dictionary for waiting simulation objects
         self.waiting_obj_map = {}
+        self._waiting_keys = []  # min-heap of creation times
         # dictionary for active simulation objects
         self.active_obj_map = {}
 
@@ -121,8 +122,9 @@ class SysExecutor(CoreModel):
         )
         self.product_port_map[entity] = sim_obj
 
-        if not sim_obj.get_create_time() in self.waiting_obj_map:
+        if sim_obj.get_create_time() not in self.waiting_obj_map:
             self.waiting_obj_map[sim_obj.get_create_time()] = []
+            heapq.heappush(self._waiting_keys, sim_obj.get_create_time())
 
         self.waiting_obj_map[sim_obj.get_create_time()].append(sim_obj)
 
@@ -174,15 +176,15 @@ class SysExecutor(CoreModel):
         """
         Creates entities that are scheduled for creation.
         """
-        if len(self.waiting_obj_map.keys()) != 0:
-            key = min(self.waiting_obj_map)
+        if self._waiting_keys:
+            key = self._waiting_keys[0]
             if key <= self.global_time:
-                lst = self.waiting_obj_map[key]
+                heapq.heappop(self._waiting_keys)
+                lst = self.waiting_obj_map.pop(key)
                 for obj in lst:
                     self.active_obj_map[obj.get_obj_id()] = obj
                     obj.set_req_time(self.global_time)
                     heapq.heappush(self.min_schedule_item, obj)
-                del self.waiting_obj_map[key]
 
     def destory_entity(self, delete_lst):
         """
@@ -510,6 +512,7 @@ class SysExecutor(CoreModel):
         self.time_resolution = 1
 
         self.waiting_obj_map = {}
+        self._waiting_keys = []
         self.active_obj_map = {}
         self.port_map = {}
 
@@ -583,9 +586,10 @@ class SysExecutor(CoreModel):
     def handle_external_input_event(self):
         """Handles external input events."""
         with self.condition:
-            events = [ev[1] for ev in self.input_event_queue if ev[0] <= self.global_time]
-            self.input_event_queue = [ev for ev in self.input_event_queue if ev[0] > self.global_time]
-            heapq.heapify(self.input_event_queue)
+            events = []
+            while self.input_event_queue and self.input_event_queue[0][0] <= self.global_time:
+                _, msg = heapq.heappop(self.input_event_queue)
+                events.append(msg)
 
         msg_deliver = MessageDeliverer()
         msg_deliver.data_list = events
