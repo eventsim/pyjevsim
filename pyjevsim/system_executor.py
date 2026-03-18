@@ -8,7 +8,7 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module includes SysExecutor, a simulation engine that manages models over time. 
 """
 
-import copy, os
+import copy
 import datetime
 import heapq
 import math
@@ -61,7 +61,8 @@ class SysExecutor(CoreModel):
         self.hierarchical_structure = {}
         self.model_map = {}
         
-        self.min_schedule_item = deque()
+        self.min_schedule_item = []
+        self._schedule_dirty = False
         self.sim_init_time = datetime.datetime.now()
         self.simulation_mode = SimulationMode.SIMULATION_IDLE
 
@@ -180,13 +181,8 @@ class SysExecutor(CoreModel):
                 for obj in lst:
                     self.active_obj_map[obj.get_obj_id()] = obj
                     obj.set_req_time(self.global_time)
-                    self.min_schedule_item.append(obj)
+                    heapq.heappush(self.min_schedule_item, obj)
                 del self.waiting_obj_map[key]
-
-                self.min_schedule_item = sorted(
-                    self.min_schedule_item,
-                    key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-                )
 
     def destory_entity(self, delete_lst):
         """
@@ -217,6 +213,7 @@ class SysExecutor(CoreModel):
 
             if agent in self.min_schedule_item:
                 self.min_schedule_item.remove(agent)
+                heapq.heapify(self.min_schedule_item)
 
     def destroy_active_entity(self):
         """
@@ -324,6 +321,7 @@ class SysExecutor(CoreModel):
                 if destination[0].get_obj_id() in self.active_obj_map:
                     destination[0].ext_trans(destination[1], msg)
                     destination[0].set_req_time(self.global_time)
+                    self._schedule_dirty = True
 
     def output_handling(self, obj, msg_deliver):
         """
@@ -357,18 +355,18 @@ class SysExecutor(CoreModel):
 
                 obj[1].set_req_time(self.global_time)
                 self.min_schedule_item.append(obj[1])
+        heapq.heapify(self.min_schedule_item)
 
     def schedule(self):
         """Schedules the next simulation event."""
         self.create_entity()
         self.handle_external_input_event()
         
-        tuple_obj = self.min_schedule_item.popleft()
+        tuple_obj = heapq.heappop(self.min_schedule_item)
         before = time.perf_counter()  # Record time before processing
-        
-        while tuple_obj.get_req_time() <=  self.global_time:
+
+        while tuple_obj.get_req_time() <= self.global_time:
             msg_deliver = MessageDeliverer()
-            #msg = tuple_obj.output(msg_deliver)
             tuple_obj.output(msg_deliver)
             if msg_deliver.has_contents():
                 self.output_handling(tuple_obj, msg_deliver)
@@ -377,18 +375,15 @@ class SysExecutor(CoreModel):
             req_t = tuple_obj.get_req_time()
 
             tuple_obj.set_req_time(req_t)
-            self.min_schedule_item.append(tuple_obj)
+            heapq.heappush(self.min_schedule_item, tuple_obj)
 
-            self.min_schedule_item = deque(
-                sorted(
-                    self.min_schedule_item,
-                    key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-                )
-            )
+            if self._schedule_dirty:
+                heapq.heapify(self.min_schedule_item)
+                self._schedule_dirty = False
 
-            tuple_obj = self.min_schedule_item.popleft()
-            
-        self.min_schedule_item.appendleft(tuple_obj)
+            tuple_obj = heapq.heappop(self.min_schedule_item)
+
+        heapq.heappush(self.min_schedule_item, tuple_obj)
 
         if self.ex_mode != ExecutionType.HLA_TIME:
             with self.condition:
@@ -424,7 +419,7 @@ class SysExecutor(CoreModel):
             if self.simulation_mode == SimulationMode.SIMULATION_TERMINATED:
                 break
 
-            if not self.waiting_obj_map:
+            if not self.waiting_obj_map and self.min_schedule_item:
                 if (
                     self.min_schedule_item[0].get_req_time() == Infinite
                     and self.ex_mode == ExecutionType.V_TIME
@@ -471,7 +466,7 @@ class SysExecutor(CoreModel):
         self.handle_external_input_event()
 
         if self.min_schedule_item:
-            tuple_obj = self.min_schedule_item.popleft()
+            tuple_obj = heapq.heappop(self.min_schedule_item)
 
             while tuple_obj.get_req_time() <= self.global_time:
                 msg_deliver = MessageDeliverer()
@@ -483,18 +478,15 @@ class SysExecutor(CoreModel):
                 req_t = tuple_obj.get_req_time()
 
                 tuple_obj.set_req_time(req_t)
-                self.min_schedule_item.append(tuple_obj)
+                heapq.heappush(self.min_schedule_item, tuple_obj)
 
-                self.min_schedule_item = deque(
-                    sorted(
-                        self.min_schedule_item,
-                        key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-                    )
-                )
+                if self._schedule_dirty:
+                    heapq.heapify(self.min_schedule_item)
+                    self._schedule_dirty = False
 
-                tuple_obj = self.min_schedule_item.popleft()
+                tuple_obj = heapq.heappop(self.min_schedule_item)
 
-            self.min_schedule_item.appendleft(tuple_obj)
+            heapq.heappush(self.min_schedule_item, tuple_obj)
 
         self.destroy_active_entity()
 
@@ -521,7 +513,7 @@ class SysExecutor(CoreModel):
         self.active_obj_map = {}
         self.port_map = {}
 
-        self.min_schedule_item = deque()
+        self.min_schedule_item = []
 
         self.sim_init_time = datetime.datetime.now()
 
@@ -600,12 +592,9 @@ class SysExecutor(CoreModel):
 
         self.output_handling(self, msg_deliver)
 
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-            )
-        )
+        if self._schedule_dirty:
+            heapq.heapify(self.min_schedule_item)
+            self._schedule_dirty = False
 
     def handle_external_output_event(self):
         """

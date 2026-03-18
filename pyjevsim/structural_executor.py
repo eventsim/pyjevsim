@@ -9,7 +9,7 @@ This module contains a StructuralExecutor, an object for executing a StructuralM
 """
 
 import copy
-from collections import deque
+import heapq
 
 from .definition import Infinite
 from .executor import Executor
@@ -35,7 +35,7 @@ class StructuralExecutor(Executor) :
         self.ex_factory = factory
         self.behavior_object = model
         
-        self.min_schedule_item = deque([])
+        self.min_schedule_item = []
         self.model_executor_map = {}
         self.sm = model
                
@@ -47,13 +47,8 @@ class StructuralExecutor(Executor) :
         self.request_time = 0
         self._next_event_t = 0
 
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-            )
-        )
-        self.next_exec_model = self.min_schedule_item.popleft()
+        heapq.heapify(self.min_schedule_item)
+        self.next_exec_model = heapq.heappop(self.min_schedule_item)
         self.time_advance()
 
     def __str__(self):
@@ -80,12 +75,13 @@ class StructuralExecutor(Executor) :
                 # Handle internal coupling
                 dst_executor = self.model_executor_map.get(coupling[0])
                 if dst_executor:
-                    self.min_schedule_item = deque([item for item in self.min_schedule_item if item != dst_executor])
+                    self.min_schedule_item = [item for item in self.min_schedule_item if item != dst_executor]
 
                     dst_executor.ext_trans(coupling[1], msg)
                     dst_executor.set_req_time(self.global_time)
 
                     self.min_schedule_item.append(dst_executor)
+                    heapq.heapify(self.min_schedule_item)
 
 
     def set_req_time(self, global_time):
@@ -115,29 +111,17 @@ class StructuralExecutor(Executor) :
     def ext_trans(self, port, msg):
         # EIC handling
         self.route_message((self.behavior_object, port), msg)
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-            )
-        )
-        self.next_exec_model = self.min_schedule_item.popleft()
+        heapq.heapify(self.min_schedule_item)
+        self.next_exec_model = heapq.heappop(self.min_schedule_item)
 
     def int_trans(self):
         # Perform internal transition
         self.next_exec_model.int_trans()
-        #req_t = executor.get_req_time()
         self.next_exec_model.set_req_time(self.global_time)
 
         # Update next event time and reinsert into schedule list
-        self.min_schedule_item.append(self.next_exec_model)
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-            )
-        )
-        self.next_exec_model = self.min_schedule_item.popleft()
+        heapq.heappush(self.min_schedule_item, self.next_exec_model)
+        self.next_exec_model = heapq.heappop(self.min_schedule_item)
 
     def output(self, msg_deliver):
         if not msg_deliver.has_contents():

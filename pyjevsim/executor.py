@@ -17,8 +17,11 @@ class Executor:
             dtime (float): Destruction time
             ename (str): Engine name
         """
-        self.engine_name = ename 
-        self._instance_t = itime 
+        self.engine_name = ename
+        self._instance_t = itime
         self._destruct_t = dtime
         self.model = model
         self.parent = parent
+
+    def __lt__(self, other):
+        return (self.request_time, self.get_obj_id()) < (other.request_time, other.get_obj_id())
