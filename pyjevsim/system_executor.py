@@ -407,7 +407,7 @@ class SysExecutor(CoreModel):
             _tm (bool): Whether to use the termination manager 
         """
         if _tm:
-            self.tm = TerminationManager()
+            self.tm = TerminationManager(self)
 
         self.target_time = self.global_time + _time
 
