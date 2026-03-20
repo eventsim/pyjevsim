@@ -8,11 +8,14 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module contains a StructuralExecutor, an object for executing a StructuralModel.
 """
 
+import copy
+import heapq
+
 from .definition import Infinite
 from .executor import Executor
 
+from .executor_factory import ExecutorFactory
 from .message_deliverer import MessageDeliverer
-from .schedule_queue import ScheduleQueue
 
 class StructuralExecutor(Executor) :
     def __init__(self, global_time, itime, dtime, ename, model, parent, factory):
@@ -32,22 +35,20 @@ class StructuralExecutor(Executor) :
         self.ex_factory = factory
         self.behavior_object = model
         
-        self.schedule_queue = ScheduleQueue()
+        self.min_schedule_item = []
         self.model_executor_map = {}
         self.sm = model
-
+               
         for model_id, model in self.behavior_object.get_models().items() : 
             executor = factory.create_executor(global_time, itime, dtime, ename, model, self)
-            self.schedule_queue.push(executor)
+            self.min_schedule_item.append(executor)
             self.model_executor_map[model] = executor
-
+                   
         self.request_time = 0
         self._next_event_t = 0
 
-        # Cache destruct time for performance optimization
-        self._cached_destruct_time = self._destruct_t
-
-        self.next_exec_model = self.schedule_queue.pop()
+        heapq.heapify(self.min_schedule_item)
+        self.next_exec_model = heapq.heappop(self.min_schedule_item)
         self.time_advance()
 
     def __str__(self):
@@ -74,9 +75,13 @@ class StructuralExecutor(Executor) :
                 # Handle internal coupling
                 dst_executor = self.model_executor_map.get(coupling[0])
                 if dst_executor:
+                    self.min_schedule_item = [item for item in self.min_schedule_item if item != dst_executor]
+
                     dst_executor.ext_trans(coupling[1], msg)
                     dst_executor.set_req_time(self.global_time)
-                    self.schedule_queue.push(dst_executor)
+
+                    self.min_schedule_item.append(dst_executor)
+                    heapq.heapify(self.min_schedule_item)
 
 
     def set_req_time(self, global_time):
@@ -94,8 +99,7 @@ class StructuralExecutor(Executor) :
         return self.sm.get_name()
     
     def get_destruct_time(self):
-        """Returns the destruction time (cached for performance)"""
-        return self._cached_destruct_time
+        return self._destruct_t
 
     def get_obj_id(self):
         return self.sm.get_obj_id()
@@ -107,17 +111,17 @@ class StructuralExecutor(Executor) :
     def ext_trans(self, port, msg):
         # EIC handling
         self.route_message((self.behavior_object, port), msg)
-        self.next_exec_model = self.schedule_queue.pop()
+        heapq.heapify(self.min_schedule_item)
+        self.next_exec_model = heapq.heappop(self.min_schedule_item)
 
     def int_trans(self):
         # Perform internal transition
         self.next_exec_model.int_trans()
-        #req_t = executor.get_req_time()
         self.next_exec_model.set_req_time(self.global_time)
 
         # Update next event time and reinsert into schedule list
-        self.schedule_queue.push(self.next_exec_model)
-        self.next_exec_model = self.schedule_queue.pop()
+        heapq.heappush(self.min_schedule_item, self.next_exec_model)
+        self.next_exec_model = heapq.heappop(self.min_schedule_item)
 
     def output(self, msg_deliver):
         if not msg_deliver.has_contents():

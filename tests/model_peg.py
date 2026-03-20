@@ -53,7 +53,7 @@ class PEG(BehaviorModel):
         msg = SysMessage(self.get_name(), "process")
         msg.insert(f"{self.msg_no}")  # Insert message number
         print(f"[Gen][OUT]: {self.msg_no}")
-        return msg
+        msg_deliver.insert_message(msg)
 
     def int_trans(self):
         """
