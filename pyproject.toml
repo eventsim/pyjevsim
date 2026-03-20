@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyjevsim"
+version = "1.0.0"
+description = "A DEVS(Discrete Event System Specification) Modeling & Simulation environment with journaling functionality"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.8"
+authors = [
+    { name = "Changbeom Choi", email = "me@cbchoi.info" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: Scientific/Engineering",
+    "Intended Audience :: Science/Research",
+]
+keywords = ["DEVS", "simulation", "discrete-event", "modeling"]
+
+[project.optional-dependencies]
+snapshot = ["dill>=0.3.6"]
+dev = ["pytest>=7.0", "dill>=0.3.6"]
+
+[project.urls]
+Homepage = "https://github.com/eventsim/pyjevsim"
+Documentation = "https://pyjevsim.readthedocs.io/en/latest/index.html"
+Repository = "https://github.com/eventsim/pyjevsim"
+Issues = "https://github.com/eventsim/pyjevsim/issues"
+
+[tool.setuptools.packages.find]
+include = ["pyjevsim*"]
+exclude = ["tests*", "examples*", "docs*", "venv*", "utils*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
