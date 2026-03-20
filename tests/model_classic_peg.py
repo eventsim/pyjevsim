@@ -51,8 +51,8 @@ class PEG(AtomicModel):
         """
         msg = SysMessage(self.get_name(), "process")
         msg.insert(f"{self.msg_no}")  # Insert message number
-        print(f"[Gen][OUT]: {self.msg_no}")
-        return msg
+        print(f"[Gen][OUT]: classic {self.msg_no}")
+        msg_deliver.insert_message(msg)
 
     def int_trans(self):
         """
@@ -63,9 +63,9 @@ class PEG(AtomicModel):
             self.msg_no += 1  # Increment message number
 
     def time_advance(self):
-    	if self._cur_state == "Wait":
+        if self._cur_state == "Wait":
             return Infinite
         elif self._cur_state == "Generate":
             return 1
         else:
-    		return -1
+            return -1
