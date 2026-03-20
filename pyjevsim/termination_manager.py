@@ -9,12 +9,20 @@ This module contains the TerminatorManager, which manages the simulation termina
 """
 
 import datetime
-import os
 import signal
 
 class TerminationManager:
-    def __init__(self):
+    _executors = []
+
+    def __init__(self, executor=None):
+        if executor:
+            TerminationManager._executors.append(executor)
         TerminationManager.__set_terminate_handler()
+
+    @staticmethod
+    def register_executor(executor):
+        """Register a SysExecutor for graceful shutdown on signal."""
+        TerminationManager._executors.append(executor)
 
     @staticmethod
     def __set_terminate_handler():
@@ -23,11 +31,7 @@ class TerminationManager:
 
     @staticmethod
     def signal_handler(sig, frame):
-        try:
-            print(sig, frame)
-            print(f"{datetime.datetime.now()} Simulation Engine Terminated Gracefully")
-        except Exception as exception:
-            print(exception)
-            raise
-        finally:
-            os._exit(0)
+        print(f"{datetime.datetime.now()} Signal {sig} received, terminating simulation gracefully")
+        for executor in TerminationManager._executors:
+            executor.terminate_simulation()
+        TerminationManager._executors.clear()

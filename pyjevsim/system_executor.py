@@ -8,7 +8,7 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module includes SysExecutor, a simulation engine that manages models over time. 
 """
 
-import copy, os
+import copy
 import datetime
 import heapq
 import math
@@ -42,7 +42,7 @@ class SysExecutor(CoreModel):
             snapshot_manager (ModelSnapshotManager, optional): Manages SnapshotExecutor
         """
         CoreModel.__init__(self, _sim_name, ModelType.UTILITY)
-        self.lock = threading.Lock()
+        self.condition = threading.Condition()
 
         self.global_time = 0
         self.target_time = 0
@@ -50,6 +50,7 @@ class SysExecutor(CoreModel):
 
         # dictionary for waiting simulation objects
         self.waiting_obj_map = {}
+        self._waiting_keys = []  # min-heap of creation times
         # dictionary for active simulation objects
         self.active_obj_map = {}
 
@@ -61,13 +62,15 @@ class SysExecutor(CoreModel):
         self.hierarchical_structure = {}
         self.model_map = {}
         
-        self.min_schedule_item = deque()
+        self.min_schedule_item = []
+        self._schedule_dirty = False
         self.sim_init_time = datetime.datetime.now()
         self.simulation_mode = SimulationMode.SIMULATION_IDLE
 
         # External Interface
         self.input_event_queue = []
         self.output_event_queue = deque()
+        self._output_event_callback = None
 
         # TIME Handling
         self.ex_mode = ex_mode
@@ -119,8 +122,9 @@ class SysExecutor(CoreModel):
         )
         self.product_port_map[entity] = sim_obj
 
-        if not sim_obj.get_create_time() in self.waiting_obj_map:
+        if sim_obj.get_create_time() not in self.waiting_obj_map:
             self.waiting_obj_map[sim_obj.get_create_time()] = []
+            heapq.heappush(self._waiting_keys, sim_obj.get_create_time())
 
         self.waiting_obj_map[sim_obj.get_create_time()].append(sim_obj)
 
@@ -172,20 +176,15 @@ class SysExecutor(CoreModel):
         """
         Creates entities that are scheduled for creation.
         """
-        if len(self.waiting_obj_map.keys()) != 0:
-            key = min(self.waiting_obj_map)
+        if self._waiting_keys:
+            key = self._waiting_keys[0]
             if key <= self.global_time:
-                lst = self.waiting_obj_map[key]
+                heapq.heappop(self._waiting_keys)
+                lst = self.waiting_obj_map.pop(key)
                 for obj in lst:
                     self.active_obj_map[obj.get_obj_id()] = obj
                     obj.set_req_time(self.global_time)
-                    self.min_schedule_item.append(obj)
-                del self.waiting_obj_map[key]
-
-                self.min_schedule_item = sorted(
-                    self.min_schedule_item,
-                    key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-                )
+                    heapq.heappush(self.min_schedule_item, obj)
 
     def destory_entity(self, delete_lst):
         """
@@ -216,6 +215,7 @@ class SysExecutor(CoreModel):
 
             if agent in self.min_schedule_item:
                 self.min_schedule_item.remove(agent)
+                heapq.heapify(self.min_schedule_item)
 
     def destroy_active_entity(self):
         """
@@ -315,11 +315,15 @@ class SysExecutor(CoreModel):
                 raise AssertionError
 
             if destination[0] is self:
-                self.output_event_queue.append((self.global_time, msg[1].retrieve()))
+                with self.condition:
+                    self.output_event_queue.append((self.global_time, msg[1].retrieve()))
+                if self._output_event_callback:
+                    self._output_event_callback()
             else:
                 if destination[0].get_obj_id() in self.active_obj_map:
                     destination[0].ext_trans(destination[1], msg)
                     destination[0].set_req_time(self.global_time)
+                    self._schedule_dirty = True
 
     def output_handling(self, obj, msg_deliver):
         """
@@ -353,18 +357,18 @@ class SysExecutor(CoreModel):
 
                 obj[1].set_req_time(self.global_time)
                 self.min_schedule_item.append(obj[1])
+        heapq.heapify(self.min_schedule_item)
 
     def schedule(self):
         """Schedules the next simulation event."""
         self.create_entity()
         self.handle_external_input_event()
         
-        tuple_obj = self.min_schedule_item.popleft()
+        tuple_obj = heapq.heappop(self.min_schedule_item)
         before = time.perf_counter()  # Record time before processing
-        
-        while tuple_obj.get_req_time() <=  self.global_time:
+
+        while tuple_obj.get_req_time() <= self.global_time:
             msg_deliver = MessageDeliverer()
-            #msg = tuple_obj.output(msg_deliver)
             tuple_obj.output(msg_deliver)
             if msg_deliver.has_contents():
                 self.output_handling(tuple_obj, msg_deliver)
@@ -373,20 +377,19 @@ class SysExecutor(CoreModel):
             req_t = tuple_obj.get_req_time()
 
             tuple_obj.set_req_time(req_t)
-            self.min_schedule_item.append(tuple_obj)
+            heapq.heappush(self.min_schedule_item, tuple_obj)
 
-            self.min_schedule_item = deque(
-                sorted(
-                    self.min_schedule_item,
-                    key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-                )
-            )
+            if self._schedule_dirty:
+                heapq.heapify(self.min_schedule_item)
+                self._schedule_dirty = False
 
-            tuple_obj = self.min_schedule_item.popleft()
-            
-        self.min_schedule_item.appendleft(tuple_obj)
+            tuple_obj = heapq.heappop(self.min_schedule_item)
 
-        self.global_time += self.time_resolution
+        heapq.heappush(self.min_schedule_item, tuple_obj)
+
+        if self.ex_mode != ExecutionType.HLA_TIME:
+            with self.condition:
+                self.global_time += self.time_resolution
 
         self.destroy_active_entity()
 
@@ -404,14 +407,21 @@ class SysExecutor(CoreModel):
             _tm (bool): Whether to use the termination manager 
         """
         if _tm:
-            self.tm = TerminationManager()
+            self.tm = TerminationManager(self)
 
         self.target_time = self.global_time + _time
 
         self.init_sim()
 
         while self.global_time < self.target_time:
-            if not self.waiting_obj_map:
+            with self.condition:
+                while self.simulation_mode == SimulationMode.SIMULATION_PAUSE:
+                    self.condition.wait()
+
+            if self.simulation_mode == SimulationMode.SIMULATION_TERMINATED:
+                break
+
+            if not self.waiting_obj_map and self.min_schedule_item:
                 if (
                     self.min_schedule_item[0].get_req_time() == Infinite
                     and self.ex_mode == ExecutionType.V_TIME
@@ -421,6 +431,80 @@ class SysExecutor(CoreModel):
 
             self.schedule()
 
+    def get_next_event_time(self):
+        """
+        Returns the next scheduled event time.
+        Used by HLA federate to determine Time Advance Request value.
+
+        Returns:
+            float: The next event time, or Infinite if no events are scheduled
+        """
+        next_internal = Infinite
+        if self.min_schedule_item:
+            next_internal = self.min_schedule_item[0].get_req_time()
+
+        next_external = Infinite
+        with self.condition:
+            if self.input_event_queue:
+                next_external = self.input_event_queue[0][0]
+
+        return min(next_internal, next_external)
+
+    def step(self, granted_time):
+        """
+        Executes one simulation step up to the granted time.
+        Used in HLA_TIME mode where the RTI controls time advancement.
+
+        Args:
+            granted_time (float): The time granted by the RTI
+
+        Returns:
+            deque: Output events generated during this step
+        """
+        with self.condition:
+            self.global_time = granted_time
+
+        self.create_entity()
+        self.handle_external_input_event()
+
+        if self.min_schedule_item:
+            tuple_obj = heapq.heappop(self.min_schedule_item)
+
+            while tuple_obj.get_req_time() <= self.global_time:
+                msg_deliver = MessageDeliverer()
+                tuple_obj.output(msg_deliver)
+                if msg_deliver.has_contents():
+                    self.output_handling(tuple_obj, msg_deliver)
+
+                tuple_obj.int_trans()
+                req_t = tuple_obj.get_req_time()
+
+                tuple_obj.set_req_time(req_t)
+                heapq.heappush(self.min_schedule_item, tuple_obj)
+
+                if self._schedule_dirty:
+                    heapq.heapify(self.min_schedule_item)
+                    self._schedule_dirty = False
+
+                tuple_obj = heapq.heappop(self.min_schedule_item)
+
+            heapq.heappush(self.min_schedule_item, tuple_obj)
+
+        self.destroy_active_entity()
+
+        return self.handle_external_output_event()
+
+    def pause_sim(self):
+        """Pauses the simulation. External threads can still insert events while paused."""
+        with self.condition:
+            self.simulation_mode = SimulationMode.SIMULATION_PAUSE
+
+    def resume_sim(self):
+        """Resumes the simulation from a paused state."""
+        with self.condition:
+            self.simulation_mode = SimulationMode.SIMULATION_RUNNING
+            self.condition.notify_all()
+
     def simulation_stop(self):
         """Stops the simulation and resets SysExecutor."""
         self.global_time = 0
@@ -428,10 +512,11 @@ class SysExecutor(CoreModel):
         self.time_resolution = 1
 
         self.waiting_obj_map = {}
+        self._waiting_keys = []
         self.active_obj_map = {}
         self.port_map = {}
 
-        self.min_schedule_item = deque()
+        self.min_schedule_item = []
 
         self.sim_init_time = datetime.datetime.now()
 
@@ -451,7 +536,7 @@ class SysExecutor(CoreModel):
         sys_msg.insert(_msg)
 
         if _port in self.external_input_ports:
-            with self.lock:
+            with self.condition:
                 heapq.heappush(
                     self.input_event_queue, (scheduled_time + self.global_time, sys_msg)
                 )
@@ -471,48 +556,61 @@ class SysExecutor(CoreModel):
         sys_msg.extend(_bodylist)
 
         if _port in self.external_input_ports:
-            with self.lock:
+            with self.condition:
                 heapq.heappush(
                     self.input_event_queue, (scheduled_time + self.global_time, sys_msg)
                 )
         else:
             print("[INSERT_EXTERNAL_EVNT] Port Not Found")
 
+    def set_output_event_callback(self, callback):
+        """
+        Sets a callback to be invoked when an output event is generated.
+        Useful for inter-instance event delivery without polling.
+
+        Args:
+            callback (callable): A callable with no arguments
+        """
+        self._output_event_callback = callback
+
     def get_generated_event(self):
         """
-        Returns the queue of generated events.
-        
+        Returns a snapshot of the generated events queue.
+
         Returns:
-            deque: The queue of generated events
+            deque: A copy of the generated events queue
         """
-        return self.output_event_queue
+        with self.condition:
+            return deque(self.output_event_queue)
 
     def handle_external_input_event(self):
         """Handles external input events."""
+        with self.condition:
+            events = []
+            while self.input_event_queue and self.input_event_queue[0][0] <= self.global_time:
+                _, msg = heapq.heappop(self.input_event_queue)
+                events.append(msg)
+
         msg_deliver = MessageDeliverer()
-        msg_deliver.data_list = [ev[1] for ev in self.input_event_queue if ev[0] <= self.global_time]
+        msg_deliver.data_list = events
 
         self.output_handling(self, msg_deliver)
-        if self.input_event_queue:
-            with self.lock:
-                heapq.heappop(self.input_event_queue)
 
-        self.min_schedule_item = deque(
-            sorted(
-                self.min_schedule_item,
-                key=lambda bm: (bm.get_req_time(), bm.get_obj_id()),
-            )
-        )
+        if self._schedule_dirty:
+            heapq.heapify(self.min_schedule_item)
+            self._schedule_dirty = False
 
     def handle_external_output_event(self):
         """
         Handles external output events and clears the output event queue.
-        
+        Thread-safe: deepcopy and clear are performed atomically.
+
         Returns:
-            list: List of output events
+            deque: List of output events
         """
-        event_lists = copy.deepcopy(self.output_event_queue)
-        self.output_event_queue.clear()
+        with self.condition:
+            event_lists = copy.deepcopy(self.output_event_queue)
+            self.output_event_queue.clear()
         return event_lists
 
     def is_terminated(self):
@@ -544,4 +642,7 @@ class SysExecutor(CoreModel):
         self.snapshot_manager.snapshot_simulation(self.port_map, self.model_map, name, directory_path)
         
     def terminate_simulation(self):
-        os._exit(0)
+        """Gracefully terminates the simulation."""
+        with self.condition:
+            self.simulation_mode = SimulationMode.SIMULATION_TERMINATED
+            self.condition.notify_all()

@@ -75,9 +75,10 @@ class ModelType(Enum):
 
 class ExecutionType(Enum):
     """Enum for execution types."""
-    
+
     R_TIME = 0 #Real time
     V_TIME = 1 #Virtual time
+    HLA_TIME = 2 #HLA/RTI-controlled time (externally driven)
 
 
 class SingletonType(object):

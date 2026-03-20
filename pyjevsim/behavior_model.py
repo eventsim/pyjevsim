@@ -36,6 +36,7 @@ class BehaviorModel(CoreModel):
 
         self._cancel_reschedule_f = False
         self._cur_state = ""
+        self.global_time = 0
 
     def insert_state(self, name, deadline="inf"):
         """

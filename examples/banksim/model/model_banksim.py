@@ -19,22 +19,14 @@ class Banksim(StructuralModel):
     def __init__(self, name):
         StructuralModel.__init__(self, name)
         
-        gen_num = 3            #Number of BankUserGenerators 
+        gen_num = 3            #Number of BankUserGenerators
         queue_size = 10        #BankQueue size
         proc_num = 5         #Number of BankAccountant
-        
-        user_process_time = 1   #BankUser's processing speed
-        gen_cycle = 2           #BankUser Generattion cycle
-        max_user = 300       #Total number of users generated
-        
 
         ## model set & register entity
         gen_list = []
-        user = int(max_user / gen_num)
         for i in range(gen_num) :
-            if i == gen_num-1:
-                user += max_user % gen_num
-            gen = BankUserGenerator(f'gen{i}', gen_cycle, user, user_process_time)
+            gen = BankUserGenerator(f'gen{i}')
             gen_list.append(gen)    
             self.register_entity(gen)    
             
