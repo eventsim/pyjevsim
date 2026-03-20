@@ -391,7 +391,7 @@ class SysExecutor(CoreModel):
         self.destroy_active_entity()
 
         if self.ex_mode == ExecutionType.R_TIME:
-            delta = float(self.time_resolution) - float(before - time.perf_counter())
+            delta = float(self.time_resolution) - float(time.perf_counter() - before)
             if delta > 0:
                 time.sleep(delta)
 
@@ -414,7 +414,7 @@ class SysExecutor(CoreModel):
             if not self.waiting_obj_map:
                 if (
                     self.min_schedule_item[0].get_req_time() == Infinite
-                    and self.ex_mode == "VIRTUAL_TIME"
+                    and self.ex_mode == ExecutionType.V_TIME
                 ):
                     self.simulation_mode = SimulationMode.SIMULATION_TERMINATED
                     break
