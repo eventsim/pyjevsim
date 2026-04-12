@@ -7,6 +7,5 @@ recursive-exclude examples *
 recursive-exclude docs *
 recursive-exclude utils *
 recursive-exclude venv *
-exclude setup.py
 global-exclude *.pyc
 global-exclude __pycache__
