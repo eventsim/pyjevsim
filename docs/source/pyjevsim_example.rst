@@ -22,10 +22,18 @@ Bank Simulation
 
    banksim
 
-Municipal Waste Management Simulator 
+Municipal Waste Management Simulator
 ====================================
 
 .. toctree::
    :maxdepth: 4
 
    mwsim
+
+DEVStone Benchmark
+==================
+
+.. toctree::
+   :maxdepth: 4
+
+   benchmark

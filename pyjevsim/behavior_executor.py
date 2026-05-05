@@ -32,8 +32,12 @@ class BehaviorExecutor(Executor):
         self.behavior_model = behavior_model #Behavior Model
         self._cancel_reschedule_f = False #cancel reschedule flag
 
-        # Cache destruct time for performance optimization
+        # Hot-path attribute snapshots. obj_id and destruct_t never change
+        # over the executor's lifetime, so we read them once here instead
+        # of dispatching through method chains every time the scheduler
+        # needs an id.
         self._cached_destruct_time = self._destruct_t
+        self._obj_id = behavior_model.get_obj_id()
 
     def set_global_time(self, gtime):
         """Sets the global time for the executor and behavior model"""
@@ -69,8 +73,10 @@ class BehaviorExecutor(Executor):
         return self._cached_destruct_time
 
     def get_obj_id(self):
-        """Returns the object ID of the behavior model"""
-        return self.behavior_model.get_obj_id()
+        """Returns the object ID. Snapshot of the model's id, taken at
+        construction time to skip the `BehaviorModel` -> `SystemObject`
+        method dispatch on the hot path."""
+        return self._obj_id
 
     # State management
     def get_cur_state(self):
@@ -94,6 +100,20 @@ class BehaviorExecutor(Executor):
         """Handles internal transition"""
         self.behavior_model.int_trans()
 
+    # Confluent Transition
+    def con_trans(self, port_msgs):
+        """Handles confluent transition (model is both imminent and
+        receiving external events at the same simulated instant).
+
+        Args:
+            port_msgs (Iterable[tuple[str, SysMessage]]): bag of messages
+                with their input ports.
+        """
+        if self.behavior_model.get_cancel_flag():
+            self._cancel_reschedule_f = True
+
+        self.behavior_model.con_trans(port_msgs)
+
     # Output Function
     def output(self, msg_deliver):
         """Executes the output function of the behavior model"""
@@ -108,16 +128,27 @@ class BehaviorExecutor(Executor):
         return -1
 
     def set_req_time(self, global_time):
-        """Sets the request time based on the global time and time advance"""
-        self.set_global_time(global_time)
-        if self.time_advance() == Infinite:
+        """Set the executor's next request time.
+
+        This is the single hottest method on the simulator's inner loop —
+        called once per affected model per tick. The body is inlined to
+        avoid the `set_global_time` -> `time_advance` -> dict-lookup
+        method-dispatch chain that the previous version went through.
+        """
+        bm = self.behavior_model
+        self.global_time = global_time
+        bm.global_time = global_time
+
+        # Inlined `time_advance`: read state and look up its deadline.
+        ta = bm._states.get(bm._cur_state, -1)
+
+        if ta == Infinite:
             self._next_event_t = Infinite
             self.request_time = Infinite
+        elif self._cancel_reschedule_f:
+            self.request_time = min(self._next_event_t, global_time + ta)
         else:
-            if self._cancel_reschedule_f:
-                self.request_time = min(self._next_event_t, global_time + self.time_advance())
-            else:
-                self.request_time = global_time + self.time_advance()
+            self.request_time = global_time + ta
 
     def get_req_time(self):
         """Returns the request time and resets the cancel flag if necessary"""

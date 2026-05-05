@@ -145,6 +145,41 @@ State Transition Flow
 
 This example serves as a foundation for building more complex simulation behavior models.
 
+Debugging Uncaught Output Messages
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, output messages emitted on a port with **no downstream
+coupling** are dropped silently. To inspect them while debugging a
+model graph, pass ``track_uncaught=True`` to the executor:
+
+.. code-block:: python
+
+   se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, track_uncaught=True)
+
+The simulator's ``DefaultMessageCatcher`` (accessible as ``se.dmc``)
+will then receive every uncoupled emit on its ``"uncaught"`` input
+port, so you can attach probes or count what is leaking. The flag
+costs roughly 10-15 % throughput on dense graphs with many dangling
+outputs, so leave it off in production runs.
+
+Output Messages Are Shared by Reference
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When a model's output port has multiple downstream subscribers, every
+subscriber receives the **same** ``SysMessage`` object. ``pyjevsim`` does
+not deep-copy outputs during propagation. This matches the prevailing
+Python-DEVS convention — ``xdevs.py`` and ``PythonPDEVS`` propagate by
+reference the same way.
+
+The practical rule for modelers:
+
+- Treat received messages as **immutable**.
+- If your model needs to mutate a payload, copy it on the receiver side
+  first, e.g. ``payload = list(msg.retrieve())``.
+
+The empirical multi-subscriber test under ``benchmark/aliasing_test.py``
+demonstrates this behaviour for every engine in the comparison set.
+
 2. Structural Model in pyjevsim
 -------------------------------
 

@@ -2,17 +2,30 @@ from .definition import *
 from .system_message import SysMessage
 
 class MessageDeliverer:
+    """Bag of `SysMessage` objects produced by a model's `output()`.
+
+    Output messages are propagated **by reference** to every subscriber on
+    a coupled port. This matches the prevailing Python-DEVS convention
+    (xdevs.py, PythonPDEVS, and the reference engine in
+    `benchmark/engines/reference/` all behave the same way). If your model
+    needs to mutate a received payload, copy it on the receiver side
+    (e.g. `payload = list(received)`); do not rely on the simulator to
+    deep-copy outputs.
+    """
+
     def __init__(self):
         self.data_list = []
 
     def insert_message(self, msg):
-        """
-        Inserts a message into the data list.
-       
+        """Insert a `SysMessage` into the bag.
+
         Args:
-            msg: Message object to be inserted.
+            msg (SysMessage): the message to deliver. Pass exactly one
+                `SysMessage` per call. The bag is propagated by reference
+                to every subscriber on the source port (see class
+                docstring).
         """
-        self.data_list.append(msg) #SysMessage type
+        self.data_list.append(msg)
 
         #self.data_list.sort(key=lambda m: m.get_scheduled_time())
 

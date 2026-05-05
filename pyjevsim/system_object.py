@@ -5,22 +5,27 @@ Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
-This module contains SystemObject, the top-level class for all models. 
+This module contains SystemObject, the top-level class for all models.
 """
 
-import datetime
 
 class SystemObject:
-    """Base class for all system objects, providing unique object IDs and creation time."""
+    """Base class for all system objects, providing unique object IDs.
+
+    Note: an earlier version also stamped a ``datetime.now()`` creation
+    time on every object. That field was only ever read by ``__str__``
+    and never used elsewhere, but the ``datetime.now()`` call was
+    measurable in hot allocation paths (every ``SysMessage`` paid for
+    it). It has been removed.
+    """
 
     # Object ID which tracks the entire instantiated Objects
     __GLOBAL_OBJECT_ID = 0
 
     def __init__(self):
-        self.__created_time = datetime.datetime.now()  # Creation time
         self.__object_id = SystemObject.__GLOBAL_OBJECT_ID  # Unique object ID
         SystemObject.__GLOBAL_OBJECT_ID += 1  # Increment global object ID
-        
+
     def __str__(self):
         """
         Returns the string representation of the SystemObject.
@@ -28,7 +33,7 @@ class SystemObject:
         Returns:
             str: The string representation
         """
-        return f"ID:{self.__object_id} {self.__created_time}"
+        return f"ID:{self.__object_id}"
 
     def __lt__(self, other):
         """

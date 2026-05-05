@@ -11,7 +11,16 @@ This module contains an object SysMessage for handling messages (port and data) 
 from .system_object import SystemObject
 
 class SysMessage(SystemObject):
-    """SysMessage for handling messages(port and data) between Models."""
+    """SysMessage for handling messages(port and data) between Models.
+
+    .. note::
+        When a port has multiple downstream subscribers, every receiver
+        gets the **same** `SysMessage` object — pyjevsim does not deep-copy
+        outputs on propagation. Treat received messages as immutable. This
+        is consistent with the Python-DEVS ecosystem (xdevs.py and
+        PythonPDEVS use the same shared-reference model). To mutate a
+        payload, copy it on the receiver side first.
+    """
 
     def __init__(self, src_name="", dst_name=""):
         """

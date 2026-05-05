@@ -13,6 +13,7 @@ import heapq
 
 from .definition import Infinite
 from .executor import Executor
+from .schedule_queue import ScheduleQueue
 
 from .executor_factory import ExecutorFactory
 from .message_deliverer import MessageDeliverer
@@ -35,20 +36,26 @@ class StructuralExecutor(Executor) :
         self.ex_factory = factory
         self.behavior_object = model
         
-        self.min_schedule_item = []
+        self.min_schedule_item = ScheduleQueue()
         self.model_executor_map = {}
         self.sm = model
-               
-        for model_id, model in self.behavior_object.get_models().items() : 
+
+        for model_id, model in self.behavior_object.get_models().items():
             executor = factory.create_executor(global_time, itime, dtime, ename, model, self)
-            self.min_schedule_item.append(executor)
+            self.min_schedule_item.push(executor)
             self.model_executor_map[model] = executor
-                   
+
         self.request_time = 0
         self._next_event_t = 0
 
-        heapq.heapify(self.min_schedule_item)
-        self.next_exec_model = heapq.heappop(self.min_schedule_item)
+        # Snapshot of the model's stable id; saves a method dispatch
+        # whenever ScheduleQueue / SysExecutor reads the executor's id.
+        self._obj_id = model.get_obj_id()
+        # Cached destruct time so SysExecutor.destroy_active_entity can
+        # read the attribute directly (matches BehaviorExecutor).
+        self._cached_destruct_time = self._destruct_t
+
+        self.next_exec_model = self.min_schedule_item.pop()
         self.time_advance()
 
     def __str__(self):
@@ -72,16 +79,16 @@ class StructuralExecutor(Executor) :
                 msg_deliver.insert_message(msg)
                 self.parent.output(msg_deliver)
             else:
-                # Handle internal coupling
+                # Handle internal coupling. ScheduleQueue.remove marks any
+                # existing entry stale via the entries dict; the subsequent
+                # push registers a fresh current entry with the new
+                # req_time after ext_trans / set_req_time.
                 dst_executor = self.model_executor_map.get(coupling[0])
                 if dst_executor:
-                    self.min_schedule_item = [item for item in self.min_schedule_item if item != dst_executor]
-
+                    self.min_schedule_item.remove(dst_executor)
                     dst_executor.ext_trans(coupling[1], msg)
                     dst_executor.set_req_time(self.global_time)
-
-                    self.min_schedule_item.append(dst_executor)
-                    heapq.heapify(self.min_schedule_item)
+                    self.min_schedule_item.push(dst_executor)
 
 
     def set_req_time(self, global_time):
@@ -102,7 +109,7 @@ class StructuralExecutor(Executor) :
         return self._destruct_t
 
     def get_obj_id(self):
-        return self.sm.get_obj_id()
+        return self._obj_id
 
     def get_req_time(self):
         self._next_event_t = self.next_exec_model.get_req_time()
@@ -111,17 +118,26 @@ class StructuralExecutor(Executor) :
     def ext_trans(self, port, msg):
         # EIC handling
         self.route_message((self.behavior_object, port), msg)
-        heapq.heapify(self.min_schedule_item)
-        self.next_exec_model = heapq.heappop(self.min_schedule_item)
+        self.next_exec_model = self.min_schedule_item.pop()
 
     def int_trans(self):
         # Perform internal transition
         self.next_exec_model.int_trans()
         self.next_exec_model.set_req_time(self.global_time)
 
-        # Update next event time and reinsert into schedule list
-        heapq.heappush(self.min_schedule_item, self.next_exec_model)
-        self.next_exec_model = heapq.heappop(self.min_schedule_item)
+        # Update next event time and reinsert into schedule queue
+        self.min_schedule_item.push(self.next_exec_model)
+        self.next_exec_model = self.min_schedule_item.pop()
+
+    def con_trans(self, port_msgs):
+        """Confluent transition for a structural model: route external
+        events into internal coupling, then perform internal transition.
+
+        Matches the standard DEVS rule δ_con = δ_int ; δ_ext.
+        """
+        self.int_trans()
+        for port, msg in port_msgs:
+            self.ext_trans(port, msg)
 
     def output(self, msg_deliver):
         if not msg_deliver.has_contents():

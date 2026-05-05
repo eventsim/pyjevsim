@@ -20,6 +20,7 @@ from .core_model import CoreModel
 from .default_message_catcher import DefaultMessageCatcher
 from .definition import ExecutionType, Infinite, ModelType, SimulationMode
 from .executor_factory import ExecutorFactory
+from .schedule_queue import ScheduleQueue
 from .system_message import SysMessage
 from .termination_manager import TerminationManager
 
@@ -31,7 +32,9 @@ class SysExecutor(CoreModel):
     EXTERNAL_SRC = "SRC"
     EXTERNAL_DST = "DST"
 
-    def __init__(self, _time_resolution, _sim_name="default", ex_mode=ExecutionType.V_TIME, snapshot_manager=None):
+    def __init__(self, _time_resolution, _sim_name="default",
+                 ex_mode=ExecutionType.V_TIME, snapshot_manager=None,
+                 track_uncaught=False):
         """
         Initializes the SysExecutor with time resolution, simulation name, execution mode, and optional snapshot manager.
 
@@ -40,9 +43,20 @@ class SysExecutor(CoreModel):
             _sim_name (str, optional): The name of the simulation
             ex_mode (R_TIME or VTIME): The execution mode
             snapshot_manager (ModelSnapshotManager, optional): Manages SnapshotExecutor
+            track_uncaught (bool, optional): When True, output messages
+                emitted to ports with no downstream coupling are routed
+                to a built-in :class:`DefaultMessageCatcher` (accessible
+                as ``self.dmc``). Useful when debugging "where did this
+                event go?" questions during model wiring. Defaults to
+                False because the catcher itself is a no-op
+                (``ext_trans`` is a discard) and routing to it costs one
+                extra ``ext_trans`` + ``set_req_time`` + heap push per
+                uncoupled emit — a measurable hit on dense graphs with
+                many dangling outputs (e.g. DEVStone LI).
         """
         CoreModel.__init__(self, _sim_name, ModelType.UTILITY)
         self.condition = threading.Condition()
+        self._track_uncaught = bool(track_uncaught)
 
         self.global_time = 0
         self.target_time = 0
@@ -62,8 +76,18 @@ class SysExecutor(CoreModel):
         self.hierarchical_structure = {}
         self.model_map = {}
         
-        self.min_schedule_item = []
-        self._schedule_dirty = False
+        # ScheduleQueue: lazy-deletion priority queue. Push snapshots
+        # (req_time, obj_id, entry_id) at push time; the entries dict
+        # tracks the *current* entry per obj_id so duplicates from
+        # in-place reschedules become stale and get filtered on pop.
+        # No heapify ever runs; Executor.__lt__ is dead code now that
+        # ordering is settled by tuple comparison.
+        self.min_schedule_item = ScheduleQueue()
+        # Counter of registered executors with a finite destruct_time.
+        # `destroy_active_entity` short-circuits when this is zero so
+        # the per-tick scan over `active_obj_map` only runs when a
+        # destruction is actually pending.
+        self._destructs_pending = 0
         self.sim_init_time = datetime.datetime.now()
         self.simulation_mode = SimulationMode.SIMULATION_IDLE
 
@@ -116,11 +140,18 @@ class SysExecutor(CoreModel):
             dest_t (float, optional): Destruction time
             ename (str, optional): SysExecutor name
         """
-        
+
         sim_obj = self.exec_factory.create_executor(
             self.global_time, inst_t, self.global_time + dest_t, ename, entity, self
         )
         self.product_port_map[entity] = sim_obj
+
+        # Track whether any registered executor has a finite destruct
+        # time. When the count is zero `destroy_active_entity` skips its
+        # full scan over `active_obj_map` — a measurable win on sparse
+        # workloads where the scan runs once per simulated tick.
+        if dest_t < Infinite:
+            self._destructs_pending += 1
 
         if sim_obj.get_create_time() not in self.waiting_obj_map:
             self.waiting_obj_map[sim_obj.get_create_time()] = []
@@ -184,7 +215,7 @@ class SysExecutor(CoreModel):
                 for obj in lst:
                     self.active_obj_map[obj.get_obj_id()] = obj
                     obj.set_req_time(self.global_time)
-                    heapq.heappush(self.min_schedule_item, obj)
+                    self.min_schedule_item.push(obj)
 
     def destory_entity(self, delete_lst):
         """
@@ -213,20 +244,31 @@ class SysExecutor(CoreModel):
             for key in port_del_map:
                 del self.port_map[key]
 
-            if agent in self.min_schedule_item:
-                self.min_schedule_item.remove(agent)
-                heapq.heapify(self.min_schedule_item)
+            self.min_schedule_item.remove(agent)
 
     def destroy_active_entity(self):
         """
-        Destroys active entities that are scheduled for destruction.
-        """
-        if len(self.active_obj_map.keys()) != 0:
-            delete_lst = []
-            for _, agent in self.active_obj_map.items():
-                if agent.get_destruct_time() <= self.global_time:
-                    delete_lst.append(agent)
+        Destroys active entities whose ``destruct_time`` has elapsed.
 
+        Fast-path: when no registered executor was ever given a finite
+        ``destruct_time`` the scan is skipped entirely. This is the
+        common case (most simulations register entities with the
+        default ``Infinite`` destruct time) and the scan would
+        otherwise run once per simulated tick.
+        """
+        if self._destructs_pending == 0:
+            return
+        if not self.active_obj_map:
+            return
+
+        delete_lst = []
+        global_time = self.global_time
+        for agent in self.active_obj_map.values():
+            if agent._cached_destruct_time <= global_time:
+                delete_lst.append(agent)
+
+        if delete_lst:
+            self._destructs_pending -= len(delete_lst)
             self.destory_entity(delete_lst)
 
     def coupling_relation(self, src_obj, out_port, dst_obj, in_port):
@@ -297,50 +339,49 @@ class SysExecutor(CoreModel):
         """
         Handles a single output message.
 
+        Used by the HLA ``step()`` path and ``handle_external_input_event``.
+        Each delivered message triggers ``ext_trans`` + ``set_req_time``
+        on the receiver and an immediate re-push into the priority queue
+        so the receiver's new request_time takes effect (ScheduleQueue
+        snapshots req_time at push time; in-place mutation alone is not
+        visible to the heap).
+
+        Uncoupled emits are dropped silently unless the executor was
+        built with ``track_uncaught=True``, in which case they fall back
+        to ``self.dmc`` (the previous default behaviour).
+
         Args:
-            obj (BehaviorModel or StructuralModel): Model
-            msg (SysMessage): The message
+            obj: source executor
+            msg (SysMessage): the message
         """
-        #print(obj.get_name())    
-        pair = (obj, msg.get_dst())
-        if pair not in self.port_map:
-            self.port_map[pair] = [
-                (self.active_obj_map[self.dmc.get_obj_id()], "uncaught")
-            ]
-
-        for port_pair in self.port_map[pair]:
-            destination = port_pair
-            if destination is None:
-                print("Destination Not Found")
-                raise AssertionError
-
+        for destination in self._destinations_for(obj, msg.get_dst()):
             if destination[0] is self:
                 with self.condition:
                     self.output_event_queue.append((self.global_time, msg[1].retrieve()))
                 if self._output_event_callback:
                     self._output_event_callback()
-            else:
-                if destination[0].get_obj_id() in self.active_obj_map:
-                    destination[0].ext_trans(destination[1], msg)
-                    destination[0].set_req_time(self.global_time)
-                    self._schedule_dirty = True
+            elif destination[0].get_obj_id() in self.active_obj_map:
+                destination[0].ext_trans(destination[1], msg)
+                destination[0].set_req_time(self.global_time)
+                self.min_schedule_item.push(destination[0])
 
     def output_handling(self, obj, msg_deliver):
         """
         Handles output messages.
 
+        Output values are propagated by reference: if a port has multiple
+        subscribers, every subscriber sees the *same* `SysMessage` object.
+        This matches the prevailing Python-DEVS convention (xdevs.py and
+        PythonPDEVS behave the same way). Treat received messages as
+        immutable; copy on the receiver if you need to mutate the payload.
+
         Args:
             obj (BehaviorModel or StructuralModel): Model
-            msg (SysMessage): The message
+            msg_deliver (MessageDeliverer): batched output messages from `obj`
         """
         if msg_deliver.has_contents():
             for msg in msg_deliver.get_contents():
-                if isinstance(msg, list):
-                    for ith_msg in msg:
-                        pair = (obj, ith_msg)
-                        self.single_output_handling(obj, copy.deepcopy(pair))
-                else:
-                    self.single_output_handling(obj, msg)
+                self.single_output_handling(obj, msg)
 
     def init_sim(self):
         """Initializes the simulation."""
@@ -356,44 +397,192 @@ class SysExecutor(CoreModel):
                     raise AssertionError
 
                 obj[1].set_req_time(self.global_time)
-                self.min_schedule_item.append(obj[1])
-        heapq.heapify(self.min_schedule_item)
+                self.min_schedule_item.push(obj[1])
+
+    def _peek_next_event_time(self):
+        """Smallest scheduled time across the FEL, external-event queue,
+        and waiting-creation queue. Returns ``Infinite`` if nothing is
+        pending.
+
+        Open-coded — the previous implementation built a ``candidates``
+        list and called ``min(...)``; that allocation showed up at
+        hundreds of ns per call which is meaningful in sparse-time
+        workloads where the function fires once per simulated tick.
+        """
+        next_t = (
+            self.min_schedule_item.peek_time(default=Infinite)
+            if self.min_schedule_item
+            else Infinite
+        )
+        if self.input_event_queue:
+            ext_t = self.input_event_queue[0][0]
+            if ext_t < next_t:
+                next_t = ext_t
+        if self._waiting_keys:
+            wait_t = self._waiting_keys[0]
+            if wait_t < next_t:
+                next_t = wait_t
+        return next_t
+
+    _NO_DESTINATIONS = ()
+
+    def _destinations_for(self, src_executor, src_port):
+        """Return ``(dst_executor, dst_port)`` pairs for a source emit.
+
+        Behaviour depends on the executor's ``track_uncaught`` flag:
+
+        * Default (``track_uncaught=False``): uncoupled ports return an
+          empty tuple, so emits to dangling outputs are no-ops on the
+          hot path. This is the fast configuration.
+        * Debug (``track_uncaught=True``): uncoupled ports get a lazily
+          installed fallback to ``self.dmc`` so users can inspect what
+          would have been delivered. Pays one extra ``ext_trans`` +
+          ``set_req_time`` + heap push per uncoupled emit.
+        """
+        pair = (src_executor, src_port)
+        coupling = self.port_map.get(pair)
+        if coupling is not None:
+            return coupling
+        if self._track_uncaught:
+            self.port_map[pair] = fallback = [
+                (self.active_obj_map[self.dmc.get_obj_id()], "uncaught")
+            ]
+            return fallback
+        return self._NO_DESTINATIONS
 
     def schedule(self):
-        """Schedules the next simulation event."""
+        """Run one simulated-instant tick using Parallel-DEVS two-phase
+        scheduling.
+
+        Phase A — pop every imminent executor (those whose ``req_time``
+        has been reached) and invoke ``output()`` on each.
+
+        Phase B — route the collected outputs through the coupling map
+        and assemble per-receiver bags of incoming messages.
+
+        Phase C — for every model that is imminent and/or influenced,
+        invoke the correct DEVS transition:
+
+            * imminent + receiving  -> ``con_trans(bag)``  (confluent)
+            * imminent only         -> ``int_trans()``
+            * receiving only        -> ``ext_trans(port, msg)`` per msg
+
+        Phase D — bulk-reschedule every affected model with one
+        ``set_req_time(global_time)`` and ``heappush`` per model. No
+        ``heapify`` runs; lazy reschedule is fine because DEVS always
+        moves req_times forward in time.
+
+        Time advancement rules (Phase E):
+          * V_TIME: jump ``global_time`` to ``min(next_event, target_time)``.
+            If more events are still due at the current instant the
+            timestamp is left unchanged so the next ``schedule()`` call
+            processes them in another round at the same simulated time.
+          * R_TIME: step by ``time_resolution`` and sleep to match
+            wall-clock pace.
+          * HLA_TIME: do not advance ``global_time`` here; the RTI sets
+            it via ``step(granted_time)``.
+        """
         self.create_entity()
         self.handle_external_input_event()
-        
-        tuple_obj = heapq.heappop(self.min_schedule_item)
-        before = time.perf_counter()  # Record time before processing
 
-        while tuple_obj.get_req_time() <= self.global_time:
-            msg_deliver = MessageDeliverer()
-            tuple_obj.output(msg_deliver)
-            if msg_deliver.has_contents():
-                self.output_handling(tuple_obj, msg_deliver)
+        # `time.perf_counter()` is only consulted at the bottom of this
+        # method to compute the R_TIME sleep delta. Avoid the syscall
+        # in V_TIME / HLA_TIME where the value is never read.
+        is_realtime = self.ex_mode == ExecutionType.R_TIME
+        before = time.perf_counter() if is_realtime else None
 
-            tuple_obj.int_trans()
-            req_t = tuple_obj.get_req_time()
+        active_obj_map = self.active_obj_map
+        callback = self._output_event_callback
+        output_queue = self.output_event_queue
 
-            tuple_obj.set_req_time(req_t)
-            heapq.heappush(self.min_schedule_item, tuple_obj)
+        # Phase A — pop all imminents at the current global_time.
+        # The heapset's `pop_all_at(t)` drains a whole bucket in one O(1)
+        # dict lookup; for DEVStone cascades the heap holds a single
+        # timestamp and every imminent model lives in the same bucket.
+        # We loop in case multiple distinct timestamps have already
+        # elapsed (e.g. resuming after a paused simulation).
+        imminent = []
+        fel = self.min_schedule_item
+        while fel:
+            next_t = fel.peek_time(default=Infinite)
+            if next_t > self.global_time:
+                break
+            imminent.extend(fel.pop_all_at(next_t))
 
-            if self._schedule_dirty:
-                heapq.heapify(self.min_schedule_item)
-                self._schedule_dirty = False
+        if imminent:
+            # Phase A continued — collect lambda outputs.
+            outputs = []
+            for X in imminent:
+                md = MessageDeliverer()
+                X.output(md)
+                if md.has_contents():
+                    outputs.append((X, md))
 
-            tuple_obj = heapq.heappop(self.min_schedule_item)
+            # Phase B — route outputs through coupling, build per-receiver bag.
+            influenced_inputs = {}      # dst_executor -> list[(dst_port, msg)]
+            current_time = self.global_time
+            for X, md in outputs:
+                for msg in md.get_contents():
+                    for dst_exec, dst_port in self._destinations_for(X, msg.get_dst()):
+                        if dst_exec is self:
+                            # External output: when no callback is
+                            # registered we are in the single-thread
+                            # fast path and the lock is unnecessary.
+                            if callback is not None:
+                                with self.condition:
+                                    output_queue.append((current_time, msg))
+                                callback()
+                            else:
+                                output_queue.append((current_time, msg))
+                        elif dst_exec._obj_id in active_obj_map:
+                            influenced_inputs.setdefault(
+                                dst_exec, []
+                            ).append((dst_port, msg))
 
-        heapq.heappush(self.min_schedule_item, tuple_obj)
+            imminent_set = set(imminent)
+            affected = imminent_set | set(influenced_inputs)
 
-        if self.ex_mode != ExecutionType.HLA_TIME:
-            with self.condition:
-                self.global_time += self.time_resolution
+            # Phase C — apply the right transition for every affected model.
+            for M in affected:
+                bag = influenced_inputs.get(M, ())
+                is_imminent = M in imminent_set
+                if is_imminent and bag:
+                    M.con_trans(bag)
+                elif is_imminent:
+                    M.int_trans()
+                else:
+                    for port, msg in bag:
+                        M.ext_trans(port, msg)
+
+            # Phase D — bulk reschedule via ScheduleQueue.push. Each
+            # push snapshots the new req_time and supersedes the prior
+            # entry (lazy invalidation). No heapify; no `__lt__` on
+            # executor objects — tuple comparison settles ordering.
+            for M in affected:
+                M.set_req_time(current_time)
+                fel.push(M)
+
+        # Phase E — advance simulated time.
+        # CPython attribute writes are atomic at the bytecode level, so
+        # the simulator's own time-advance does not need to hold the
+        # condition lock. External producers calling
+        # `insert_external_event` etc. take the lock themselves when
+        # they touch their own queues, so pause/resume semantics still
+        # hold.
+        if self.ex_mode == ExecutionType.V_TIME:
+            next_t = self._peek_next_event_time()
+            new_time = min(next_t, self.target_time)
+            # If the next event is at the current instant we leave
+            # global_time alone — the next schedule() call processes
+            # the remaining round at the same simulated time.
+            if new_time > self.global_time:
+                self.global_time = new_time
+        elif self.ex_mode != ExecutionType.HLA_TIME:
+            self.global_time += self.time_resolution
 
         self.destroy_active_entity()
 
-        if self.ex_mode == ExecutionType.R_TIME:
+        if is_realtime:
             delta = float(self.time_resolution) - float(time.perf_counter() - before)
             if delta > 0:
                 time.sleep(delta)
@@ -413,21 +602,38 @@ class SysExecutor(CoreModel):
 
         self.init_sim()
 
+        # The "everything has passivated" check via `peek_time` only
+        # matters when the user passed a finite horizon is *not*
+        # supplied — for any finite ``_time`` the simulation exits via
+        # `global_time` reaching `target_time` after a single jump-step
+        # in `schedule()` Phase E. Skipping the peek on the hot loop
+        # body is a measurable win when ``schedule()`` is called many
+        # times (sparse-time workloads).
+        unbounded = (_time == Infinite)
+        v_time = self.ex_mode == ExecutionType.V_TIME
+
         while self.global_time < self.target_time:
-            with self.condition:
-                while self.simulation_mode == SimulationMode.SIMULATION_PAUSE:
-                    self.condition.wait()
+            # Fast path: in the common case the simulation is RUNNING and
+            # no external thread is poking at it. Skip the condition lock
+            # entirely and only acquire it when we actually need to wait
+            # for resume. CPython attribute reads are atomic at the
+            # bytecode level so a stale read is fine — the worst case is
+            # one extra loop iteration before we notice the pause.
+            if self.simulation_mode == SimulationMode.SIMULATION_PAUSE:
+                with self.condition:
+                    while self.simulation_mode == SimulationMode.SIMULATION_PAUSE:
+                        self.condition.wait()
 
             if self.simulation_mode == SimulationMode.SIMULATION_TERMINATED:
                 break
 
-            if not self.waiting_obj_map and self.min_schedule_item:
-                if (
-                    self.min_schedule_item[0].get_req_time() == Infinite
-                    and self.ex_mode == ExecutionType.V_TIME
-                ):
-                    self.simulation_mode = SimulationMode.SIMULATION_TERMINATED
-                    break
+            if (unbounded
+                    and v_time
+                    and not self.waiting_obj_map
+                    and self.min_schedule_item
+                    and self.min_schedule_item.peek_time(default=Infinite) == Infinite):
+                self.simulation_mode = SimulationMode.SIMULATION_TERMINATED
+                break
 
             self.schedule()
 
@@ -441,7 +647,7 @@ class SysExecutor(CoreModel):
         """
         next_internal = Infinite
         if self.min_schedule_item:
-            next_internal = self.min_schedule_item[0].get_req_time()
+            next_internal = self.min_schedule_item.peek_time(default=Infinite)
 
         next_external = Infinite
         with self.condition:
@@ -452,43 +658,105 @@ class SysExecutor(CoreModel):
 
     def step(self, granted_time):
         """
-        Executes one simulation step up to the granted time.
-        Used in HLA_TIME mode where the RTI controls time advancement.
+        Run one RTI-granted simulation step. Process every event whose
+        ``req_time <= granted_time`` using the same Parallel-DEVS
+        four-phase tick that ``schedule()`` uses, so HLA federates get
+        correct ``δ_int / δ_ext / δ_con`` semantics and accurate
+        intra-grant simulated-time advancement.
+
+        Multiple rounds may run at the same simulated instant when
+        cascading sigma=0 transitions chain through the model graph;
+        the outer ``while`` loop continues until no imminent remains
+        within the granted window.
 
         Args:
-            granted_time (float): The time granted by the RTI
+            granted_time (float): time granted by the RTI.
 
         Returns:
-            deque: Output events generated during this step
+            deque: output events generated and drained during this step.
         """
-        with self.condition:
-            self.global_time = granted_time
-
         self.create_entity()
+        # Drain any external events scheduled at <= current global_time
+        # before the round loop starts. Receivers that wake up because
+        # of these events are pushed into the FEL with `set_req_time`
+        # so the loop picks them up as imminents.
         self.handle_external_input_event()
 
-        if self.min_schedule_item:
-            tuple_obj = heapq.heappop(self.min_schedule_item)
+        # Round loop — one cascade tick per pass. `global_time` advances
+        # to the actual event time of each round (not the grant
+        # boundary), so models observe correct simulated time during
+        # their transitions. The grant ceiling is enforced by
+        # `next_t > granted_time` — any event scheduled past the grant
+        # stays in the FEL for a future `step()`.
+        while self.min_schedule_item:
+            next_t = self.min_schedule_item.peek_time(default=Infinite)
+            if next_t > granted_time:
+                break
+            if next_t > self.global_time:
+                self.global_time = next_t
 
-            while tuple_obj.get_req_time() <= self.global_time:
-                msg_deliver = MessageDeliverer()
-                tuple_obj.output(msg_deliver)
-                if msg_deliver.has_contents():
-                    self.output_handling(tuple_obj, msg_deliver)
+            # Phase A — pop every imminent at this instant.
+            imminent = self.min_schedule_item.pop_all_at(next_t)
+            if not imminent:
+                # The peek returned a stale entry (already removed or
+                # just pruned); loop again.
+                continue
 
-                tuple_obj.int_trans()
-                req_t = tuple_obj.get_req_time()
+            # Phase A continued — collect lambda outputs.
+            outputs = []
+            for X in imminent:
+                md = MessageDeliverer()
+                X.output(md)
+                if md.has_contents():
+                    outputs.append((X, md))
 
-                tuple_obj.set_req_time(req_t)
-                heapq.heappush(self.min_schedule_item, tuple_obj)
+            # Phase B — route outputs through coupling, build per-receiver bag.
+            influenced_inputs = {}
+            for X, md in outputs:
+                for msg in md.get_contents():
+                    for dst_exec, dst_port in self._destinations_for(X, msg.get_dst()):
+                        if dst_exec is self:
+                            with self.condition:
+                                self.output_event_queue.append(
+                                    (self.global_time, msg)
+                                )
+                            if self._output_event_callback:
+                                self._output_event_callback()
+                        elif dst_exec.get_obj_id() in self.active_obj_map:
+                            influenced_inputs.setdefault(
+                                dst_exec, []
+                            ).append((dst_port, msg))
 
-                if self._schedule_dirty:
-                    heapq.heapify(self.min_schedule_item)
-                    self._schedule_dirty = False
+            imminent_set = set(imminent)
+            affected = imminent_set | set(influenced_inputs)
 
-                tuple_obj = heapq.heappop(self.min_schedule_item)
+            # Phase C — apply the right transition for every affected model.
+            for M in affected:
+                bag = influenced_inputs.get(M, ())
+                is_imminent = M in imminent_set
+                if is_imminent and bag:
+                    M.con_trans(bag)
+                elif is_imminent:
+                    M.int_trans()
+                else:
+                    for port, msg in bag:
+                        M.ext_trans(port, msg)
 
-            heapq.heappush(self.min_schedule_item, tuple_obj)
+            # Phase D — bulk reschedule.
+            for M in affected:
+                M.set_req_time(self.global_time)
+                self.min_schedule_item.push(M)
+
+            # External events injected during this round are picked up
+            # before the next round so they participate in the same
+            # cascade window.
+            self.handle_external_input_event()
+
+        # IEEE 1516-2010 convention: after a successful grant the
+        # federate's logical time equals the granted time, even if the
+        # last processed event was earlier.
+        if granted_time > self.global_time:
+            self.global_time = granted_time
 
         self.destroy_active_entity()
 
@@ -516,7 +784,8 @@ class SysExecutor(CoreModel):
         self.active_obj_map = {}
         self.port_map = {}
 
-        self.min_schedule_item = []
+        self.min_schedule_item = ScheduleQueue()
+        self._destructs_pending = 0
 
         self.sim_init_time = datetime.datetime.now()
 
@@ -584,21 +853,34 @@ class SysExecutor(CoreModel):
             return deque(self.output_event_queue)
 
     def handle_external_input_event(self):
-        """Handles external input events."""
+        """Handles external input events.
+
+        Fast-path: if the queue is empty there is nothing to do, and we
+        can skip both the lock acquisition and the
+        ``MessageDeliverer`` allocation. The unlocked check is racy
+        against concurrent ``insert_external_event`` callers, but the
+        worst-case effect is missing a just-pushed event by one tick —
+        the next ``schedule()`` invocation will pick it up.
+        """
+        if not self.input_event_queue:
+            return
+
         with self.condition:
             events = []
             while self.input_event_queue and self.input_event_queue[0][0] <= self.global_time:
                 _, msg = heapq.heappop(self.input_event_queue)
                 events.append(msg)
 
+        if not events:
+            return
+
         msg_deliver = MessageDeliverer()
         msg_deliver.data_list = events
 
+        # `single_output_handling` re-pushes each receiver into the
+        # ScheduleQueue after `set_req_time`; no separate dirty-flag
+        # bookkeeping needed.
         self.output_handling(self, msg_deliver)
-
-        if self._schedule_dirty:
-            heapq.heapify(self.min_schedule_item)
-            self._schedule_dirty = False
 
     def handle_external_output_event(self):
         """

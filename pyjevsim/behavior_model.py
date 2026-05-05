@@ -97,6 +97,28 @@ class BehaviorModel(CoreModel):
         """Defines the output function, to be implemented by subclasses"""
         pass
 
+    def con_trans(self, port_msgs):
+        """Confluent transition.
+
+        Invoked when the model is *both* imminent (its deadline has been
+        reached) and receiving external events at the same simulated
+        instant. The default implementation matches the standard DEVS
+        rule used by xdevs.py and PythonPDEVS:
+
+            δ_con = δ_int ; δ_ext
+
+        Subclasses may override to implement custom confluent semantics
+        (for example, ext-then-int, or skip-int).
+
+        Args:
+            port_msgs (Iterable[tuple[str, SysMessage]]): the bag of
+                messages that arrived this instant, paired with the input
+                port each was delivered on.
+        """
+        self.int_trans()
+        for port, msg in port_msgs:
+            self.ext_trans(port, msg)
+
     def get_cancel_flag(self):
         """Returns the cancel reschedule flag"""
         return self._cancel_reschedule_f
