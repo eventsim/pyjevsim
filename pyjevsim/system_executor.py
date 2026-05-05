@@ -27,7 +27,28 @@ from .termination_manager import TerminationManager
 from .message_deliverer import MessageDeliverer
 
 class SysExecutor(CoreModel):
-    """SysExecutor managing the execution of models in a simulation.(Simulation Engine)"""
+    """The pyjevsim simulation engine.
+
+    ``SysExecutor`` owns the global simulated clock, the future-event
+    list (FEL), the coupling graph, and the lifecycle of registered
+    executors. It runs each simulated instant as a two-phase tick —
+    Phase A drains every imminent model's ``output()`` against its
+    pre-transition state; Phase B routes outputs through coupling and
+    applies ``int_trans`` / ``ext_trans`` / ``con_trans`` per
+    Parallel-DEVS semantics.
+
+    Three execution modes are supported via :class:`ExecutionType`:
+
+    - ``V_TIME`` — virtual-time, jump-to-next-event. ``simulate()``
+      drives the loop and ``global_time`` hops directly to the next
+      scheduled event.
+    - ``R_TIME`` — real-time, ``time_resolution``-stepped with a
+      ``time.sleep`` to match wall-clock pace.
+    - ``HLA_TIME`` — federate-driven. The executor does not advance
+      time on its own; an HLA ambassador calls
+      :py:meth:`get_next_event_time` then :py:meth:`step` to grant
+      cascade rounds inside an RTI-issued time grant.
+    """
 
     EXTERNAL_SRC = "SRC"
     EXTERNAL_DST = "DST"
@@ -41,7 +62,11 @@ class SysExecutor(CoreModel):
         Args:
             _time_resolution (float): The time resolution for the simulation
             _sim_name (str, optional): The name of the simulation
-            ex_mode (R_TIME or VTIME): The execution mode
+            ex_mode (ExecutionType): The execution mode — one of
+                ``V_TIME`` (virtual time, jump-to-next-event),
+                ``R_TIME`` (real time, ``time_resolution``-stepped),
+                or ``HLA_TIME`` (federate-driven via
+                :py:meth:`step`).
             snapshot_manager (ModelSnapshotManager, optional): Manages SnapshotExecutor
             track_uncaught (bool, optional): When True, output messages
                 emitted to ports with no downstream coupling are routed

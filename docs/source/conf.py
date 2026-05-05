@@ -9,8 +9,11 @@ import os
 import sys
 sys.path.insert(0, os.path.abspath('../..'))  
 
-project = 'pyjevsim' 
-author = 'jaiyun'
+project = 'pyjevsim'
+author = 'Changbeom Choi'
+copyright = '2024-2026, Changbeom Choi'
+version = '2.0.0'
+release = '2.0.0'
 
 extensions = [
     'sphinx.ext.autodoc',      

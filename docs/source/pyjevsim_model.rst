@@ -18,3 +18,10 @@ Core Model
    :members:
    :undoc-members:
    :show-inheritance:
+
+Atomic Model
+------------
+.. automodule:: pyjevsim.atomic_model
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -39,7 +39,7 @@ DEVS models operate based on four core methods:
 
 1. ``ext_trans(self, port, msg)``: Handles external input events and transitions state.
 2. ``int_trans(self)``: Handles internal state transitions when a state's deadline is reached.
-3. ``output(self, msg_deliver)``: Creates output messages.
+3. ``output(self, msg_deliver)``: Creates output messages and adds them to the ``msg_deliver`` bag via ``msg_deliver.insert_message(msg)``.
 4. ``time_advance(self)``: Returns the time duration until the next internal transition.
 
 The table below summarizes key methods used when constructing an AtomicModel based on DEVS formalism,
@@ -73,8 +73,8 @@ including descriptions, parameters, and example usages.
      - Handles internal transitions to update or keep the state
      - (no parameters)
    * - ``output(self, msg_deliver)``
-     - Generates and returns an output message
-     - - ``msg_deliver``: message delivery object
+     - Builds output messages and adds them to ``msg_deliver`` via ``insert_message(msg)`` (v2.0 two-phase tick reads the bag, not the return value)
+     - - ``msg_deliver`` (``MessageDeliverer``): the bag to deposit outputs into
    * - ``time_advance(self)``
      - Returns the time advance for the current state
      - (no parameters)
@@ -119,7 +119,7 @@ Below is the complete implementation of the PEG model:
             msg = SysMessage(self.get_name(), "process")
             msg.insert(f"{self.msg_no}")  # Insert message number
             print(f"[Gen][OUT]: {self.msg_no}")
-            return msg
+            msg_deliver.insert_message(msg)  # add to the bag for v2.0 two-phase tick
 
         def int_trans(self):
             """Handles internal transitions based on the current state."""
@@ -352,3 +352,77 @@ Simulation Flow Example
         se.simulate(1)
 
 This engine orchestrates all time progression, message passing, and model coordination in the simulation system.
+
+4. Two-Phase Tick and Confluent Transitions
+-------------------------------------------
+
+Starting in 2.0, ``SysExecutor`` runs each simulated instant as a
+**two-phase tick**:
+
+1. **Phase A — output.** Every model whose deadline has been reached
+   evaluates ``output()`` against its *pre-transition* state. Outputs
+   are buffered, not delivered yet.
+2. **Phase B — transitions.** The buffered outputs are routed through
+   the coupling graph, then each affected model runs the appropriate
+   transition: ``int_trans`` (imminent only), ``ext_trans`` (receiver
+   only), or ``con_trans`` (both at once).
+
+This matches Parallel-DEVS semantics and fixes ordering bugs that arose
+when a model was simultaneously imminent *and* receiving an external
+event (the **confluent** case).
+
+Overriding ``con_trans``
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The default ``con_trans`` runs ``δ_int ; δ_ext`` (internal then external),
+matching xdevs.py and PythonPDEVS. Override it on your ``BehaviorModel``
+subclass when you need different confluent semantics:
+
+.. code-block:: python
+
+    class PriorityModel(BehaviorModel):
+        def con_trans(self, port_msgs):
+            # ext-then-int: incoming events take precedence over the
+            # scheduled internal transition.
+            for port, msg in port_msgs:
+                self.ext_trans(port, msg)
+            self.int_trans()
+
+``port_msgs`` is an iterable of ``(port_name, SysMessage)`` tuples
+delivered at this instant.
+
+5. HLA Stepped Execution
+------------------------
+
+For HLA federate integration (IEEE 1516-2010 RTI), pyjevsim exposes a
+**stepped** execution API in addition to ``simulate()``. The federate
+ambassador owns the main loop and asks pyjevsim to advance up to a
+granted time:
+
+.. code-block:: python
+
+    from pyjevsim.definition import ExecutionType
+    from pyjevsim.system_executor import SysExecutor
+
+    se = SysExecutor(1, ex_mode=ExecutionType.HLA_TIME)
+    # ... register entities, set up coupling ...
+
+    while not federate.done:
+        next_t = se.get_next_event_time()        # for Time Advance Request
+        granted = federate.request_advance(next_t)  # RTI grants time
+        outputs = se.step(granted)                  # run cascade up to granted
+        federate.publish(outputs)
+
+Two methods drive the integration:
+
+- ``get_next_event_time()`` — returns the next scheduled internal or
+  external event time (or ``Infinite``). The federate uses this as its
+  Time Advance Request value.
+- ``step(granted_time)`` — processes every event whose ``req_time`` is
+  ``<= granted_time`` using the same two-phase tick. Cascading
+  ``sigma=0`` transitions are run within the same call; events past the
+  grant stay in the FEL for the next ``step()``. Returns a deque of
+  output events generated during this grant.
+
+Use ``ExecutionType.HLA_TIME`` so the executor does not also try to
+own time advancement internally.

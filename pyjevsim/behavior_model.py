@@ -5,7 +5,7 @@ Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
-This module contains a BehaivorModel object that allows you to implement the Discrete Event System Specification AtomicModel. 
+This module contains a BehaviorModel object that allows you to implement the Discrete Event System Specification AtomicModel.
 """
 
 from abc import abstractmethod

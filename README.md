@@ -1,46 +1,127 @@
 # pyjevsim
+
+[![PyPI](https://img.shields.io/pypi/v/pyjevsim.svg)](https://pypi.org/project/pyjevsim/)
+[![Python](https://img.shields.io/pypi/pyversions/pyjevsim.svg)](https://pypi.org/project/pyjevsim/)
+[![Docs](https://readthedocs.org/projects/pyjevsim/badge/?version=latest)](https://pyjevsim.readthedocs.io/en/latest/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ## Introduction
-pyjevsim is a DEVS(discrete event system specification) environment that provides journaling functionality.
-It provides the ability to snapshot and restore models or simulation engines.
-It's compatible with Python versions 3.10+.
-   
-For more information, see the documentation. : [pyjevsim](https://pyjevsim.readthedocs.io/en/latest/index.html)
-   
+
+pyjevsim is a DEVS (discrete event system specification) modeling and
+simulation environment with built-in journaling. It supports snapshot
+and restore of individual models or the full simulation engine,
+virtual-time and real-time execution, and HLA federate integration via
+a stepped execution mode. Compatible with Python 3.10+.
+
+Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
+
+### What's new in 2.0
+
+- **Two-phase tick.** `SysExecutor` evaluates every imminent model's
+  `output()` first, then routes outputs and applies transitions —
+  fixing confluent-event ordering under Parallel-DEVS semantics.
+- **HLA stepped execution.** `step(granted_time)` and
+  `get_next_event_time()` let an IEEE 1516-2010 RTI federate drive
+  pyjevsim without owning the main loop.
+- **V_TIME jump-to-next-event.** The virtual-time scheduler hops
+  directly to the next scheduled event instead of advancing by a fixed
+  `time_resolution`, eliminating idle ticks on sparse models.
+- **Opt-in uncaught-message tracking** for debugging dangling outputs.
+- **DEVStone benchmark suite** with cross-engine comparison adapters.
+
 ## Installing
-You can install pyjevsim via
+
+From PyPI (recommended):
+
+```
+pip install pyjevsim
+```
+
+From source:
+
 ```
 git clone https://github.com/eventsim/pyjevsim
+cd pyjevsim
+pip install -e .
 ```
-   
+
 ## Dependencies
-The only dependency required by pyjevsim is dill ~= 0.3.6 for model serialization and restoration.  
-dill is an essential library for serializing models and simulation states and can be installed via. 
-```
-pip install dill
-```
-   
-### Optional Dependencies
-pytest is an optional dependency required for running test cases and example executions. 
-You can install pyjevsim via
-```
-pip install pytest
-```
-   
-Additionally, you can install all necessary libraries, including optional dependencies, by running the following command:
-```
-pip install -r requirements.txt
-``` 
 
-## Working with pyjevsim
-Once you have installed the library, you can begin working with it.
+- Python >= 3.10
+- `dill >= 0.3.6` (installed automatically) — used for model
+  serialization and restoration.
 
-### Quick Start
-The docs describe how to configure a simulation via pyjevsim's BehaviorModel and SysExecutor.
-Check out the [documentation](link) to configure your simulation.
+`pytest` is required only to run the test suite and is declared under
+the `dev` extra:
 
-### Example
-There is a banksim example that uses pyjevsim's DEVS functionality and journaling features.
-[documentation](link)
+```
+pip install pyjevsim[dev]
+```
+
+## Quick Start
+
+A minimal generator → sink simulation:
+
+```python
+from pyjevsim.behavior_model import BehaviorModel
+from pyjevsim.definition import ExecutionType, Infinite
+from pyjevsim.system_executor import SysExecutor
+from pyjevsim.system_message import SysMessage
+
+
+class Gen(BehaviorModel):
+    def __init__(self, name):
+        super().__init__(name)
+        self.init_state("Generate")
+        self.insert_state("Generate", 1)
+        self.insert_output_port("out")
+
+    def ext_trans(self, port, msg): pass
+    def int_trans(self): pass
+    def output(self, md):
+        msg = SysMessage(self.get_name(), "out")
+        msg.insert("tick")
+        md.insert_message(msg)
+    def time_advance(self):
+        return 1
+
+
+class Sink(BehaviorModel):
+    def __init__(self, name):
+        super().__init__(name)
+        self.init_state("Idle")
+        self.insert_state("Idle", Infinite)
+        self.insert_input_port("in")
+
+    def ext_trans(self, port, msg):
+        print(f"received: {msg.retrieve()}")
+    def int_trans(self): pass
+    def output(self, md): pass
+    def time_advance(self):
+        return Infinite
+
+
+se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
+gen = Gen("g")
+sink = Sink("s")
+se.register_entity(gen)
+se.register_entity(sink)
+se.coupling_relation(gen, "out", sink, "in")
+se.simulate(5)
+```
+
+See the [quick-start guide](https://pyjevsim.readthedocs.io/en/latest/pyjevsim_quick_start.html)
+for structural models, snapshots, and HLA stepped execution.
+
+### Examples
+
+The [`examples/`](examples/) directory contains:
+
+- **`banksim/`** — bank queue simulation demonstrating BehaviorModel,
+  StructuralModel, and snapshot/restore.
+- **`atsim/`** — anti-torpedo simulator with self-propelled and
+  stationary decoy models.
+- **`mwmsim/`** — municipal waste management agent-based model.
 
 ### Output messages are shared by reference
 
