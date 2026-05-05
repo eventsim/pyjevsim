@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-05-06
+
 ### Added
 - DEVStone benchmark suite under `benchmark/` with LI/HI/HO topology builders,
   parameterizable atomic, and a CLI runner (`run_devstone.py`) for single
@@ -102,7 +104,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SysExecutor` with V_TIME and R_TIME execution modes, port-based
   coupling, and `dill`-backed serialization.
 
-[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v1.3.1...HEAD
+[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/eventsim/pyjevsim/compare/v1.3.1...v2.0.0
 [1.3.1]: https://github.com/eventsim/pyjevsim/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/eventsim/pyjevsim/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/eventsim/pyjevsim/compare/v1.1.0...v1.2.0
