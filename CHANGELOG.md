@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] — 2026-05-06
+
+### Changed
+- Documentation overhaul: `README.md` now ships PyPI/RTD/license badges,
+  PyPI install instructions, and a runnable generator → sink quick start.
+- Sphinx docs updated for 2.0: "What's new in 2.0" landing section,
+  HLA `step()` and two-phase tick subsections in the quick start,
+  autodoc coverage for `atomic_model`, `schedule_queue`, and
+  `message_deliverer`. Author / release metadata in `conf.py` set to
+  `Changbeom Choi` and `2.0.0`.
+- `StructuralModel` gains class- and method-level docstrings.
+- `SysExecutor` class docstring expanded to describe the two-phase
+  tick and the three execution modes; `ex_mode` argument now documents
+  `HLA_TIME`.
+
+### Fixed
+- Quick-start `output()` example used the legacy `return msg` pattern
+  that the v2.0 two-phase tick silently ignores. Updated to call
+  `msg_deliver.insert_message(msg)`.
+- Typo in `behavior_model` module docstring ("BehaivorModel").
+
 ## [2.0.0] — 2026-05-06
 
 ### Added
@@ -104,7 +125,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SysExecutor` with V_TIME and R_TIME execution modes, port-based
   coupling, and `dill`-backed serialization.
 
-[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/eventsim/pyjevsim/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/eventsim/pyjevsim/compare/v1.3.1...v2.0.0
 [1.3.1]: https://github.com/eventsim/pyjevsim/compare/v1.3.0...v1.3.1
 [1.3.0]: https://github.com/eventsim/pyjevsim/compare/v1.2.0...v1.3.0
