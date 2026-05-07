@@ -81,9 +81,15 @@ class TestSysExecutorWiring:
 
 class TestEndToEndStep:
     def test_M2_5_step_delivers_bound_output_to_transport(self):
+        # The factory installs an _HLARouter as the transport's single
+        # callback, so we spy on tx.send to observe the outbound flow.
         tx = LoopbackTransport()
         seen: list = []
-        tx.on_receive(lambda kind, fom, payload, ts: seen.append((fom, payload)))
+        original_send = tx.send
+        def spy(b, payload):
+            seen.append((b.fom_id, payload))
+            original_send(b, payload)
+        tx.send = spy  # type: ignore[assignment]
 
         sys_exec = _sys()
         bindings_by_model = {
