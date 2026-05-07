@@ -59,14 +59,19 @@ class TestClassShape:
 
     def test_M1_2_constructor_stores_bindings_and_parent(self, emitter):
         # §3.1 — observable behavior, not private attrs: a bound out
-        # port emits via the transport.
+        # port emits via the transport. We spy on tx.send (rather than
+        # tx.on_receive) because _HLARouter takes the single on_receive
+        # callback for dispatch.
         bindings = {
             "out": HLAInteraction("Communication.ChatMsg", direction="out"),
         }
         tx = LoopbackTransport()
         seen: list = []
-        tx.on_receive(lambda kind, fom_id, payload, ts:
-                      seen.append((kind, fom_id, payload)))
+        original_send = tx.send
+        def spy(b, payload):
+            seen.append((b.kind, b.fom_id, payload))
+            original_send(b, payload)
+        tx.send = spy  # type: ignore[assignment]
 
         ex, sys_exec, _, _ = _wrap(emitter, bindings, transport=tx)
         ex.output(MessageDeliverer())
@@ -122,6 +127,11 @@ class TestOutputInterception:
 
     def test_M1_6_inout_binding_routes_outbound_to_transport(self):
         emitter = EmitOnce(name="e", out_port="dual")
+        # §1.1 inout direction means the model both publishes and
+        # subscribes to this FOM identifier — so the model needs both
+        # an input port and an output port with that name.
+        emitter.insert_input_port("dual")
+
         bindings = {"dual": HLAInteraction("Comm.X", direction="inout")}
         sent: list = []
         tx = LoopbackTransport()

@@ -6,10 +6,12 @@ contract and docs/hla/instruction.md for the developer guide.
 """
 
 from .bindings import HLAAttribute, HLAInteraction
+from .hla_executor import HLAExecutor
 from .transport import LoopbackTransport, Transport, _HLARouter
 
 __all__ = [
     "HLAAttribute",
+    "HLAExecutor",
     "HLAInteraction",
     "LoopbackTransport",
     "Transport",
