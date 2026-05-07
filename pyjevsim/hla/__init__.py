@@ -7,10 +7,12 @@ contract and docs/hla/instruction.md for the developer guide.
 
 from .bindings import HLAAttribute, HLAInteraction
 from .factory import HLAExecutorFactory
+from .federate import Federate
 from .hla_executor import HLAExecutor
 from .transport import LoopbackTransport, Transport, _HLARouter
 
 __all__ = [
+    "Federate",
     "HLAAttribute",
     "HLAExecutor",
     "HLAExecutorFactory",
