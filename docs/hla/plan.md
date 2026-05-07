@@ -32,14 +32,17 @@ do PW before M0. See `docs/hla/tasks.md` § Pre-work.
 
 | #  | Title                                  | Tasks         | New code (LOC) | Touches core? | Status |
 |----|----------------------------------------|---------------|----------------|---------------|--------|
-| PW | Spec / fixture corrections             | PW.1..PW.7    | 0 (docs only)  | no            |        |
-| M0 | Foundation: bindings + transport + router | T0.1..T0.5 | ~150        | no            |        |
-| M1 | `HLAExecutor` data path + wiring       | T1.1..T1.5    | ~130           | no            |        |
-| M2 | `HLAExecutorFactory` + integration     | T2.1..T2.4    | ~55            | no            |        |
-| M3 | `Federate` runtime + HLA_TIME loop     | T3.1..T3.3    | ~90            | no            |        |
-| M4 | Confluent / bag delivery semantics     | M4.0+T4.1..T4.5 | ~10 cond.    | conditional   |        |
+| PW | Spec / fixture corrections             | PW.1..PW.7    | 0 (docs only)  | no            | DONE 2026-05-07 |
+| M0 | Foundation: bindings + transport + router | T0.1..T0.5 | ~120        | no            | DONE 2026-05-07 |
+| M1 | `HLAExecutor` data path + wiring       | T1.1..T1.5    | ~95            | no            | DONE 2026-05-07 |
+| M2 | `HLAExecutorFactory` + integration     | T2.1..T2.4    | ~30            | no            | DONE 2026-05-07 |
+| M3 | `Federate` runtime + HLA_TIME loop     | T3.1..T3.3    | ~40            | no            | DONE 2026-05-07 |
+| M4 | step() peek patch + confluent semantics | M4.0+T4.1..T4.5 | ~30 core | yes (step round loop) | DONE 2026-05-07 |
 | M5 | Snapshot composition                   | DEFERRED v2   | -              | -             | DROP   |
-| F  | Final integration                      | F.1..F.3      | 0              | no            |        |
+| F  | Final integration                      | F.1..F.3      | 0              | no            | DONE 2026-05-07 |
+
+**Final test count**: 86/86 pass — 40 pre-existing + 46 new HLA tests
+(15 M0 + 11 M1 + 6 M2 + 9 M3 + 5 M4). Zero regressions.
 
 After M5: subsystem is complete and usable against any `Transport`
 implementation. Two transports follow as separate work items downstream
