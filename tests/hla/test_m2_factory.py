@@ -130,4 +130,8 @@ class TestEndToEndStep:
         )
         port, payload = receiver.received[0]
         assert port == "in"
-        assert payload == [{"hello": "world"}]
+        # HLAExecutor.output forwards sys_msg.retrieve() (a list) to the
+        # transport; _on_rti_event splats that list back to one
+        # insert_external_event call per item. The receiver's
+        # SysMessage.retrieve() yields the per-item payload.
+        assert payload == {"hello": "world"}

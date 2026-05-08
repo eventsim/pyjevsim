@@ -4,6 +4,15 @@ Two transport-specific chat-federate examples sharing one `Chatter`
 BehaviorModel (`_chat_model.py`). Same model class runs against both
 RTIs — only the `Transport` and the bring-up script differ.
 
+| Demo                | RTI                      | Run with                                              |
+|---------------------|--------------------------|-------------------------------------------------------|
+| **`chat_loopback.py`** | none (in-process)     | `python -m examples.hla.chat_loopback`                |
+| `chat_pitch/`       | Pitch pRTI               | `chat_pitch/run_demo.sh` (orchestrates 2 gateways + 2 federates) |
+| `chat_gorti/`       | gorti rtid               | `chat_gorti/run_demo.sh` (orchestrates rtid + 2 federates) |
+
+**Start with `chat_loopback.py`** — no external RTI required, runs in
+one process, demonstrates the full subsystem in ~30 seconds.
+
 | Directory      | RTI           | Transport implementation                       |
 |----------------|---------------|------------------------------------------------|
 | `chat_pitch/`  | Pitch pRTI    | `PitchTransport` → `kdx_rti.GatewayClient` (ZMQ → Java gateway → pRTI) |
@@ -35,33 +44,49 @@ upstream a richer one to the kdx-rti / gorti repo).
 
 ## Verifying without an RTI
 
-The shared model has no HLA imports, so it can be exercised with
-`pyjevsim.hla.LoopbackTransport` for a self-contained two-federate
-demo without any external RTI:
+`chat_loopback.py` is a complete in-process two-federate demo using
+`pyjevsim.hla.LoopbackTransport`. No external dependencies. Run it:
 
-```python
-from pyjevsim import ExecutionType, SysExecutor
-from pyjevsim.hla import (
-    Federate, HLAExecutorFactory, HLAInteraction, LoopbackTransport,
-)
-from examples.hla._chat_model import Chatter
-
-tx = LoopbackTransport()
-sys_exec = SysExecutor(_time_resolution=1, ex_mode=ExecutionType.HLA_TIME)
-chat = HLAInteraction("Communication", direction="inout")
-sys_exec.exec_factory = HLAExecutorFactory(tx, {
-    "alice": {Chatter.OUTBOX: HLAInteraction("Communication", direction="out"),
-              Chatter.INBOX:  HLAInteraction("Communication", direction="in")},
-    "bob":   {Chatter.OUTBOX: HLAInteraction("Communication", direction="out"),
-              Chatter.INBOX:  HLAInteraction("Communication", direction="in")},
-})
-sys_exec.register_entity(Chatter("alice"))
-sys_exec.register_entity(Chatter("bob"))
-
-# Drive without a Federate (LoopbackTransport doesn't need lifecycle).
-for _ in range(10):
-    sys_exec.step(sys_exec.global_time + 1.0)
+```sh
+python -m examples.hla.chat_loopback                  # default 3 messages each
+python -m examples.hla.chat_loopback --count 5 --period 0.5 --end 5
 ```
 
-This is what `tests/hla/test_m2_factory.py::test_M2_6` exercises —
-the test itself is a working two-federate demo.
+Expected output:
+
+```
+-- chat_loopback: each federate sends 3, period=1.0s --
+[alice] heard 'bob': hello from bob #1
+[bob] heard 'alice': hello from alice #1
+[alice] heard 'bob': hello from bob #2
+...
+-- done at t=3.0 --
+```
+
+`tests/hla/test_m2_factory.py::test_M2_6` is the same demo expressed
+as a regression test.
+
+## Automated demos with real RTIs
+
+Each subdir has a `run_demo.sh` that brings up the RTI processes,
+runs both federates in parallel, captures their logs, prints the
+chat output, and tears everything down on exit. Both scripts trap
+`EXIT/INT/TERM` to ensure no orphaned processes survive.
+
+### Pitch (assumes pRTI CRC is already running):
+
+```sh
+COUNT=3 PERIOD=0.5 END=8 ./examples/hla/chat_pitch/run_demo.sh
+```
+
+Required env: `PRTI1516E_HOME` + `KDX_RTI_DIR` (defaults to a sibling
+`kdx-rti` checkout).
+
+### gorti (rtid is started by the script):
+
+```sh
+COUNT=3 PERIOD=0.5 END=8 ./examples/hla/chat_gorti/run_demo.sh
+```
+
+Required env: `RTID` (path to the `rtid` binary, defaults to
+`<sibling-gorti>/rtid`) and the `rti1516e` Python package installed.

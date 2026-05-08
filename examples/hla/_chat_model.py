@@ -41,8 +41,14 @@ class Chatter(BehaviorModel):
             return
         items = msg.retrieve() if msg is not None else []
         for item in items:
-            text = item.get("text", "<no text>") if isinstance(item, dict) else str(item)
             sender = item.get("from", "?") if isinstance(item, dict) else "?"
+            # Skip self-echoes. Real RTIs (Pitch, gorti) don't redeliver
+            # a federate's own publications, but LoopbackTransport does
+            # (it has no notion of "publisher"). Filtering here keeps
+            # the same model usable across all transports.
+            if sender == self.get_name():
+                continue
+            text = item.get("text", "<no text>") if isinstance(item, dict) else str(item)
             print(f"[{self.get_name()}] heard {sender!r}: {text}")
 
     def int_trans(self):
