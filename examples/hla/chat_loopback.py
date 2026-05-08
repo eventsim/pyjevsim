@@ -36,6 +36,7 @@ from pyjevsim.hla import (
 )
 
 from examples.hla._chat_model import Chatter
+from examples.hla._trace import TracingTransport
 
 CHAT_CLASS = "HLAinteractionRoot.Communication"
 
@@ -55,9 +56,19 @@ def main() -> None:
                    help="simulated seconds between sends (default 1.0)")
     p.add_argument("--end", type=float, default=10.0,
                    help="simulated end time (default 10.0)")
+    p.add_argument("--trace-file",
+                   help="write canonical event-sequence trace to this file "
+                        "(for cross-RTI semantics comparison)")
     args = p.parse_args()
 
     transport = LoopbackTransport()
+    if args.trace_file:
+        # NOTE: in chat_loopback both alice and bob share one transport,
+        # so the trace is the *combined* sequence — useful for sanity
+        # checks but not directly comparable to per-federate traces from
+        # chat_pitch / chat_gorti. Use the per-RTI demos for that.
+        trace_sink = open(args.trace_file, "w", buffering=1)
+        transport = TracingTransport(transport, sink=trace_sink)
     sys_exec = SysExecutor(_time_resolution=1, _sim_name="chat-demo",
                            ex_mode=ExecutionType.HLA_TIME)
     sys_exec.exec_factory = HLAExecutorFactory(

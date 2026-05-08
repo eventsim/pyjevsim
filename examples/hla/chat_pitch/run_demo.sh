@@ -74,10 +74,12 @@ start_federate() {
     local name="$1"; shift
     local ports="$1"; shift
     local logfile="${LOG_DIR}/${name}.log"
-    echo "starting federate ${name} (ports=${ports})  (log: ${logfile})"
+    local tracefile="${LOG_DIR}/${name}.trace"
+    echo "starting federate ${name} (ports=${ports})  (log: ${logfile}, trace: ${tracefile})"
     ( cd "${REPO_ROOT}" && python3 -m examples.hla.chat_pitch.run "${name}" \
         --ports "${ports}" --count "${COUNT}" --period "${PERIOD}" \
-        --end "${END}" --log INFO >"${logfile}" 2>&1 ) &
+        --end "${END}" --log INFO --trace-file "${tracefile}" \
+        >"${logfile}" 2>&1 ) &
     PIDS+=("$!")
 }
 
@@ -100,4 +102,18 @@ for name in alice bob; do
     echo "## ${name}.log"
     grep -E '\[(alice|bob)\] heard' "${LOG_DIR}/${name}.log" || echo "  (no chat lines captured)"
 done
+
+# Stable filename in /tmp so cross-RTI diff is one fixed command.
+mkdir -p /tmp/hla-traces
+cp "${LOG_DIR}/alice.trace" /tmp/hla-traces/alice.pitch.trace 2>/dev/null || true
+cp "${LOG_DIR}/bob.trace"   /tmp/hla-traces/bob.pitch.trace   2>/dev/null || true
+
+echo
+echo "-- traces -------------------------------------------------------"
+echo "  per-federate:  ${LOG_DIR}/{alice,bob}.trace"
+echo "  conformance:   /tmp/hla-traces/{alice,bob}.pitch.trace"
+echo "  to compare against gorti, run chat_gorti/run_demo.sh and:"
+echo "    diff /tmp/hla-traces/alice.{pitch,gorti}.trace"
+echo "    diff /tmp/hla-traces/bob.{pitch,gorti}.trace"
+echo
 echo "-- done. full logs in ${LOG_DIR} --"

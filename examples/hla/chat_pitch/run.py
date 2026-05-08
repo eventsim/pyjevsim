@@ -27,6 +27,7 @@ from pyjevsim import ExecutionType, SysExecutor
 from pyjevsim.hla import Federate, HLAExecutorFactory, HLAInteraction
 
 from examples.hla._chat_model import Chatter
+from examples.hla._trace import TracingTransport
 from examples.hla.chat_pitch.transport import PitchTransport
 
 try:
@@ -49,6 +50,9 @@ def main() -> None:
     p.add_argument("--period", type=float, default=1.0)
     p.add_argument("--count", type=int, default=5)
     p.add_argument("--log", default="INFO")
+    p.add_argument("--trace-file",
+                   help="write canonical event-sequence trace to this file "
+                        "(for cross-RTI semantics comparison vs chat_gorti)")
     args = p.parse_args()
 
     logging.basicConfig(level=getattr(logging, args.log.upper(), logging.INFO),
@@ -62,6 +66,10 @@ def main() -> None:
     )
 
     transport = PitchTransport(endpoints=endpoints)
+    if args.trace_file:
+        trace_sink = open(args.trace_file, "w", buffering=1)
+        transport = TracingTransport(transport, sink=trace_sink)
+
     sys_exec = SysExecutor(_time_resolution=1, _sim_name=f"{args.name}-sim",
                            ex_mode=ExecutionType.HLA_TIME)
 
