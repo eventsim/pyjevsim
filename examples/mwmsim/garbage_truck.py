@@ -86,8 +86,7 @@ class GarbageTruck(BehaviorModel):
         if self._cur_state == "REQUEST":
             msg = SysMessage(self.get_name(), self.garbage_id_map[self.schedule[self.cur_index][0]])
             msg.insert(self.truck_storage-self.truck_current_storage)
-            return msg
-        return None
+            msg_deliver.insert_message(msg)
 
     def int_trans(self):
         if self._cur_state == "INITAL_APPROACH":

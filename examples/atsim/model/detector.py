@@ -24,17 +24,16 @@ class Detector(BehaviorModel):
             #print(ObjectDB().items)
             self._cur_state = "Detect"
 
-    def output(self, msg):
-        message = SysMessage(self.get_name(),  "threat_list")
+    def output(self, msg_deliver):
+        message = SysMessage(self.get_name(), "threat_list")
         message.insert([])
-        
+
         for target in ObjectDB().items:
             if self.platform.mo != target and target.check_active():
                 if self.platform.do.detect(self.platform.mo, target):
                     message.retrieve()[0].append(target)
         if message.retrieve()[0]:
-            msg.insert_message(message)
-        return msg
+            msg_deliver.insert_message(message)
         
     def int_trans(self):
         if self._cur_state == "Detect":

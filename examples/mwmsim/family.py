@@ -46,8 +46,8 @@ class Family(BehaviorModel):
         msg.insert(copy.deepcopy(self.family_type.get_members()))
         #print(self.family_type.get_stack_amount())
         self.family_type.empty_stack()
-        
-        return msg
+
+        msg_deliver.insert_message(msg)
             
     def int_trans(self):
         if self._cur_state == "FLUSH":

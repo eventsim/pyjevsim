@@ -31,6 +31,14 @@ class SnapshotExecutor(Executor):
         self.behavior_executor = behavior_executor
         self.condition = condition
 
+        # Mirror the hot-path attribute snapshots that BehaviorExecutor /
+        # StructuralExecutor expose. ScheduleQueue reads `_obj_id` and
+        # SysExecutor.destroy_active_entity reads `_cached_destruct_time`
+        # as plain attributes, so a decorator that forwards only via
+        # methods raises AttributeError on the inner loop.
+        self._obj_id = behavior_executor.get_obj_id()
+        self._cached_destruct_time = behavior_executor.get_destruct_time()
+
     def get_core_model(self):
         """Returns BehaviorModel of SnapshotExecutor.
 

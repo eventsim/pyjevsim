@@ -206,7 +206,7 @@ class GarbageCan(BehaviorModel):
             self._cur_state = "PROC_TRUCK"
 
     def output(self, msg_deliver):
-        if self._cur_state == "PROCESS":  
+        if self._cur_state == "PROCESS":
             #print('[check]$')
             #print(self.human_port_map[self.recv_checker_port])
             port = self.recv_checker_port.pop(0)
@@ -214,13 +214,14 @@ class GarbageCan(BehaviorModel):
             msg.insert(float(self.cur_amount/self.can_size))
             #print("$")
             #print("[gc] " + str(float(self.cur_amount/self.can_size)))
-            return msg
+            msg_deliver.insert_message(msg)
+            return
 
         if self._cur_state == "PROC_TRUCK":
             #print("!@@")
 #            if self.avaliable_amount < 0:
 #               self.avaliable_amount = 0
-            
+
             msg = SysMessage(self.get_name(), "res_garbage")
             if self.cur_amount < self.avaliable_amount:
                 msg.insert(self.cur_amount)
@@ -230,8 +231,7 @@ class GarbageCan(BehaviorModel):
             elif self.cur_amount >= self.avaliable_amount:
                 self.cur_amount -= self.avaliable_amount
                 msg.insert(self.avaliable_amount)
-            return msg
-        return None
+            msg_deliver.insert_message(msg)
 
     def int_trans(self):
         if self._cur_state == "PROCESS":

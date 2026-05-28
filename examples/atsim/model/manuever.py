@@ -18,9 +18,8 @@ class Manuever(BehaviorModel):
             print(f"{self.get_name()}[start_recv]: {datetime.datetime.now()}")
             self._cur_state = "Generate"
 
-    def output(self, msg):
+    def output(self, msg_deliver):
         self.platform.mo.calc_next_pos_with_heading(1)
-        return None
         
     def int_trans(self):
         if self._cur_state == "Generate":

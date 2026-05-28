@@ -24,22 +24,20 @@ class TorpedoCommandControl(BehaviorModel):
             self.threat_list = msg.retrieve()[0]
             self._cur_state = "Decision"
 
-    def output(self, msg):
+    def output(self, msg_deliver):
         target = None
-        
+
         for t in self.threat_list:
-            target =  self.platform.co.get_target(self.platform.mo, t)
-                
+            target = self.platform.co.get_target(self.platform.mo, t)
+
         # house keeping
         self.threat_list = []
         self.platform.co.reset_target()
-        
+
         if target:
             message = SysMessage(self.get_name(), "target")
             message.insert(target)
-            msg.insert_message(message)
-        
-        return msg
+            msg_deliver.insert_message(message)
         
     def int_trans(self):
         if self._cur_state == "Decision":

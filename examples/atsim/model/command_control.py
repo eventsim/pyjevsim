@@ -26,17 +26,16 @@ class CommandControl(BehaviorModel):
             self.threat_list = msg.retrieve()[0]
             self._cur_state = "Decision"
 
-    def output(self, msg):
+    def output(self, msg_deliver):
         for target in self.threat_list:
             if self.platform.co.threat_evaluation(self.platform.mo, target):
                 # send order
                 message = SysMessage(self.get_name(), "launch_order")
-                msg.insert_message(message)
+                msg_deliver.insert_message(message)
                 # change heading
                 self.platform.mo.change_heading(self.platform.co.get_evasion_heading())
-        
+
         self.threat_list = []
-        return msg
         
     def int_trans(self):
         if self._cur_state == "Decision":

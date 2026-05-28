@@ -26,14 +26,13 @@ class TrackingManuever(BehaviorModel):
             self.target_platform = msg.retrieve()[0]
             self.cancel_rescheduling()
 
-    def output(self, msg):
+    def output(self, msg_deliver):
         self.idx += 1
         if self.target_platform:
             if self.platform.mo.calc_next_pos_with_pos(self.target_platform, 1) < 5:
                 self.target_platform = None
         else:
             self.platform.mo.calc_next_pos_with_heading(1)
-        return None
         
     def int_trans(self):
         if self._cur_state == "Manuever":

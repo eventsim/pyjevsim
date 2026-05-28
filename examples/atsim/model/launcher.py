@@ -28,7 +28,7 @@ class Launcher(BehaviorModel):
             print(f"{self.get_name()}[order_recv]: {datetime.datetime.now()}")
             self._cur_state = "Launch"
 
-    def output(self, msg):
+    def output(self, msg_deliver):
         if not self.launch_flag:
             se = ObjectDB().get_executor()
 
@@ -42,15 +42,12 @@ class Launcher(BehaviorModel):
                     decoy_model = SelfPropelledDecoy(f"[Decoy][{idx}]", sdo)
                 else:
                     sdo = None
-                
+
                 ObjectDB().decoys.append((f"[Decoy][{idx}]", sdo))
                 ObjectDB().items.append(sdo)
                 se.register_entity(decoy_model, 0, destroy_t)
-                
-        self.launch_flag = True
 
-        #se.register_entity()
-        return None
+        self.launch_flag = True
         
     def int_trans(self):
         if self._cur_state == "Launch":

@@ -40,9 +40,9 @@ class Human(BehaviorModel):
             #print("[human] " + self.get_name())
             msg = SysMessage(self.get_name(), "trash")
             msg.insert(self.human)
-            
+
             #print("start?")
-            return msg
+            msg_deliver.insert_message(msg)
 
     def int_trans(self):
         #print(self._cur_state)

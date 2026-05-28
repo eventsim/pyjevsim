@@ -1,5 +1,6 @@
 # SIMULATION_MODE
-SIMULATION_MODE = 'VIRTUAL_TIME'
+from pyjevsim.definition import ExecutionType
+SIMULATION_MODE = ExecutionType.V_TIME
 
 # SIMULATION_MODEL
 #REQUEST_FREQ = 1

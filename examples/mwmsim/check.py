@@ -62,22 +62,20 @@ class Check(BehaviorModel):
                 #print(SystemSimulator().get_engine("sname").get_global_time(),"[check] "+self.get_name() + ":" + str(self.htype.satisfaction))
 
     def output(self, msg_deliver):
-        if self._cur_state=="CHECK":
+        if self._cur_state == "CHECK":
             if self.htype.is_vacation():
-                self.htype.satisfaction=None
-                return None
-            else:
-                msg = SysMessage(self.get_name(), "check")
-                msg.insert(self.htype)
-                return msg
-            
+                self.htype.satisfaction = None
+                return
+            msg = SysMessage(self.get_name(), "check")
+            msg.insert(self.htype)
+            msg_deliver.insert_message(msg)
+            return
+
         if self._cur_state == "REPORT":
             #print('[check]#')
             msg = SysMessage(self.get_name(), "gov_report")
             msg.insert(self.htype)
-            return msg
-            
-        return None
+            msg_deliver.insert_message(msg)
 
     def int_trans(self):
         if self._cur_state == "CHECK":
