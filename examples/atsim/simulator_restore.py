@@ -19,7 +19,7 @@ with open('./examples/atsim/scenarios/restore_decoys.yaml', 'r') as file:
 snapshot_manager = SnapshotManager(restore_handler=RestoreHandler()) 
     
 
-se = SysExecutor(1, ex_mode=ExecutionType.R_TIME)
+se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
 #ObjectDB().set_executor(se)
 
 se.insert_input_port("start")
@@ -70,4 +70,7 @@ for i in range(30):
 		x, y, z = decoy.get_position()
 		pos_plot.update_position(name, x, y, z, 'black', 'green')
 
+	pos_plot.render(pause=0.3)
+
 se.terminate_simulation()
+pos_plot.keep_open()

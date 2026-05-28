@@ -10,7 +10,7 @@ from utils.object_db import ObjectDB
 pos_plot = PositionPlotter()
 #sm = ScenarioManager('./examples/atsim/scenarios/stationary_decoy.yaml')
 sm = ScenarioManager('./examples/atsim/scenarios/self_propelled_decoy.yaml')
-se = SysExecutor(1, ex_mode=ExecutionType.R_TIME)
+se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
 ObjectDB().set_executor(se)
 
 se.insert_input_port("start")
@@ -40,6 +40,11 @@ for _ in range(30):
 		x, y, z = decoy.get_position()
 		pos_plot.update_position(name, x, y, z, 'black', 'green')
 
+	# Single repaint per frame; the pause both paces the animation and
+	# keeps the Qt window responsive (see PositionPlotter docstring).
+	pos_plot.render(pause=0.3)
+
 #print(se.model_map)
 se.terminate_simulation()
+pos_plot.keep_open()  # keep the window interactive after the run
 

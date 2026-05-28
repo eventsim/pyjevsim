@@ -13,7 +13,7 @@ sm = ScenarioManager('./examples/atsim/scenarios/self_propelled_decoy.yaml')
 
 snapshot_manager = SnapshotManager()
 
-se = SysExecutor(1, ex_mode=ExecutionType.R_TIME, snapshot_manager = snapshot_manager)
+se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager = snapshot_manager)
 ObjectDB().set_executor(se)
 
 se.insert_input_port("start")
@@ -47,5 +47,8 @@ for i in range(30):
 		x, y, z = decoy.get_position()
 		pos_plot.update_position(name, x, y, z, 'black', 'green')
 
+	pos_plot.render(pause=0.3)
+
 
 se.terminate_simulation()
+pos_plot.keep_open()
