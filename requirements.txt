@@ -1,2 +1,2 @@
 dill==0.3.7
-pytest==7.4.2
+pytest==9.0.3
