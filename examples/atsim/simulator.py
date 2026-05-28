@@ -1,4 +1,5 @@
 import project_config
+import sys
 
 from pyjevsim import SysExecutor, ExecutionType, Infinite
 from model.manuever import Manuever
@@ -6,6 +7,13 @@ from model.surfaceship import SurfaceShip
 from utils.scenario_manager import ScenarioManager
 from utils.pos_plotter import PositionPlotter
 from utils.object_db import ObjectDB
+
+# Seconds to pause per frame — controls playback speed (larger = slower).
+# Default 1.0 matches the original real-time pacing (1 sim tick per second)
+# but stays GUI-responsive. Override on the command line, e.g.
+#   python simulator.py 2.0     # slower, easier to watch
+#   python simulator.py 0.2     # faster
+FRAME_DELAY = float(sys.argv[1]) if len(sys.argv) > 1 else 1.0
 
 pos_plot = PositionPlotter()
 #sm = ScenarioManager('./examples/atsim/scenarios/stationary_decoy.yaml')
@@ -42,7 +50,7 @@ for _ in range(30):
 
 	# Single repaint per frame; the pause both paces the animation and
 	# keeps the Qt window responsive (see PositionPlotter docstring).
-	pos_plot.render(pause=0.3)
+	pos_plot.render(pause=FRAME_DELAY)
 
 #print(se.model_map)
 se.terminate_simulation()
