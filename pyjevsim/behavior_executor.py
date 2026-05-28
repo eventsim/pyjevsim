@@ -89,11 +89,20 @@ class BehaviorExecutor(Executor):
 
     # External Transition
     def ext_trans(self, port, msg):
-        """Handles external transition based on port and message"""
+        """Handles external transition based on port and message.
+
+        The cancel-reschedule flag is read *after* the model's
+        ``ext_trans`` runs because the model raises it from inside that
+        call via ``cancel_rescheduling()``. Reading it beforehand only
+        ever saw the previous cycle's value (which ``get_req_time``
+        already cleared), so ``cancel_rescheduling`` was effectively a
+        no-op — e.g. atsim's TrackingManuever kept getting its deadline
+        reset by every incoming ``target`` and never fired ``output``.
+        """
+        self.behavior_model.ext_trans(port, msg)
+
         if self.behavior_model.get_cancel_flag():
             self._cancel_reschedule_f = True
-
-        self.behavior_model.ext_trans(port, msg)
 
     # Internal Transition
     def int_trans(self):
@@ -109,10 +118,10 @@ class BehaviorExecutor(Executor):
             port_msgs (Iterable[tuple[str, SysMessage]]): bag of messages
                 with their input ports.
         """
+        self.behavior_model.con_trans(port_msgs)
+
         if self.behavior_model.get_cancel_flag():
             self._cancel_reschedule_f = True
-
-        self.behavior_model.con_trans(port_msgs)
 
     # Output Function
     def output(self, msg_deliver):
