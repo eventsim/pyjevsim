@@ -36,7 +36,9 @@ for torpedo in sm.get_torpedoes():
 se.insert_external_event("start", None)
 
 for i in range(30):
-	se.simulate(1)
+	# _tm=False so pyjevsim doesn't install a SIGINT handler that breaks
+	# Ctrl+C under the Qt event loop (see simulator.py).
+	se.simulate(1, _tm=False)
 	if i %3 == 0 :
 		se.snapshot_simulation(name = f"atsim{i}", directory_path = "./examples/atsim/snapshot")
    

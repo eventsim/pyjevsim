@@ -1,3 +1,5 @@
+import signal
+
 import matplotlib
 matplotlib.use('QtAgg')
 import matplotlib.pyplot as plt
@@ -27,6 +29,18 @@ class PositionPlotter:
         self.y_positions = {}
         self.z_positions = {}
         self.colors = {}  # obj_id -> (point_color, line_color)
+
+        # Make Ctrl+C terminate the process. plt.pause / plt.show run
+        # Qt's C-level event loop, which never hands control back to the
+        # Python interpreter, so a SIGINT can't raise KeyboardInterrupt
+        # and the program appears unkillable. Restoring the OS default
+        # SIGINT handler lets Ctrl+C kill it immediately. Must run on the
+        # main thread (the simulators create the plotter there).
+        try:
+            signal.signal(signal.SIGINT, signal.SIG_DFL)
+        except (ValueError, OSError):
+            # Not on the main thread — leave the default handler in place.
+            pass
 
         self.fig = plt.figure()
         self.ax = self.fig.add_subplot(111, projection='3d')

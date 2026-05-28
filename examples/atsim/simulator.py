@@ -35,7 +35,10 @@ for torpedo in sm.get_torpedoes():
 se.insert_external_event("start", None)
 
 for _ in range(30):
-	se.simulate(1)
+	# _tm=False: don't let pyjevsim install its own SIGINT handler. It
+	# overrides the plotter's SIG_DFL every call and, under Qt, can't
+	# run anyway — which is exactly why Ctrl+C used to do nothing.
+	se.simulate(1, _tm=False)
 	for ship in sm.get_surface_ships():
 		x, y, z = ship.get_position()
 		pos_plot.update_position('ship', x, y, z)

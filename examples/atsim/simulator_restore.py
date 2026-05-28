@@ -63,8 +63,10 @@ se.insert_external_event("start", None)
 print(se.model_map)
 
 for i in range(30):
-	se.simulate(1)
-	
+	# _tm=False so pyjevsim doesn't install a SIGINT handler that breaks
+	# Ctrl+C under the Qt event loop (see simulator.py).
+	se.simulate(1, _tm=False)
+
 	x, y, z = ship.get_position()
 	pos_plot.update_position('ship', x, y, z)
 
