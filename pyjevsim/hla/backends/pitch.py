@@ -100,7 +100,8 @@ class PitchTransport(RTIConnector):
     def __init__(self, federation: str, federate: str, fom: str,
                  fom_map: dict, *, federate_type: str = "pyjevsim",
                  jvm_path: "str | None" = None, classpath=None,
-                 lookahead: float = 1.0, codec=None) -> None:
+                 lookahead: float = 1.0, crc: "str | None" = None,
+                 codec=None) -> None:
         super().__init__(codec)
         self._federation = federation
         self._federate = federate
@@ -110,6 +111,10 @@ class PitchTransport(RTIConnector):
         self._jvm_path = jvm_path
         self._classpath = list(classpath or [])
         self._lookahead = float(lookahead)
+        # CRC endpoint ("host" or "host:port"); None => the RTI default
+        # (localhost). Pointing this at another host is all that turns a
+        # local federation into a multi-host one.
+        self._crc = crc
 
         # Java handles, resolved after connect/join.
         self._jpype = None
@@ -121,6 +126,12 @@ class PitchTransport(RTIConnector):
         self._logical_time = 0.0        # last granted logical time
         self._reg_enabled = threading.Event()
         self._con_enabled = threading.Event()
+
+        # Federation synchronization points (used to bring multi-process
+        # federations up to a common start barrier). label -> Event.
+        self._sync_lock = threading.Lock()
+        self._sync_announced: dict[str, "threading.Event"] = {}
+        self._sync_done: dict[str, "threading.Event"] = {}
 
         # FOM resolution caches.
         self._ic_handles: dict[str, Any] = {}          # fom_id -> InteractionClassHandle
@@ -153,7 +164,15 @@ class PitchTransport(RTIConnector):
         CallbackModel = jpype.JClass("hla.rti1516e.CallbackModel")
         # HLA_IMMEDIATE delivers callbacks on RTI-owned threads; our _emit ->
         # insert_external_event is lock-protected, so that is safe.
-        self._rtiamb.connect(self._fed_amb, CallbackModel.HLA_IMMEDIATE)
+        if self._crc:
+            # Local settings designator points the LRC at a (possibly
+            # remote) CRC, e.g. "crcAddress=192.168.1.10:8989".
+            self._rtiamb.connect(
+                self._fed_amb, CallbackModel.HLA_IMMEDIATE,
+                f"crcAddress={self._crc}",
+            )
+        else:
+            self._rtiamb.connect(self._fed_amb, CallbackModel.HLA_IMMEDIATE)
 
     def _build_federate_ambassador(self):
         # JPype cannot subclass a concrete Java class (NullFederateAmbassador),
@@ -189,6 +208,12 @@ class PitchTransport(RTIConnector):
             def reflectAttributeValues(self, theObject, attributes, tag,
                                        *rest):
                 outer._on_reflect(theObject, attributes, rest)
+
+            def announceSynchronizationPoint(self, label, tag):
+                outer._sync_event(outer._sync_announced, str(label)).set()
+
+            def federationSynchronized(self, label, *rest):
+                outer._sync_event(outer._sync_done, str(label)).set()
 
             def __getattr__(self, name):
                 if name.startswith("__"):
@@ -348,6 +373,34 @@ class PitchTransport(RTIConnector):
         self._granted.wait()
         self._logical_time = self._granted_time
         return self._granted_time
+
+    # ------------------------------------------------- synchronization points
+
+    def _sync_event(self, table, label):
+        with self._sync_lock:
+            ev = table.get(label)
+            if ev is None:
+                ev = table[label] = threading.Event()
+            return ev
+
+    def register_sync_point(self, label: str) -> None:
+        """Register a federation synchronization point (one federate calls
+        this; the RTI then announces it to all joined federates)."""
+        tag = self._jpype.JArray(self._jpype.JByte)(0)
+        self._rtiamb.registerFederationSynchronizationPoint(label, tag)
+
+    def wait_sync_announced(self, label: str, timeout: float = 30.0) -> bool:
+        """Block until the RTI announces ``label`` to this federate."""
+        return self._sync_event(self._sync_announced, label).wait(timeout)
+
+    def achieve_sync_point(self, label: str) -> None:
+        """Tell the RTI this federate has reached ``label``."""
+        self._rtiamb.synchronizationPointAchieved(label)
+
+    def wait_synchronized(self, label: str, timeout: float = 30.0) -> bool:
+        """Block until every federate has achieved ``label`` (the RTI then
+        reports the federation as synchronized)."""
+        return self._sync_event(self._sync_done, label).wait(timeout)
 
     # --------------------------------------------------------- FOM handles
 
