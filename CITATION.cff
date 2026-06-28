@@ -26,9 +26,10 @@ keywords:
   - IEEE 1516
   - distributed simulation
   - Python
-# After enabling the GitHub–Zenodo integration and archiving a release,
-# add the minted DOI here, e.g.:
-# identifiers:
-#   - type: doi
-#     value: "10.5281/zenodo.XXXXXXX"
-#     description: "Concept DOI (all versions)"
+identifiers:
+  - type: doi
+    value: "10.5281/zenodo.21002028"
+    description: "Concept DOI (all versions)"
+  - type: doi
+    value: "10.5281/zenodo.21002029"
+    description: "Version DOI (v2.1.2)"
