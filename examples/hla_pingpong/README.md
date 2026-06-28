@@ -83,11 +83,30 @@ python examples/hla_pingpong/run_pitch_federate.py pong
 python examples/hla_pingpong/run_pitch_federate.py ping
 ```
 
-> Verified live (two processes, Pitch pRTI Free 5.5.2 + Temurin 11):
-> `pong received pings: [0, 1, 2, 3]`, `ping received pongs: [0, 1, 2, 3]`,
-> `pong reflected hits: [0, 1, 2, 3]`, both `resigned`, exit 0. The two
-> federates synchronize on a `ready` federation synchronization point
-> before exchanging any event.
+### Across two hosts
+
+The only thing that distinguishes a multi-host run is where the CRC lives.
+Run the CRC on one machine and point each federate at it with
+`PYJEVSIM_CRC=<crc-host>:8989` (the LRC then connects to the CRC over the
+network instead of localhost):
+
+```bash
+# host A (also runs the CRC) — responder
+set PYJEVSIM_CRC=192.168.1.10:8989
+python examples/hla_pingpong/run_pitch_federate.py pong
+# host B — server
+set PYJEVSIM_CRC=192.168.1.10:8989
+python examples/hla_pingpong/run_pitch_federate.py ping
+```
+
+> Verified live (two separate OS processes, Pitch pRTI Free 5.5.2 +
+> Temurin 11): `pong received pings: [0, 1, 2, 3]`,
+> `ping received pongs: [0, 1, 2, 3]`, `pong reflected hits: [0, 1, 2, 3]`,
+> both `resigned`, exit 0. The federates synchronize on a `ready`
+> federation synchronization point before exchanging any event. The same
+> run also succeeds with `PYJEVSIM_CRC` set to the host's routable LAN
+> address (not `localhost`), confirming the network transport path — a
+> second host on the LAN connects identically.
 
 Switching backend is the only change — the models and wiring are identical:
 

@@ -42,6 +42,7 @@ PRTI_HOME = os.environ.get("PRTI_HOME", r"C:\Program Files\prti1516e")
 JAR = os.path.join(PRTI_HOME, "lib", "prti1516e.jar")
 FOM = os.path.join(os.path.dirname(__file__), "fom", "PingPong.xml")
 JVM_PATH = os.environ.get("PYJEVSIM_JVM")          # Java >= 9 jvm.dll
+CRC = os.environ.get("PYJEVSIM_CRC")               # e.g. 192.168.1.10:8989
 SYNC = "ready"
 
 
@@ -57,7 +58,7 @@ def build_role(role: str, max_volleys: int):
         "pitch",
         federation="PingPong", federate=role,
         fom=FOM, fom_map=PINGPONG_FOM_MAP,
-        jvm_path=JVM_PATH, classpath=[JAR], lookahead=1.0,
+        jvm_path=JVM_PATH, classpath=[JAR], lookahead=1.0, crc=CRC,
     )
     se.exec_factory = HLAExecutorFactory(tx, {role: bindings})
     se.register_entity(model)

@@ -100,7 +100,8 @@ class PitchTransport(RTIConnector):
     def __init__(self, federation: str, federate: str, fom: str,
                  fom_map: dict, *, federate_type: str = "pyjevsim",
                  jvm_path: "str | None" = None, classpath=None,
-                 lookahead: float = 1.0, codec=None) -> None:
+                 lookahead: float = 1.0, crc: "str | None" = None,
+                 codec=None) -> None:
         super().__init__(codec)
         self._federation = federation
         self._federate = federate
@@ -110,6 +111,10 @@ class PitchTransport(RTIConnector):
         self._jvm_path = jvm_path
         self._classpath = list(classpath or [])
         self._lookahead = float(lookahead)
+        # CRC endpoint ("host" or "host:port"); None => the RTI default
+        # (localhost). Pointing this at another host is all that turns a
+        # local federation into a multi-host one.
+        self._crc = crc
 
         # Java handles, resolved after connect/join.
         self._jpype = None
@@ -159,7 +164,15 @@ class PitchTransport(RTIConnector):
         CallbackModel = jpype.JClass("hla.rti1516e.CallbackModel")
         # HLA_IMMEDIATE delivers callbacks on RTI-owned threads; our _emit ->
         # insert_external_event is lock-protected, so that is safe.
-        self._rtiamb.connect(self._fed_amb, CallbackModel.HLA_IMMEDIATE)
+        if self._crc:
+            # Local settings designator points the LRC at a (possibly
+            # remote) CRC, e.g. "crcAddress=192.168.1.10:8989".
+            self._rtiamb.connect(
+                self._fed_amb, CallbackModel.HLA_IMMEDIATE,
+                f"crcAddress={self._crc}",
+            )
+        else:
+            self._rtiamb.connect(self._fed_amb, CallbackModel.HLA_IMMEDIATE)
 
     def _build_federate_ambassador(self):
         # JPype cannot subclass a concrete Java class (NullFederateAmbassador),
