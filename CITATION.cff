@@ -1,0 +1,34 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+title: pyjevsim
+abstract: >-
+  A Python DEVS (Discrete Event System Specification) modelling and
+  simulation framework with journaling (snapshot/restore), virtual- and
+  real-time execution, and HLA (IEEE 1516-2010) federate integration through
+  a pluggable, RTI-agnostic backend interface (validated against Pitch pRTI).
+type: software
+authors:
+  - family-names: Choi
+    given-names: Changbeom
+    affiliation: Hanbat National University
+    email: me@cbchoi.info
+    # orcid: "https://orcid.org/0000-0000-0000-0000"   # TODO: add ORCID
+repository-code: "https://github.com/eventsim/pyjevsim"
+url: "https://pyjevsim.readthedocs.io/"
+license: MIT
+version: 2.1.1
+date-released: "2026-06-28"
+keywords:
+  - DEVS
+  - discrete-event simulation
+  - modeling and simulation
+  - HLA
+  - IEEE 1516
+  - distributed simulation
+  - Python
+# After enabling the GitHub–Zenodo integration and archiving a release,
+# add the minted DOI here, e.g.:
+# identifiers:
+#   - type: doi
+#     value: "10.5281/zenodo.XXXXXXX"
+#     description: "Concept DOI (all versions)"
