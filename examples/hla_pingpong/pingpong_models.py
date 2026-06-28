@@ -45,9 +45,9 @@ class Ping(BehaviorModel):
 
     def ext_trans(self, port, msg):
         if port == "in_pong":
-            # Inbound contract: retrieve()[0] is the peer's full
-            # retrieve() list; our payload is its single dict.
-            data = msg.retrieve()[0][0]
+            # HLAExecutor injects each item of the peer's retrieve() list
+            # as one external event, so retrieve()[0] is our single dict.
+            data = msg.retrieve()[0]
             self.received_pongs.append(data)
             self.count = int(data["count"]) + 1
             self._cur_state = "rally" if self.count <= self.max_volleys else "idle"
@@ -84,12 +84,12 @@ class Pong(BehaviorModel):
 
     def ext_trans(self, port, msg):
         if port == "in_ping":
-            data = msg.retrieve()[0][0]
+            data = msg.retrieve()[0]
             self.received_pings.append(data)
             self.count = int(data["count"])
             self._cur_state = "return"
         elif port == "in_hits":
-            data = msg.retrieve()[0][0]
+            data = msg.retrieve()[0]
             self.reflected_hits.append(int(data["hits"]))
 
     def int_trans(self):
