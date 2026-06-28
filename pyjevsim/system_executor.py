@@ -701,11 +701,6 @@ class SysExecutor(CoreModel):
             deque: output events generated and drained during this step.
         """
         self.create_entity()
-        # Drain any external events scheduled at <= current global_time
-        # before the round loop starts. Receivers that wake up because
-        # of these events are pushed into the FEL with `set_req_time`
-        # so the loop picks them up as imminents.
-        self.handle_external_input_event()
 
         # Round loop — one cascade tick per pass. `global_time` advances
         # to the actual event time of each round (not the grant
@@ -713,21 +708,45 @@ class SysExecutor(CoreModel):
         # their transitions. The grant ceiling is enforced by
         # `next_t > granted_time` — any event scheduled past the grant
         # stays in the FEL for a future `step()`.
-        while self.min_schedule_item:
-            next_t = self.min_schedule_item.peek_time(default=Infinite)
+        #
+        # External events from `input_event_queue` participate in the
+        # same round as imminents at the same instant: they are drained
+        # into `influenced_inputs` alongside imminents' lambda outputs
+        # so Phase C can dispatch `con_trans` correctly when a model is
+        # both imminent and externally influenced (TSO delivery).
+        while self.min_schedule_item or self.input_event_queue:
+            next_internal = self.min_schedule_item.peek_time(default=Infinite)
+            next_external = (self.input_event_queue[0][0]
+                             if self.input_event_queue else Infinite)
+            next_t = min(next_internal, next_external)
             if next_t > granted_time:
                 break
             if next_t > self.global_time:
                 self.global_time = next_t
 
+            # Drain externals at <= next_t and seed influenced_inputs
+            # with their (dst_port, msg) pairs.
+            influenced_inputs = {}
+            with self.condition:
+                while (self.input_event_queue
+                       and self.input_event_queue[0][0] <= next_t):
+                    _, ext_msg = heapq.heappop(self.input_event_queue)
+                    for dst_exec, dst_port in self._destinations_for(
+                        self, ext_msg.get_dst()
+                    ):
+                        if dst_exec.get_obj_id() in self.active_obj_map:
+                            influenced_inputs.setdefault(
+                                dst_exec, []
+                            ).append((dst_port, ext_msg))
+
             # Phase A — pop every imminent at this instant.
             imminent = self.min_schedule_item.pop_all_at(next_t)
-            if not imminent:
+            if not imminent and not influenced_inputs:
                 # The peek returned a stale entry (already removed or
                 # just pruned); loop again.
                 continue
 
-            # Phase A continued — collect lambda outputs.
+            # Phase A continued — collect lambda outputs from imminents.
             outputs = []
             for X in imminent:
                 md = MessageDeliverer()
@@ -735,8 +754,8 @@ class SysExecutor(CoreModel):
                 if md.has_contents():
                     outputs.append((X, md))
 
-            # Phase B — route outputs through coupling, build per-receiver bag.
-            influenced_inputs = {}
+            # Phase B — route outputs through coupling, merge into
+            # influenced_inputs (already seeded with externals).
             for X, md in outputs:
                 for msg in md.get_contents():
                     for dst_exec, dst_port in self._destinations_for(X, msg.get_dst()):
@@ -771,11 +790,6 @@ class SysExecutor(CoreModel):
             for M in affected:
                 M.set_req_time(self.global_time)
                 self.min_schedule_item.push(M)
-
-            # External events injected during this round are picked up
-            # before the next round so they participate in the same
-            # cascade window.
-            self.handle_external_input_event()
 
         # IEEE 1516-2010 convention: after a successful grant the
         # federate's logical time equals the granted time, even if the
