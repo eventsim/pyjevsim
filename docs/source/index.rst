@@ -9,11 +9,29 @@ PyJEvSim documentation
 PyJEvSim is a DEVS (Discrete Event System Specification) modeling and
 simulation environment with built-in journaling. It supports snapshot and
 restore of individual models or the full simulation engine, virtual-time
-and real-time execution, and an HLA-friendly stepped execution mode for
-federate integration.
+and real-time execution, and HLA (IEEE 1516-2010) federate integration
+with pluggable RTI backends (including Pitch pRTI).
 
   - GitHub: `eventsim/pyjevsim <https://github.com/eventsim/pyjevsim>`_
   - PyPI: `pyjevsim <https://pypi.org/project/pyjevsim/>`_
+
+What's new in 2.1
+-----------------
+
+- **Pluggable RTI backends.** A new ``RTIConnector`` interface
+  (``pyjevsim.hla``) lets any RTI drive a pyjevsim federate without
+  touching model code. A backend implements just ``_do_send`` and
+  ``_do_request_time_advance``; direction enforcement, FOM codec,
+  callback dispatch and the join/resign state machine are inherited.
+  Ships an in-process bus (``inprocess``) and a **Pitch pRTI**
+  (IEEE 1516-2010) backend (``pitch``, via JPype). Select by name with
+  ``create_rti(...)``. See :doc:`pyjevsim_hla`.
+- **HLA ping-pong example** under ``examples/hla_pingpong/``: two
+  federates exchanging interactions and synchronizing an object
+  attribute, runnable offline or against a live RTI.
+- **Unified DEVS tick.** ``V_TIME``, ``R_TIME`` and ``HLA_TIME`` share a
+  single two-phase tick body, so external events get correct confluent
+  (``con_trans``) semantics on every path.
 
 What's new in 2.0
 -----------------
@@ -77,3 +95,4 @@ Quick Start Guides
 
    pyjevsim_quick_start
    snapshot_quick_start
+   pyjevsim_hla

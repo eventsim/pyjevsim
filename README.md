@@ -10,10 +10,28 @@
 pyjevsim is a DEVS (discrete event system specification) modeling and
 simulation environment with built-in journaling. It supports snapshot
 and restore of individual models or the full simulation engine,
-virtual-time and real-time execution, and HLA federate integration via
-a stepped execution mode. Compatible with Python 3.10+.
+virtual-time and real-time execution, and HLA (IEEE 1516-2010) federate
+integration with pluggable RTI backends (including Pitch pRTI).
+Compatible with Python 3.10+.
 
 Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
+
+### What's new in 2.1
+
+- **Pluggable RTI backends.** A new `RTIConnector` interface
+  (`pyjevsim.hla`) lets any RTI drive a pyjevsim federate without
+  touching model code. A backend implements just two methods; direction
+  enforcement, FOM codec, callback dispatch and the join/resign state
+  machine are inherited. Ships an in-process bus (`inprocess`) for
+  multi-federate testing and a **Pitch pRTI** (IEEE 1516-2010) backend
+  (`pitch`, via JPype). Pick one by name with `create_rti(...)`.
+- **HLA ping-pong example** ([`examples/hla_pingpong/`](examples/hla_pingpong/)):
+  two federates (ping/pong) exchanging interactions and synchronizing an
+  object attribute — runnable offline (no Java) or against a live RTI.
+  Verified live against Pitch pRTI Free 5.5.2.
+- **Unified DEVS tick.** V_TIME, R_TIME and HLA_TIME now share one
+  two-phase tick body, so external events get correct confluent
+  (`con_trans`) semantics on every execution path.
 
 ### What's new in 2.0
 
@@ -56,6 +74,13 @@ the `dev` extra:
 
 ```
 pip install pyjevsim[dev]
+```
+
+The Pitch pRTI backend needs JPype, declared under the `hla-pitch` extra
+(the `loopback` / `inprocess` backends need nothing beyond the core):
+
+```
+pip install pyjevsim[hla-pitch]
 ```
 
 ## Quick Start
@@ -122,6 +147,10 @@ The [`examples/`](examples/) directory contains:
 - **`atsim/`** — anti-torpedo simulator with self-propelled and
   stationary decoy models.
 - **`mwmsim/`** — municipal waste management agent-based model.
+- **`hla_pingpong/`** — two HLA federates (ping/pong) demonstrating
+  federation join/resign, interaction exchange, and object-attribute
+  synchronization. Run offline (`run_inprocess.py`, no Java) or against a
+  live Pitch pRTI (`run_pitch.py`).
 
 ### Output messages are shared by reference
 
@@ -282,9 +311,62 @@ se.set_output_event_callback(lambda: print("output ready"))
 events = se.handle_external_output_event()
 ```
 
-## HLA/RTI Integration (HLA_TIME Mode)
+## HLA/RTI Integration
 
-For HLA/RTI-controlled simulations, use `HLA_TIME` mode with `step()` and `get_next_event_time()`.
+pyjevsim integrates with HLA (IEEE 1516-2010) at two levels: a high-level
+**pluggable RTI backend** layer (`pyjevsim.hla`) that runs ordinary DEVS
+models as federates, and the low-level `HLA_TIME` stepping hooks for
+custom federate ambassadors.
+
+### Pluggable RTI backends (`pyjevsim.hla`)
+
+Your `BehaviorModel` declares HLA *bindings* on its ports (an
+`HLAInteraction` or `HLAAttribute` per FOM id); an `HLAExecutorFactory`
+bridges those ports to a transport; and a `Federate` drives the
+time-advance loop. The transport is chosen by name — the same models run
+on any backend:
+
+```python
+from pyjevsim import SysExecutor, ExecutionType
+from pyjevsim.hla import (
+    create_rti, available_rtis, HLAExecutorFactory, HLAInteraction, Federate,
+)
+
+print(available_rtis())            # ['inprocess', 'loopback', 'pitch']
+
+transport = create_rti("inprocess")            # or "pitch" for live Pitch pRTI
+sys_exec = SysExecutor(1, ex_mode=ExecutionType.HLA_TIME)
+sys_exec.exec_factory = HLAExecutorFactory(
+    transport, {"chatter": {"out": HLAInteraction("Comm.Msg", direction="out")}}
+)
+sys_exec.register_entity(my_model)
+
+fed = Federate(sys_exec, transport)
+fed.join("MyFederation", "chatter", fom_paths=["Comm.xml"])
+fed.publish(HLAInteraction("Comm.Msg", direction="out"))
+fed.run_until(end_time=60.0, lookahead=1.0)
+fed.resign()
+```
+
+Built-in backends:
+
+| Name | Use | Dependency |
+|------|-----|------------|
+| `loopback` | self-mirror, single-federate unit tests | none |
+| `inprocess` | multi-federate in-process bus (tests/demos) | none |
+| `pitch` | **Pitch pRTI** IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 9 + a running CRC |
+
+**Adding your own RTI** (CERTI, Portico, OpenRTI, MÄK, …): subclass
+`RTIConnector` and implement `_do_send` + `_do_request_time_advance`
+(plus optional lifecycle hooks), then `register_rti("name", factory)`.
+See [`docs/hla/rti_interface.md`](docs/hla/rti_interface.md) for the full
+guide and [`examples/hla_pingpong/`](examples/hla_pingpong/) for a
+working two-federate example.
+
+### Low-level stepping (`HLA_TIME` mode)
+
+If you prefer to wire pyjevsim into your own federate ambassador, use
+`HLA_TIME` mode directly with `step()` and `get_next_event_time()`.
 
 ```python
 se = SysExecutor(1, ex_mode=ExecutionType.HLA_TIME)
@@ -325,10 +407,13 @@ for the RTI.
 
 ### Federate ambassador
 
-pyjevsim ships the simulator-side hooks (above) but not an RTI
-ambassador. Wire `step` / `get_next_event_time` /
-`insert_external_event` / `set_output_event_callback` into the federate
-ambassador of your chosen IEEE 1516-2010 RTI client.
+pyjevsim ships a ready-made Pitch pRTI backend (above) and an
+`RTIConnector` interface for adding others. If instead you want to embed
+the simulator into an existing federate ambassador, wire `step` /
+`get_next_event_time` / `insert_external_event` /
+`set_output_event_callback` into the ambassador of your chosen IEEE
+1516-2010 RTI client directly — this is exactly what the `pitch` backend
+does internally.
 
 ## Graceful Termination
 
