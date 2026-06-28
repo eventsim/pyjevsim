@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.2] — 2026-06-28
+
+### Added
+- Distributed (multi-process) HLA ping-pong example: each federate runs as
+  its own OS process (own JVM/LRC) joined to one Pitch pRTI federation
+  (`examples/hla_pingpong/run_pitch_federate.py`,
+  `run_pitch_multiprocess.py`). Federates share a start barrier via a
+  federation synchronization point.
+- `PitchTransport`: federation synchronization-point support
+  (`register_sync_point` / `wait_sync_announced` / `achieve_sync_point` /
+  `wait_synchronized`) and a configurable CRC endpoint
+  (`crc="host:port"`, also via `PYJEVSIM_CRC`) for multi-host federations.
+- Packaging/citation: `.zenodo.json` and `CITATION.cff` for an archival
+  DOI; Zenodo DOI badge in the README.
+
 ## [2.1.1] — 2026-06-28
 
 ### Fixed
@@ -178,7 +193,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SysExecutor` with V_TIME and R_TIME execution modes, port-based
   coupling, and `dill`-backed serialization.
 
-[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.1.1...HEAD
+[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.1.2...HEAD
+[2.1.2]: https://github.com/eventsim/pyjevsim/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/eventsim/pyjevsim/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/eventsim/pyjevsim/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/eventsim/pyjevsim/compare/v2.0.0...v2.0.1
