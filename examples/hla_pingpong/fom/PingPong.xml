@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<objectModel xmlns="http://standards.ieee.org/IEEE1516-2010">
+  <modelIdentification>
+    <name>PingPong</name>
+    <type>FOM</type>
+    <version>1.0</version>
+    <purpose>Minimal ping-pong FOM for the pyjevsim HLA example.</purpose>
+  </modelIdentification>
+
+  <objects>
+    <objectClass>
+      <name>HLAobjectRoot</name>
+      <objectClass>
+        <name>PingPaddle</name>
+        <sharing>PublishSubscribe</sharing>
+        <attribute>
+          <name>hits</name>
+          <dataType>HLAinteger32BE</dataType>
+          <updateType>Conditional</updateType>
+          <ownership>NoTransfer</ownership>
+          <sharing>PublishSubscribe</sharing>
+          <transportation>HLAreliable</transportation>
+          <order>TimeStamp</order>
+        </attribute>
+      </objectClass>
+    </objectClass>
+  </objects>
+
+  <interactions>
+    <interactionClass>
+      <name>HLAinteractionRoot</name>
+      <interactionClass>
+        <name>Ping</name>
+        <sharing>PublishSubscribe</sharing>
+        <transportation>HLAreliable</transportation>
+        <order>TimeStamp</order>
+        <parameter>
+          <name>count</name>
+          <dataType>HLAinteger32BE</dataType>
+        </parameter>
+        <parameter>
+          <name>sender</name>
+          <dataType>HLAunicodeString</dataType>
+        </parameter>
+      </interactionClass>
+      <interactionClass>
+        <name>Pong</name>
+        <sharing>PublishSubscribe</sharing>
+        <transportation>HLAreliable</transportation>
+        <order>TimeStamp</order>
+        <parameter>
+          <name>count</name>
+          <dataType>HLAinteger32BE</dataType>
+        </parameter>
+        <parameter>
+          <name>sender</name>
+          <dataType>HLAunicodeString</dataType>
+        </parameter>
+      </interactionClass>
+    </interactionClass>
+  </interactions>
+
+  <switches>
+    <autoProvide isEnabled="false"/>
+    <conveyRegionDesignatorSets isEnabled="false"/>
+    <conveyProducingFederate isEnabled="false"/>
+    <attributeScopeAdvisory isEnabled="false"/>
+    <attributeRelevanceAdvisory isEnabled="false"/>
+    <objectClassRelevanceAdvisory isEnabled="false"/>
+    <interactionRelevanceAdvisory isEnabled="false"/>
+    <serviceReporting isEnabled="false"/>
+    <exceptionReporting isEnabled="false"/>
+    <delaySubscriptionEvaluation isEnabled="false"/>
+    <automaticResignAction resignAction="CancelThenDeleteThenDivest"/>
+  </switches>
+</objectModel>

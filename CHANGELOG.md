@@ -7,6 +7,48 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-06-28
+
+### Added
+- RTI-agnostic HLA interface so backends other than the test loopback can be
+  plugged in:
+  - `RTIConnector` template-method base class (`pyjevsim/hla/transport.py`) —
+    a new backend implements only `_do_send` / `_do_request_time_advance`
+    (plus optional lifecycle hooks); direction enforcement, codec calls,
+    single-callback dispatch, the join/resign state machine and idempotent
+    close are inherited.
+  - `RTICapabilities` (feature negotiation), `Codec` / `IdentityCodec`
+    (FOM encoding decoupled from transport), and a name→factory registry
+    (`register_rti` / `create_rti` / `available_rtis`).
+  - `docs/hla/rti_interface.md` documenting how to add a backend.
+- RTI backends under `pyjevsim/hla/backends/`:
+  - `InProcessRTI` — multi-federate in-process bus (no Java) for tests/demos.
+  - `PitchTransport` — IEEE 1516-2010 backend for **Pitch pRTI** via JPype.
+    Verified live against Pitch pRTI Free 5.5.2 with Temurin 11.
+- `examples/hla_pingpong/` — two-federate (ping/pong) example demonstrating
+  federation join/resign, interaction exchange, and object-attribute
+  synchronization. Runs offline (`run_inprocess.py`) or against a live CRC
+  (`run_pitch.py`); FOM in `fom/PingPong.xml`.
+- Tests: `tests/hla/test_rti_interface.py`, `tests/hla/test_pingpong.py`
+  (always run), `tests/hla/test_pitch_backend.py` (guarded; live when
+  `PYJEVSIM_JVM` + `PYJEVSIM_PITCH_LIVE` + a running CRC are present).
+- `hla-pitch` optional dependency extra (`jpype1`).
+
+### Changed
+- `SysExecutor.schedule` (V_TIME/R_TIME) and `SysExecutor.step` (HLA_TIME) now
+  share a single two-phase tick body, `SysExecutor._run_instant`, so all three
+  execution modes deliver identical DEVS semantics.
+
+### Fixed
+- External events on the V_TIME/R_TIME path were delivered by a legacy
+  pre-pass (`handle_external_input_event` → `single_output_handling`) that ran
+  `ext_trans` *before* imminent models computed `output()` and could never
+  produce `con_trans`. They now flow through the shared two-phase tick: a model
+  that is both imminent and externally influenced at one instant correctly
+  fires `con_trans` (TSO/confluent), matching the HLA `step` path. The legacy
+  methods are retained (deprecated) for back-compat; a latent `msg[1]` indexing
+  bug in `single_output_handling` is fixed.
+
 ## [2.0.1] — 2026-05-06
 
 ### Changed
@@ -125,7 +167,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SysExecutor` with V_TIME and R_TIME execution modes, port-based
   coupling, and `dill`-backed serialization.
 
-[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/eventsim/pyjevsim/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/eventsim/pyjevsim/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/eventsim/pyjevsim/compare/v1.3.1...v2.0.0
 [1.3.1]: https://github.com/eventsim/pyjevsim/compare/v1.3.0...v1.3.1
