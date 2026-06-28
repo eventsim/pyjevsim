@@ -4,7 +4,7 @@
 [![Python](https://img.shields.io/pypi/pyversions/pyjevsim.svg)](https://pypi.org/project/pyjevsim/)
 [![Docs](https://readthedocs.org/projects/pyjevsim/badge/?version=latest)](https://pyjevsim.readthedocs.io/en/latest/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![DOI](https://zenodo.org/badge/696591479.svg)](https://zenodo.org/badge/latestdoi/696591479)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21002028.svg)](https://doi.org/10.5281/zenodo.21002028)
 
 ## Introduction
 
