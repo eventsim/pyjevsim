@@ -19,7 +19,9 @@ Pitch pRTI. Only the transport (chosen via `create_rti(...)`) changes.
 | `pingpong_models.py` | `Ping` / `Pong` models + HLA bindings + Pitch FOM map |
 | `fom/PingPong.xml` | IEEE 1516-2010 FOM (interactions `Ping`/`Pong`, object `PingPaddle`) |
 | `run_inprocess.py` | Offline demo — two federates over `InProcessRTI` (no Java) |
-| `run_pitch.py` | Live demo — two federates over Pitch pRTI (`pitch` backend) |
+| `run_pitch.py` | Live demo — two federates (two threads) in one process over Pitch pRTI |
+| `run_pitch_federate.py` | **One federate per OS process** (`ping`/`pong` arg) — true distributed run |
+| `run_pitch_multiprocess.py` | Launcher that spawns both federate processes and streams their output |
 
 ## Run offline (no Java / RTI needed)
 
@@ -52,9 +54,40 @@ Prerequisites:
 3. `PRTI_HOME` set (default `C:\Program Files\prti1516e`). Optionally
    `PYJEVSIM_JVM` to point at a specific `jvm.dll` (use a Java ≥ 9 runtime).
 
+Single process (two federates as two threads):
+
 ```bash
 python examples/hla_pingpong/run_pitch.py
 ```
+
+### Distributed: one federate per process
+
+Each federate runs in its own OS process (own JVM and LRC), joined to the
+same federation through the CRC — a genuine distributed run. The federates
+may live on different hosts; point each at the CRC (e.g. `PYJEVSIM_CRC` /
+your pRTI client settings).
+
+One command (spawns both, starts `pong` then `ping`):
+
+```bash
+python examples/hla_pingpong/run_pitch_multiprocess.py
+```
+
+Or two terminals (start `pong` first so the start sync-point is announced
+to both federates):
+
+```bash
+# terminal 1
+python examples/hla_pingpong/run_pitch_federate.py pong
+# terminal 2
+python examples/hla_pingpong/run_pitch_federate.py ping
+```
+
+> Verified live (two processes, Pitch pRTI Free 5.5.2 + Temurin 11):
+> `pong received pings: [0, 1, 2, 3]`, `ping received pongs: [0, 1, 2, 3]`,
+> `pong reflected hits: [0, 1, 2, 3]`, both `resigned`, exit 0. The two
+> federates synchronize on a `ready` federation synchronization point
+> before exchanging any event.
 
 Switching backend is the only change — the models and wiring are identical:
 

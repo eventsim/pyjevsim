@@ -122,6 +122,12 @@ class PitchTransport(RTIConnector):
         self._reg_enabled = threading.Event()
         self._con_enabled = threading.Event()
 
+        # Federation synchronization points (used to bring multi-process
+        # federations up to a common start barrier). label -> Event.
+        self._sync_lock = threading.Lock()
+        self._sync_announced: dict[str, "threading.Event"] = {}
+        self._sync_done: dict[str, "threading.Event"] = {}
+
         # FOM resolution caches.
         self._ic_handles: dict[str, Any] = {}          # fom_id -> InteractionClassHandle
         self._param_handles: dict[str, dict] = {}      # fom_id -> {field: ParameterHandle}
@@ -189,6 +195,12 @@ class PitchTransport(RTIConnector):
             def reflectAttributeValues(self, theObject, attributes, tag,
                                        *rest):
                 outer._on_reflect(theObject, attributes, rest)
+
+            def announceSynchronizationPoint(self, label, tag):
+                outer._sync_event(outer._sync_announced, str(label)).set()
+
+            def federationSynchronized(self, label, *rest):
+                outer._sync_event(outer._sync_done, str(label)).set()
 
             def __getattr__(self, name):
                 if name.startswith("__"):
@@ -348,6 +360,34 @@ class PitchTransport(RTIConnector):
         self._granted.wait()
         self._logical_time = self._granted_time
         return self._granted_time
+
+    # ------------------------------------------------- synchronization points
+
+    def _sync_event(self, table, label):
+        with self._sync_lock:
+            ev = table.get(label)
+            if ev is None:
+                ev = table[label] = threading.Event()
+            return ev
+
+    def register_sync_point(self, label: str) -> None:
+        """Register a federation synchronization point (one federate calls
+        this; the RTI then announces it to all joined federates)."""
+        tag = self._jpype.JArray(self._jpype.JByte)(0)
+        self._rtiamb.registerFederationSynchronizationPoint(label, tag)
+
+    def wait_sync_announced(self, label: str, timeout: float = 30.0) -> bool:
+        """Block until the RTI announces ``label`` to this federate."""
+        return self._sync_event(self._sync_announced, label).wait(timeout)
+
+    def achieve_sync_point(self, label: str) -> None:
+        """Tell the RTI this federate has reached ``label``."""
+        self._rtiamb.synchronizationPointAchieved(label)
+
+    def wait_synchronized(self, label: str, timeout: float = 30.0) -> bool:
+        """Block until every federate has achieved ``label`` (the RTI then
+        reports the federation as synchronized)."""
+        return self._sync_event(self._sync_done, label).wait(timeout)
 
     # --------------------------------------------------------- FOM handles
 
