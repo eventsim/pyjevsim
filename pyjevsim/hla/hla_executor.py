@@ -91,4 +91,11 @@ class HLAExecutor(BehaviorExecutor):
         now = self.parent.global_time
         ts = timestamp if timestamp is not None else now
         delay = max(0.0, ts - now)
-        self.parent.insert_external_event(sys_port, payload, scheduled_time=delay)
+        # Payload is the list returned by SysMessage.retrieve() on the
+        # sending side (§2.1). insert_external_event wraps its `_msg`
+        # arg as a single SysMessage item, so we inject one item at a
+        # time to preserve the original message shape on the receiver.
+        if not payload:
+            return
+        for item in payload:
+            self.parent.insert_external_event(sys_port, item, scheduled_time=delay)
