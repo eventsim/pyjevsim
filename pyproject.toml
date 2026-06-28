@@ -27,6 +27,9 @@ dependencies = ["dill>=0.3.6"]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+# HLA Pitch pRTI backend (in-process JVM bridge). JPype>=1.6 needs Java>=9;
+# pin jpype1<=1.5 for Java 8. Not needed for the loopback/inprocess backends.
+hla-pitch = ["jpype1>=1.5"]
 
 [project.urls]
 Homepage = "https://github.com/eventsim/pyjevsim"
