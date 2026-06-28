@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.1] — 2026-06-28
+
+### Fixed
+- Republish from ``main``. The PyPI **2.1.0** artifact was built from the
+  feature branch before it was reconciled with ``main`` and shipped an
+  older ``HLAExecutor`` inbound convention (whole-list
+  ``insert_external_event``) that differed from the tagged ``main`` source
+  (per-item injection). PyPI versions are immutable, so 2.1.0 cannot be
+  replaced; 2.1.1 is the canonical build from ``main`` (the in-tree
+  behaviour and tests are unchanged from the 2.1.0 source on ``main``).
+
 ## [2.1.0] — 2026-06-28
 
 ### Added
@@ -167,7 +178,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SysExecutor` with V_TIME and R_TIME execution modes, port-based
   coupling, and `dill`-backed serialization.
 
-[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.1.0...HEAD
+[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.1.1...HEAD
+[2.1.1]: https://github.com/eventsim/pyjevsim/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/eventsim/pyjevsim/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/eventsim/pyjevsim/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/eventsim/pyjevsim/compare/v1.3.1...v2.0.0
