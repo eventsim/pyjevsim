@@ -12,7 +12,7 @@ authors:
     given-names: Changbeom
     affiliation: Hanbat National University
     email: me@cbchoi.info
-    # orcid: "https://orcid.org/0000-0000-0000-0000"   # TODO: add ORCID
+    orcid: "https://orcid.org/0000-0002-4826-7949"
 repository-code: "https://github.com/eventsim/pyjevsim"
 url: "https://pyjevsim.readthedocs.io/"
 license: MIT
