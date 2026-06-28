@@ -361,10 +361,20 @@ class SysExecutor(CoreModel):
         self.port_map = {}
 
     def single_output_handling(self, obj, msg):
-        """
-        Handles a single output message.
+        """Immediate (non-two-phase) delivery of a single message.
 
-        Used by the HLA ``step()`` path and ``handle_external_input_event``.
+        .. deprecated::
+            **Legacy path — no longer on the main simulation tick.** Both
+            :py:meth:`schedule` (V_TIME / R_TIME) and :py:meth:`step`
+            (HLA_TIME) now route every event through the shared two-phase
+            body :py:meth:`_run_instant`, which delivers correct
+            ``con_trans`` / output-before-transition semantics. This
+            method dispatches ``ext_trans`` immediately and cannot
+            produce ``con_trans``; it is retained only for backward
+            compatibility with external callers and by the legacy
+            :py:meth:`handle_external_input_event`. Prefer
+            ``insert_external_event`` + the normal tick.
+
         Each delivered message triggers ``ext_trans`` + ``set_req_time``
         on the receiver and an immediate re-push into the priority queue
         so the receiver's new request_time takes effect (ScheduleQueue
@@ -382,7 +392,7 @@ class SysExecutor(CoreModel):
         for destination in self._destinations_for(obj, msg.get_dst()):
             if destination[0] is self:
                 with self.condition:
-                    self.output_event_queue.append((self.global_time, msg[1].retrieve()))
+                    self.output_event_queue.append((self.global_time, msg.retrieve()))
                 if self._output_event_callback:
                     self._output_event_callback()
             elif destination[0].get_obj_id() in self.active_obj_map:
@@ -475,50 +485,139 @@ class SysExecutor(CoreModel):
             return fallback
         return self._NO_DESTINATIONS
 
+    def _run_instant(self, instant, imminent):
+        """Execute one Parallel-DEVS two-phase tick at simulated time
+        ``instant``.
+
+        This is the **single shared tick body** used by both execution
+        paths — :py:meth:`schedule` (V_TIME / R_TIME) and :py:meth:`step`
+        (HLA_TIME) — so all three modes deliver identical DEVS semantics.
+
+        Previously the V_TIME / R_TIME path processed external events in a
+        separate pre-pass (``handle_external_input_event`` ->
+        ``single_output_handling``) that ran ``ext_trans`` *before*
+        imminent models computed ``output()``, and could never produce
+        ``con_trans``. That diverged from the HLA ``step`` path (which
+        folds externals into the tick) and violated DEVS — ``output()``
+        must observe pre-transition state, and a model that is both
+        imminent and externally influenced at one instant must receive
+        ``con_trans``. Folding external events into this shared body fixes
+        both discrepancies.
+
+        Phases:
+          * A — collect ``output()`` from every imminent (pre-transition).
+          * B — route outputs through coupling into a per-receiver bag,
+            already seeded with external events due at ``<= instant``.
+          * C — dispatch the correct transition per affected model:
+            imminent + receiving -> ``con_trans``; imminent only ->
+            ``int_trans``; receiving only -> ``ext_trans``.
+          * D — bulk reschedule every affected model.
+
+        Args:
+            instant (float): simulated time of this tick. ``global_time``
+                must already equal ``instant``.
+            imminent (list): executors already popped for ``instant``.
+                May be empty when only external events are due.
+        """
+        active_obj_map = self.active_obj_map
+        callback = self._output_event_callback
+        output_queue = self.output_event_queue
+
+        # Seed the per-receiver bag with external events due at <= instant.
+        # An external event whose destination model is imminent this
+        # instant lands in the same bag, so Phase C dispatches con_trans
+        # rather than a separate ext_trans (TSO / confluent delivery).
+        influenced_inputs = {}      # dst_executor -> list[(dst_port, msg)]
+        if self.input_event_queue:
+            with self.condition:
+                while (self.input_event_queue
+                       and self.input_event_queue[0][0] <= instant):
+                    _, ext_msg = heapq.heappop(self.input_event_queue)
+                    for dst_exec, dst_port in self._destinations_for(
+                        self, ext_msg.get_dst()
+                    ):
+                        if dst_exec is not self and dst_exec._obj_id in active_obj_map:
+                            influenced_inputs.setdefault(
+                                dst_exec, []
+                            ).append((dst_port, ext_msg))
+
+        if not imminent and not influenced_inputs:
+            return
+
+        # Phase A — collect lambda outputs from imminents.
+        outputs = []
+        for X in imminent:
+            md = MessageDeliverer()
+            X.output(md)
+            if md.has_contents():
+                outputs.append((X, md))
+
+        # Phase B — route outputs through coupling, merging into the bag
+        # already seeded with external events.
+        for X, md in outputs:
+            for msg in md.get_contents():
+                for dst_exec, dst_port in self._destinations_for(X, msg.get_dst()):
+                    if dst_exec is self:
+                        # External output of the whole simulator. When no
+                        # callback is registered we are in the
+                        # single-thread fast path and the lock is
+                        # unnecessary.
+                        if callback is not None:
+                            with self.condition:
+                                output_queue.append((instant, msg))
+                            callback()
+                        else:
+                            output_queue.append((instant, msg))
+                    elif dst_exec._obj_id in active_obj_map:
+                        influenced_inputs.setdefault(
+                            dst_exec, []
+                        ).append((dst_port, msg))
+
+        imminent_set = set(imminent)
+        affected = imminent_set | set(influenced_inputs)
+
+        # Phase C — apply the right transition for every affected model.
+        for M in affected:
+            bag = influenced_inputs.get(M, ())
+            is_imminent = M in imminent_set
+            if is_imminent and bag:
+                M.con_trans(bag)
+            elif is_imminent:
+                M.int_trans()
+            else:
+                for port, msg in bag:
+                    M.ext_trans(port, msg)
+
+        # Phase D — bulk reschedule via ScheduleQueue.push. Each push
+        # snapshots the new req_time and supersedes the prior entry (lazy
+        # invalidation). No heapify; tuple comparison settles ordering.
+        for M in affected:
+            M.set_req_time(instant)
+            self.min_schedule_item.push(M)
+
     def schedule(self):
-        """Run one simulated-instant tick using Parallel-DEVS two-phase
-        scheduling.
+        """Run one simulated-instant tick (V_TIME / R_TIME).
 
-        Phase A — pop every imminent executor (those whose ``req_time``
-        has been reached) and invoke ``output()`` on each.
+        The tick body — Phases A–D, including external-event integration
+        and Parallel-DEVS ``con_trans`` semantics — is shared with the
+        HLA :py:meth:`step` path via :py:meth:`_run_instant`, so V_TIME,
+        R_TIME, and HLA_TIME deliver identical DEVS behaviour.
+        ``schedule`` adds only the time-advance rule (Phase E):
 
-        Phase B — route the collected outputs through the coupling map
-        and assemble per-receiver bags of incoming messages.
-
-        Phase C — for every model that is imminent and/or influenced,
-        invoke the correct DEVS transition:
-
-            * imminent + receiving  -> ``con_trans(bag)``  (confluent)
-            * imminent only         -> ``int_trans()``
-            * receiving only        -> ``ext_trans(port, msg)`` per msg
-
-        Phase D — bulk-reschedule every affected model with one
-        ``set_req_time(global_time)`` and ``heappush`` per model. No
-        ``heapify`` runs; lazy reschedule is fine because DEVS always
-        moves req_times forward in time.
-
-        Time advancement rules (Phase E):
           * V_TIME: jump ``global_time`` to ``min(next_event, target_time)``.
             If more events are still due at the current instant the
             timestamp is left unchanged so the next ``schedule()`` call
             processes them in another round at the same simulated time.
           * R_TIME: step by ``time_resolution`` and sleep to match
             wall-clock pace.
-          * HLA_TIME: do not advance ``global_time`` here; the RTI sets
-            it via ``step(granted_time)``.
         """
         self.create_entity()
-        self.handle_external_input_event()
 
         # `time.perf_counter()` is only consulted at the bottom of this
         # method to compute the R_TIME sleep delta. Avoid the syscall
-        # in V_TIME / HLA_TIME where the value is never read.
+        # in V_TIME where the value is never read.
         is_realtime = self.ex_mode == ExecutionType.R_TIME
         before = time.perf_counter() if is_realtime else None
-
-        active_obj_map = self.active_obj_map
-        callback = self._output_event_callback
-        output_queue = self.output_event_queue
 
         # Phase A — pop all imminents at the current global_time.
         # The heapset's `pop_all_at(t)` drains a whole bucket in one O(1)
@@ -534,58 +633,9 @@ class SysExecutor(CoreModel):
                 break
             imminent.extend(fel.pop_all_at(next_t))
 
-        if imminent:
-            # Phase A continued — collect lambda outputs.
-            outputs = []
-            for X in imminent:
-                md = MessageDeliverer()
-                X.output(md)
-                if md.has_contents():
-                    outputs.append((X, md))
-
-            # Phase B — route outputs through coupling, build per-receiver bag.
-            influenced_inputs = {}      # dst_executor -> list[(dst_port, msg)]
-            current_time = self.global_time
-            for X, md in outputs:
-                for msg in md.get_contents():
-                    for dst_exec, dst_port in self._destinations_for(X, msg.get_dst()):
-                        if dst_exec is self:
-                            # External output: when no callback is
-                            # registered we are in the single-thread
-                            # fast path and the lock is unnecessary.
-                            if callback is not None:
-                                with self.condition:
-                                    output_queue.append((current_time, msg))
-                                callback()
-                            else:
-                                output_queue.append((current_time, msg))
-                        elif dst_exec._obj_id in active_obj_map:
-                            influenced_inputs.setdefault(
-                                dst_exec, []
-                            ).append((dst_port, msg))
-
-            imminent_set = set(imminent)
-            affected = imminent_set | set(influenced_inputs)
-
-            # Phase C — apply the right transition for every affected model.
-            for M in affected:
-                bag = influenced_inputs.get(M, ())
-                is_imminent = M in imminent_set
-                if is_imminent and bag:
-                    M.con_trans(bag)
-                elif is_imminent:
-                    M.int_trans()
-                else:
-                    for port, msg in bag:
-                        M.ext_trans(port, msg)
-
-            # Phase D — bulk reschedule via ScheduleQueue.push. Each
-            # push snapshots the new req_time and supersedes the prior
-            # entry (lazy invalidation). No heapify; no `__lt__` on
-            # executor objects — tuple comparison settles ordering.
-            for M in affected:
-                M.set_req_time(current_time)
-                fel.push(M)
+        # Phases A(output)–D, with external events folded into the same
+        # instant so imminent + externally-influenced models get con_trans.
+        self._run_instant(self.global_time, imminent)
 
         # Phase E — advance simulated time.
         # CPython attribute writes are atomic at the bytecode level, so
@@ -709,11 +759,11 @@ class SysExecutor(CoreModel):
         # `next_t > granted_time` — any event scheduled past the grant
         # stays in the FEL for a future `step()`.
         #
-        # External events from `input_event_queue` participate in the
-        # same round as imminents at the same instant: they are drained
-        # into `influenced_inputs` alongside imminents' lambda outputs
-        # so Phase C can dispatch `con_trans` correctly when a model is
-        # both imminent and externally influenced (TSO delivery).
+        # The per-instant tick body is shared with the V_TIME / R_TIME
+        # `schedule` path via `_run_instant`, which also drains external
+        # events at <= next_t into the same round so a model that is both
+        # imminent and externally influenced gets `con_trans` (TSO
+        # delivery).
         while self.min_schedule_item or self.input_event_queue:
             next_internal = self.min_schedule_item.peek_time(default=Infinite)
             next_external = (self.input_event_queue[0][0]
@@ -724,72 +774,12 @@ class SysExecutor(CoreModel):
             if next_t > self.global_time:
                 self.global_time = next_t
 
-            # Drain externals at <= next_t and seed influenced_inputs
-            # with their (dst_port, msg) pairs.
-            influenced_inputs = {}
-            with self.condition:
-                while (self.input_event_queue
-                       and self.input_event_queue[0][0] <= next_t):
-                    _, ext_msg = heapq.heappop(self.input_event_queue)
-                    for dst_exec, dst_port in self._destinations_for(
-                        self, ext_msg.get_dst()
-                    ):
-                        if dst_exec.get_obj_id() in self.active_obj_map:
-                            influenced_inputs.setdefault(
-                                dst_exec, []
-                            ).append((dst_port, ext_msg))
-
-            # Phase A — pop every imminent at this instant.
+            # Phase A — pop every imminent at this instant; `_run_instant`
+            # folds in externals due at <= next_t. When the peek returned
+            # a stale entry (no imminent, no external) `_run_instant` is a
+            # no-op and the loop re-peeks, pruning the stale time.
             imminent = self.min_schedule_item.pop_all_at(next_t)
-            if not imminent and not influenced_inputs:
-                # The peek returned a stale entry (already removed or
-                # just pruned); loop again.
-                continue
-
-            # Phase A continued — collect lambda outputs from imminents.
-            outputs = []
-            for X in imminent:
-                md = MessageDeliverer()
-                X.output(md)
-                if md.has_contents():
-                    outputs.append((X, md))
-
-            # Phase B — route outputs through coupling, merge into
-            # influenced_inputs (already seeded with externals).
-            for X, md in outputs:
-                for msg in md.get_contents():
-                    for dst_exec, dst_port in self._destinations_for(X, msg.get_dst()):
-                        if dst_exec is self:
-                            with self.condition:
-                                self.output_event_queue.append(
-                                    (self.global_time, msg)
-                                )
-                            if self._output_event_callback:
-                                self._output_event_callback()
-                        elif dst_exec.get_obj_id() in self.active_obj_map:
-                            influenced_inputs.setdefault(
-                                dst_exec, []
-                            ).append((dst_port, msg))
-
-            imminent_set = set(imminent)
-            affected = imminent_set | set(influenced_inputs)
-
-            # Phase C — apply the right transition for every affected model.
-            for M in affected:
-                bag = influenced_inputs.get(M, ())
-                is_imminent = M in imminent_set
-                if is_imminent and bag:
-                    M.con_trans(bag)
-                elif is_imminent:
-                    M.int_trans()
-                else:
-                    for port, msg in bag:
-                        M.ext_trans(port, msg)
-
-            # Phase D — bulk reschedule.
-            for M in affected:
-                M.set_req_time(self.global_time)
-                self.min_schedule_item.push(M)
+            self._run_instant(next_t, imminent)
 
         # IEEE 1516-2010 convention: after a successful grant the
         # federate's logical time equals the granted time, even if the
@@ -892,7 +882,19 @@ class SysExecutor(CoreModel):
             return deque(self.output_event_queue)
 
     def handle_external_input_event(self):
-        """Handles external input events.
+        """Drain due external events and deliver them immediately.
+
+        .. deprecated::
+            **Legacy path — no longer called by the main tick.**
+            :py:meth:`schedule` and :py:meth:`step` now fold external
+            events into the shared two-phase body :py:meth:`_run_instant`,
+            which gives correct ``con_trans`` semantics (a model that is
+            both imminent and externally influenced at one instant fires
+            ``con_trans``, not ``ext_trans`` then a separate
+            ``int_trans``) and guarantees ``output()`` is computed before
+            any transition at the instant. This method delivers via the
+            immediate :py:meth:`single_output_handling` path and is kept
+            only for backward compatibility with external callers.
 
         Fast-path: if the queue is empty there is nothing to do, and we
         can skip both the lock acquisition and the
