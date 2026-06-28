@@ -1,0 +1,40 @@
+{
+  "title": "pyjevsim: a Python DEVS modelling and simulation framework with HLA federate support",
+  "description": "pyjevsim is a Python DEVS (Discrete Event System Specification) modelling and simulation framework with journaling (snapshot/restore), virtual- and real-time execution, and HLA (IEEE 1516-2010) federate integration through a pluggable, RTI-agnostic backend interface (validated against Pitch pRTI). It enables DEVS models to participate, unchanged, in distributed and interoperable simulations.",
+  "upload_type": "software",
+  "license": "MIT",
+  "access_right": "open",
+  "creators": [
+    {
+      "name": "Choi, Changbeom",
+      "affiliation": "Hanbat National University"
+    }
+  ],
+  "keywords": [
+    "DEVS",
+    "discrete-event simulation",
+    "modeling and simulation",
+    "HLA",
+    "IEEE 1516",
+    "distributed simulation",
+    "interoperability",
+    "Python"
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/eventsim/pyjevsim",
+      "relation": "isSupplementTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://pypi.org/project/pyjevsim/",
+      "relation": "isIdenticalTo",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://pyjevsim.readthedocs.io/",
+      "relation": "isDocumentedBy",
+      "scheme": "url"
+    }
+  ]
+}
