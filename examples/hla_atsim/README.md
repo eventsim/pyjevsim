@@ -12,7 +12,8 @@ reference run, tick-for-tick and bit-for-bit.
 | `run_hla_inprocess.py` | two federates over the in-process RTI bus (writes `hla_<tag>.csv`) — **no Java needed** |
 | `run_hla_pitch.py` | optional live pRTI 1516e run (guarded; writes `hla_pitch_<tag>.csv`) |
 | `verify_equivalence.py` | the gate: runs both headless builds and asserts identical CSVs for every scenario |
-| `plot_trajectories.py` | headless matplotlib — renders `figures/atsim_<tag>.png` from the CSV |
+| `plot_trajectories.py` | headless matplotlib — renders `figures/atsim_<tag>.png` (top-down, 3-D, range) from the CSV |
+| `make_animation.py` | headless matplotlib — renders `figures/atsim_<tag>.gif` engagement animation |
 | `fom/AntiTorpedo.xml` | IEEE 1516-2010 FOM, one `Platform` object class |
 | `hla_common.py` | FOM ids, `HLAAttribute` bindings, `ProxySink`, `publish_local` |
 | `scenarios/self_propelled_decoy.yaml` | self-propelled decoy scenario (default) |
@@ -84,9 +85,23 @@ done
 ## Trajectories
 
 Engagement over 30 ticks. Because the standalone and both HLA runs are
-byte-identical, one set of figures represents all three. Regenerate with
-`python examples/hla_atsim/plot_trajectories.py` (headless matplotlib) — it
-writes three figures per scenario (top-down, 3-D, range-vs-tick).
+byte-identical, one set of figures represents all three. Regenerate the static
+figures with `python examples/hla_atsim/plot_trajectories.py` (top-down, 3-D,
+range-vs-tick per scenario) and the animations with
+`python examples/hla_atsim/make_animation.py` (headless matplotlib).
+
+### Animation
+
+| self-propelled decoys | stationary decoys |
+|-----------------------|-------------------|
+| ![self-propelled engagement animation](figures/atsim_self_propelled.gif) | ![stationary engagement animation](figures/atsim_stationary.gif) |
+
+The surfaceship (blue) flees while its `Launcher` deploys decoys (green); watch
+the torpedo (red) get seduced onto a self-propelled decoy — but run down the
+ship when the decoys are stationary. Same GIFs for the standalone and the
+two-federate HLA co-simulation.
+
+### Static views
 
 | view | self-propelled decoys | stationary decoys |
 |------|-----------------------|-------------------|
