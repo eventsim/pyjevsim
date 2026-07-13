@@ -162,6 +162,23 @@ The same trajectories are produced by the single-process reference
 RTI-mediated position exchange faithfully reproduces the monolithic
 simulation's dynamics.
 
+.. figure:: ../../examples/hla_atsim/figures/atsim_self_propelled.png
+   :width: 70%
+   :align: center
+
+   Self-propelled decoy engagement (top-down x-y, 30 ticks): the surfaceship
+   (blue) flees while its launcher deploys decoys (green); one seduces the
+   torpedo (red), which locks onto the decoy and stops short of the ship.
+
+.. figure:: ../../examples/hla_atsim/figures/atsim_stationary.png
+   :width: 70%
+   :align: center
+
+   Stationary decoy engagement: the decoys hold fixed offsets away from the
+   torpedo's approach, so the torpedo is not seduced and runs down the ship's
+   track. Both figures are rendered by ``plot_trajectories.py`` and are
+   identical for the standalone and the two-federate HLA runs.
+
 Low-level stepping
 ------------------
 
