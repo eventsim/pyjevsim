@@ -187,3 +187,20 @@ snapshot_test
 .vs
 log/
 .claude/
+
+# Development / research artifacts kept out of the distributed repository
+# (managed locally; recoverable from git history if needed).
+/CLAUDE.md
+/.agent/
+/paper/
+/utils/
+/performance_profiling.py
+/test_correctness.py
+# Internal design / planning notes (not part of the user documentation)
+/docs/improvements/
+/docs/cascade_scheduling_proposal.md
+/docs/p_plan.md
+/docs/t1_2_scheduler_analysis.md
+/docs/hla/plan.md
+/docs/hla/tasks.md
+/docs/hla/qa.md
