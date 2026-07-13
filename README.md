@@ -152,6 +152,11 @@ The [`examples/`](examples/) directory contains:
   federation join/resign, interaction exchange, and object-attribute
   synchronization. Run offline (`run_inprocess.py`, no Java) or against a
   live Pitch pRTI (`run_pitch.py`).
+- **`hla_atsim/`** — the `atsim` anti-torpedo scenario split into two HLA
+  federates (surfaceship + torpedo) exchanging positions as HLA object
+  attributes. Reproduces the single-executor reference **byte-for-byte**
+  for both the self-propelled and stationary decoy scenarios, verified on
+  the in-process bus and on live Pitch pRTI (`verify_equivalence.py`).
 
 ### Output messages are shared by reference
 
