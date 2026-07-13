@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- ``examples/hla_atsim`` — the ``atsim`` anti-torpedo scenario split into two
+  HLA federates (surfaceship + torpedo) exchanging positions as HLA object
+  attributes, reproducing the single-executor reference byte-for-byte for the
+  self-propelled and stationary decoy scenarios (verified on the in-process bus
+  and on live Pitch pRTI via ``verify_equivalence.py``).
+
 ## [2.1.2] — 2026-06-28
 
 ### Added

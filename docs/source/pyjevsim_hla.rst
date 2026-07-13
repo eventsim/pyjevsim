@@ -134,6 +134,34 @@ or against a live Pitch pRTI (``pitch`` backend, with a CRC running)::
 
    python examples/hla_pingpong/run_pitch.py
 
+Anti-torpedo co-simulation (hla_atsim)
+--------------------------------------
+
+``examples/hla_atsim/`` is a larger, verification-driven example: it splits
+the ``examples/atsim`` anti-torpedo scenario into **two federates**
+(surfaceship + torpedo). In the standalone ``atsim`` the platforms sense one
+another through a shared global registry; the HLA version replaces that with
+**HLA object attributes** — each federate publishes its own hull and decoy
+positions and reflects the peer's into a per-federate one-tick position
+snapshot that the detectors read from (bidirectional sensing requires
+``lookahead = 1``).
+
+The example ships two decoy scenarios, ``self_propelled`` (default) and
+``stationary`` (select with ``PYJEVSIM_SCENARIO`` or a CLI argument), and a
+gate that proves the federated run reproduces a single-executor reference
+**byte-for-byte** for both::
+
+   python examples/hla_atsim/verify_equivalence.py
+   # -> MATCH self_propelled: 180 rows
+   # -> MATCH stationary: 180 rows
+
+The same trajectories are produced by the single-process reference
+(``run_standalone_headless.py``), the two-federate in-process bus
+(``run_hla_inprocess.py``), and two federates over a live Pitch pRTI
+(``run_hla_pitch.py``) — identical in every case. This demonstrates that the
+RTI-mediated position exchange faithfully reproduces the monolithic
+simulation's dynamics.
+
 Low-level stepping
 ------------------
 

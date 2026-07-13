@@ -42,6 +42,44 @@ PYJEVSIM_SCENARIO=stationary python examples/hla_atsim/run_hla_inprocess.py
 CSVs are named `standalone_<tag>.csv` / `hla_<tag>.csv` where `<tag>` is the
 scenario key (`self_propelled`, `stationary`); all generated CSVs are gitignored.
 
+## Two scenarios
+
+Two decoy scenarios ship, selected with `PYJEVSIM_SCENARIO` (or a positional
+CLI arg); both mirror the corresponding `examples/atsim` scenario:
+
+| scenario | decoys | behaviour |
+|----------|--------|-----------|
+| `self_propelled` (default) | 4 self-propelled | decoys run outward on their own headings; the torpedo is seduced onto a moving decoy |
+| `stationary` | 4 stationary | decoys hold their drop positions; the torpedo is seduced onto a fixed decoy |
+
+Each scenario is verified **byte-identical** across three execution paths — the
+single-process reference and the two-federate HLA co-simulation on both the
+in-process bus and a real RTI:
+
+| run script | backend | Java? |
+|------------|---------|-------|
+| `run_standalone_headless.py` | single `SysExecutor` (reference) | no |
+| `run_hla_inprocess.py` | two federates, `InProcessRTI` | no |
+| `run_hla_pitch.py` | two federates, **live Pitch pRTI 1516e** | yes (JPype + running CRC) |
+
+For each scenario, `standalone_<tag>.csv` == `hla_<tag>.csv` ==
+`hla_pitch_<tag>.csv`, 180 rows, byte-for-byte:
+
+```
+MATCH self_propelled: 180 rows
+MATCH stationary:      180 rows
+```
+
+To reproduce all six runs and the two-scenario gate:
+
+```bash
+python examples/hla_atsim/verify_equivalence.py                       # both scenarios, no Java
+for s in self_propelled stationary; do
+  python examples/hla_atsim/run_standalone_headless.py $s
+  python examples/hla_atsim/run_hla_inprocess.py       $s
+done
+```
+
 ## Why standalone == HLA, deterministically
 
 The only cross-platform coupling in atsim is *sensing* (each Detector read
