@@ -1,3 +1,7 @@
 __pycache__/
 *.pyc
 *.csv
+
+# Committed documentation figures (re-included despite the repo-wide *.png ignore).
+!figures/
+!figures/*.png

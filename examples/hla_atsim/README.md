@@ -12,6 +12,7 @@ reference run, tick-for-tick and bit-for-bit.
 | `run_hla_inprocess.py` | two federates over the in-process RTI bus (writes `hla_<tag>.csv`) — **no Java needed** |
 | `run_hla_pitch.py` | optional live pRTI 1516e run (guarded; writes `hla_pitch_<tag>.csv`) |
 | `verify_equivalence.py` | the gate: runs both headless builds and asserts identical CSVs for every scenario |
+| `plot_trajectories.py` | headless matplotlib — renders `figures/atsim_<tag>.png` from the CSV |
 | `fom/AntiTorpedo.xml` | IEEE 1516-2010 FOM, one `Platform` object class |
 | `hla_common.py` | FOM ids, `HLAAttribute` bindings, `ProxySink`, `publish_local` |
 | `scenarios/self_propelled_decoy.yaml` | self-propelled decoy scenario (default) |
@@ -79,6 +80,24 @@ for s in self_propelled stationary; do
   python examples/hla_atsim/run_hla_inprocess.py       $s
 done
 ```
+
+## Trajectories
+
+Top-down (x–y) engagement over 30 ticks. Because the standalone and both HLA
+runs are byte-identical, one figure represents all three. Regenerate with
+`python examples/hla_atsim/plot_trajectories.py` (headless matplotlib).
+
+| self-propelled decoys | stationary decoys |
+|-----------------------|-------------------|
+| ![self-propelled decoy engagement](figures/atsim_self_propelled.png) | ![stationary decoy engagement](figures/atsim_stationary.png) |
+
+The surfaceship (blue) flees west while its `Launcher` deploys four decoys
+(green). With **self-propelled** decoys, one crosses into the torpedo's path
+and seduces it — the torpedo (red) locks onto the decoy near `(-9, 7)` and
+stops short of the ship. With **stationary** decoys, the decoys jump to fixed
+offsets away from the torpedo's approach, so the torpedo is not seduced and
+runs down the ship's track. Both outcomes are reproduced identically by the
+two-federate HLA co-simulation. (hollow marker = start, filled = end.)
 
 ## Why standalone == HLA, deterministically
 
