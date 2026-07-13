@@ -1,0 +1,51 @@
+Common:
+  Name: stationary_decoy
+
+SurfaceShip:
+  - ManueverObject:
+      x: 0
+      y: 0
+      z: 0
+      heading: 0
+      xy_speed: 3
+      z_speed: 0
+    LauncherObject:
+      DecoyObjects:
+        - type: "stationary"
+          elevation: 45
+          azimuth: 45
+          speed: 15
+          lifespan: 5
+        - type: "stationary"
+          elevation: 45
+          azimuth: 135
+          speed: 15
+          lifespan: 5
+        - type: "stationary"
+          elevation: 45
+          azimuth: 225
+          speed: 15
+          lifespan: 5
+        - type: "stationary"
+          elevation: 45
+          azimuth: 315
+          speed: 15
+          lifespan: 5
+    DetectorObject:
+      detection_range: 40
+    CommandControlObject:
+      evation_heading: 270
+      decoy_deployment_range: 35
+
+Torpedo:
+  - ManueverObject:
+      x: 20
+      y: 20
+      z: -10
+      heading: 270
+      xy_speed: 5
+      z_speed: 1
+    DetectorObject:
+      detection_range: 35
+    TorpedoControlObject:
+      range: 1
