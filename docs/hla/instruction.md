@@ -7,7 +7,7 @@ This guide is for two audiences:
    binding (gorti gRPC, kdx-rti ZMQ, native Pitch HLA, ...).
 
 If you want to *implement* the subsystem itself, read
-`docs/hla/specification.md` and `docs/hla/qa.md` instead.
+`docs/hla/specification.md` instead.
 
 ## 1. Mental model
 
