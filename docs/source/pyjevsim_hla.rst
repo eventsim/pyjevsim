@@ -179,6 +179,27 @@ simulation's dynamics.
    track. Both figures are rendered by ``plot_trajectories.py`` and are
    identical for the standalone and the two-federate HLA runs.
 
+``plot_trajectories.py`` also renders a 3-D (x, y, z-depth) view and a
+range-vs-tick plot per scenario. The range plot makes the decoy effectiveness
+quantitative — the torpedo's 3-D distance to the ship and to each decoy over
+time:
+
+.. figure:: ../../examples/hla_atsim/figures/atsim_self_propelled_range.png
+   :width: 70%
+   :align: center
+
+   Self-propelled decoys: the torpedo→decoy distance collapses to zero around
+   tick 13 (seduction) while the torpedo→ship distance grows past 70 — the ship
+   escapes.
+
+.. figure:: ../../examples/hla_atsim/figures/atsim_stationary_range.png
+   :width: 70%
+   :align: center
+
+   Stationary decoys: no decoy holds the torpedo; its distance to the ship
+   instead closes to ~6 and holds. The full figure set (top-down, 3-D, range
+   for both scenarios) is under ``examples/hla_atsim/figures/``.
+
 Low-level stepping
 ------------------
 

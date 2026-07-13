@@ -83,21 +83,30 @@ done
 
 ## Trajectories
 
-Top-down (x–y) engagement over 30 ticks. Because the standalone and both HLA
-runs are byte-identical, one figure represents all three. Regenerate with
-`python examples/hla_atsim/plot_trajectories.py` (headless matplotlib).
+Engagement over 30 ticks. Because the standalone and both HLA runs are
+byte-identical, one set of figures represents all three. Regenerate with
+`python examples/hla_atsim/plot_trajectories.py` (headless matplotlib) — it
+writes three figures per scenario (top-down, 3-D, range-vs-tick).
 
-| self-propelled decoys | stationary decoys |
-|-----------------------|-------------------|
-| ![self-propelled decoy engagement](figures/atsim_self_propelled.png) | ![stationary decoy engagement](figures/atsim_stationary.png) |
+| view | self-propelled decoys | stationary decoys |
+|------|-----------------------|-------------------|
+| top-down (x–y) | ![sp x-y](figures/atsim_self_propelled.png) | ![st x-y](figures/atsim_stationary.png) |
+| 3-D (x, y, z depth) | ![sp 3d](figures/atsim_self_propelled_3d.png) | ![st 3d](figures/atsim_stationary_3d.png) |
+| torpedo range vs. tick | ![sp range](figures/atsim_self_propelled_range.png) | ![st range](figures/atsim_stationary_range.png) |
 
 The surfaceship (blue) flees west while its `Launcher` deploys four decoys
-(green). With **self-propelled** decoys, one crosses into the torpedo's path
-and seduces it — the torpedo (red) locks onto the decoy near `(-9, 7)` and
-stops short of the ship. With **stationary** decoys, the decoys jump to fixed
-offsets away from the torpedo's approach, so the torpedo is not seduced and
-runs down the ship's track. Both outcomes are reproduced identically by the
-two-federate HLA co-simulation. (hollow marker = start, filled = end.)
+(green); the torpedo (red) starts deep (`z = -9`) and rises as it homes in.
+
+- **Self-propelled decoys — seduction succeeds.** One decoy crosses into the
+  torpedo's path; the range plot shows the torpedo→decoy distance collapsing to
+  `0` around tick 13 while the torpedo→ship distance grows past `70` — the ship
+  escapes.
+- **Stationary decoys — seduction fails (here).** The decoys jump to fixed
+  offsets away from the torpedo's approach; the torpedo→ship distance instead
+  closes to ~`6` and holds — the torpedo runs down the ship's track.
+
+Both outcomes are reproduced identically by the two-federate HLA co-simulation.
+(In the top-down/3-D plots, hollow marker = start, filled = end.)
 
 ## Why standalone == HLA, deterministically
 
