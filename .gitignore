@@ -205,3 +205,6 @@ log/
 /docs/hla/plan.md
 /docs/hla/tasks.md
 /docs/hla/qa.md
+
+# Regenerable benchmark result data (the curated *.md reports are kept)
+/benchmark/results/*.csv
