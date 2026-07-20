@@ -1,5 +1,4 @@
 from pyjevsim import BehaviorModel, Infinite
-import datetime
 
 
 class Manuever(BehaviorModel):
@@ -18,7 +17,6 @@ class Manuever(BehaviorModel):
 
     def ext_trans(self, port, msg):
         if port == "start":
-            print(f"{self.get_name()}[start_recv]: {datetime.datetime.now()}")
             self._cur_state = "Generate"
 
     def output(self, msg_deliver):

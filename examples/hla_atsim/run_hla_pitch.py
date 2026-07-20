@@ -68,7 +68,7 @@ def run(scenario=None):
         PLATFORM_FOM, PLATFORM_OUT, PLATFORM_IN,
         ANTITORPEDO_FOM_MAP, ProxySink, publish_local,
     )
-    from run_standalone_headless import record, SCENARIO, resolve_scenario
+    from run_standalone_headless import record, SCENARIO
     if scenario is None:
         scenario = SCENARIO
 

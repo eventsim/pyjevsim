@@ -30,7 +30,6 @@ class BankResult(BehaviorModel):
         self.insert_input_port("drop")  # Add input port "drop"
 
         self.max_user = max_user  # Maximum number of users to generate
-        #self.proc_time = proc_time  # Processing time for each user
         self.user_count = 0
         self.user = []
         self.drop_user = []
@@ -67,7 +66,6 @@ class BankResult(BehaviorModel):
         pass
         
     def get_result(self) : 
-        #print("sim time", self.global_time, flush = True)
         print("[BANKSIM RESULT]")
         print("- Accountant user : ", self.user_count,  flush = True)
         print("- Dropped user : ", self.drop_user_count,  flush = True)

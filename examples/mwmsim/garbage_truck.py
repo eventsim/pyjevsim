@@ -3,8 +3,6 @@ from pyjevsim.system_message import SysMessage
 from pyjevsim.definition import *
 
 from config import *
-import os, sys
-#from instance.config import *
 
 class GarbageTruck(BehaviorModel):
     def __init__(self, name, storage, schedule, outp):
@@ -35,13 +33,11 @@ class GarbageTruck(BehaviorModel):
         self.cur_index = 0
         #for file save
         self.outname=outp
-        #print(schedule)
 
 
     def register_garbage_can(self, garbage_can_id):
         in_p = "trash_from_can[{0}]".format(garbage_can_id)
         out_p = "empty_can[{0}]".format(garbage_can_id)
-        #print ('[truck_id]',garbage_can_id)
         
         self.garbage_id_map[garbage_can_id] = out_p
         self.garbage_port_map[in_p] = 0
@@ -55,7 +51,6 @@ class GarbageTruck(BehaviorModel):
         return self.garbage_port_map
         
     def ext_trans(self, port, msg):
-        #print(port)    
         if port == "start":
             self._cur_state = "INITAL_APPROACH"
         elif port == "end":
@@ -63,11 +58,9 @@ class GarbageTruck(BehaviorModel):
         elif port in self.garbage_port_map:
             self.garbage_port_map[port] += msg.retrieve()[0] # 각 건물별 쓰레기 수거량 분석
             self.truck_current_storage += msg.retrieve()[0]
-            #print("self.truck_current_storage", self.truck_current_storage)
             self.accummulated_garbage += self.truck_current_storage
 
             ev_t = self.global_time
-            #print(ev_t)
 
             if self.outname is not None:
                 with open("{0}/truck.csv".format(self.outname),'a') as file: 
@@ -79,8 +72,6 @@ class GarbageTruck(BehaviorModel):
                     file.write(",")
                     file.write(str(self.accummulated_garbage))
                     file.write("\n")
-            #print(self.cur_index)
-            #print("[truck_storage]"+  str(port) + ":" +str(self.garbage_port_map[port]),self.truck_current_storage)
             
     def output(self, msg_deliver):
         if self._cur_state == "REQUEST":

@@ -1,9 +1,7 @@
 import project_config
 import sys
 
-from pyjevsim import SysExecutor, ExecutionType, Infinite, SnapshotManager
-from model.manuever import Manuever
-from model.surfaceship import SurfaceShip
+from pyjevsim import SysExecutor, ExecutionType, SnapshotManager
 from utils.scenario_manager import ScenarioManager
 from utils.pos_plotter import PositionPlotter
 from utils.object_db import ObjectDB

@@ -1,6 +1,4 @@
 from abc import *
-#import numpy as np
-import copy
 import random
 from datetime import datetime
 
@@ -10,7 +8,6 @@ class Statistic(object):
         self.stddev = stddev
         self.rseed = datetime.now().timestamp()
         self.random = random.Random(self.rseed)
-        #self.random.seed(datetime.now())
 
     def get_mean(self):
         return self.mean
@@ -50,7 +47,6 @@ class TimeStructContstraintToDay(TimeStruct):
         super(TimeStructContstraintToDay, self).__init__(hour, minute, stat)
         self.prev_time = 0
         #TimeStructContstraintToDay.ID += 1
-        #print(TimeStructContstraintToDay.ID)
 
     def get_unit_time(self):
         delta = self.stat.get_delta()
@@ -58,7 +54,6 @@ class TimeStructContstraintToDay(TimeStruct):
         cur_time = self.hour + float(self.minute)/60 + delta
         self.prev_time = 24 - cur_time
 
-        #print("prev_time:", prev_time, ", self.prev_time", id(self.prev_time), ", out_time:", prev_time+cur_time, )
         return prev_time + cur_time
 
 class TimeStructContstraintToDayDeterministic(TimeStruct):

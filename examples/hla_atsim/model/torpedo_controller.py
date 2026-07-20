@@ -1,8 +1,5 @@
-import platform
 from pyjevsim import BehaviorModel, Infinite
-import datetime
 
-from pyjevsim.system_message import SysMessage
 
 class TorpedoCommandControl(BehaviorModel):
     def __init__(self, name, platform):
@@ -20,7 +17,6 @@ class TorpedoCommandControl(BehaviorModel):
 
     def ext_trans(self,port, msg):
         if port == "threat_list":
-            print(f"{self.get_name()}[threat_list]: {datetime.datetime.now()}")
             self.threat_list = msg.retrieve()[0]
             self._cur_state = "Decision"
 

@@ -1,7 +1,6 @@
 import project_config
 from pyjevsim import BehaviorModel, Infinite
 from utils.object_db import ObjectDB
-import datetime
 
 from pyjevsim.system_message import SysMessage
 
@@ -20,8 +19,6 @@ class Detector(BehaviorModel):
 
     def ext_trans(self,port, msg):
         if port == "start":
-            print(f"{self.get_name()}[start_recv]: {datetime.datetime.now()}")
-            #print(ObjectDB().items)
             self._cur_state = "Detect"
 
     def output(self, msg_deliver):

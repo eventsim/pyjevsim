@@ -2,12 +2,8 @@ from pyjevsim.behavior_model import BehaviorModel
 from pyjevsim.system_message import SysMessage
 from pyjevsim.definition import *
 
-import sys
-import os
-import datetime
 
 from config import *
-#from instance.config import *
 
 class GarbageCan(BehaviorModel):
     def __init__(self, name, size, outp):
@@ -19,8 +15,6 @@ class GarbageCan(BehaviorModel):
         self.insert_state("PROC_TRUCK", 0)
         
         #checker port
-        #self.insert_output_port("res_check") #checker에게 garbage 값 리턴
-        #self.insert_input_port("check_garbage") #checker 에게  garbage 비율 요청 메세지를 받는 포트
         
         #trash input from family
         self.insert_input_port("recv_garbage")  #family가 garbage 배출할때 받는 포트
@@ -66,14 +60,11 @@ class GarbageCan(BehaviorModel):
 
             for ag_key, ag_value in self.dlist.items():
                 cur_list = list(ag_value.keys())
-                #print(cur_list)
                 length = cur_list[-1]
-                #print(length)
                 indx = 0
 
                 for i in range(int(length+0.5)):
                     if i == int(cur_list[indx] +0.5):
-                        #print(ag_value[cur_list[indx]])
                         indx += 1
 
                     self.fileout.write(str(i))
@@ -91,13 +82,11 @@ class GarbageCan(BehaviorModel):
 
             for ag_key, ag_value in self.alist.items():
                 cur_list = list(ag_value.keys())
-                #print(cur_list)
                 length = cur_list[-1]
                 indx = 0
                                            
                 for i in range(int(length+0.5)):
                     if i == int(cur_list[indx] +0.5):
-                                                                #print(ag_value[cur_list [indx]])
                         indx += 1
                                             
                     self.a_fileout.write(str(i))
@@ -131,7 +120,6 @@ class GarbageCan(BehaviorModel):
 
     def register_family(self, family_id):
         #checker port
-        #print ("[fam_id]",family_id)
         in_p = "trash_from_family[{0}]".format(family_id)
         out_p = "trash[{0}]".format(family_id)
         
@@ -148,20 +136,17 @@ class GarbageCan(BehaviorModel):
 
     def ext_trans(self, port, msg):
         if port in self.human_port_map:     #garbage 비율  Process
-            #print('[check]1')
             data = msg.retrieve()
             ev_t = self.global_time
             ag_id = 0
             ag_name = ""
             
             ag_satisfaction = 0
-            #print(ev_t,port,"!!")
             
             member = data[0]
             ag_id - member.get_id()
             ag_name = member.get_name()
             ag_satisfaction = member.get_satisfaction()
-            #print(SystemSimulator().get_engine("sname").get_global_time())
             
             if self.outp is not None:
                 """ To implement verbose mode """
@@ -169,27 +154,23 @@ class GarbageCan(BehaviorModel):
                     self.alist[ag_name] = {}
 
                 self.alist[ag_name][ev_t] = ag_satisfaction
-                #print(self.alist[ag_name])
 
             self._cur_state = "PROCESS"
             self.recv_checker_port.append(port)
 
         if port in self.family_port_map:       #garbage 누적
-            #print("fam_port",port)
             data = msg.retrieve()
             ev_t = self.global_time
             ag_id = 0
             ag_name = ""
             ag_amount = 0
             ag_satisfaction = 0
-            #print(ev_t,port,"!!")
             for member, accumulated in data[0].items():
                 self.cur_amount += accumulated
                 ag_id - member.get_id()
                 ag_name = member.get_name()
                 ag_amount = accumulated
                 ag_satisfaction = member.get_satisfaction()
-                #print(SystemSimulator().get_engine("sname").get_global_time())
                 
                 if self.outp is not None:
                     """ To implement verbose mode """
@@ -197,30 +178,21 @@ class GarbageCan(BehaviorModel):
                         self.dlist[ag_name] = {}
 
                     self.dlist[ag_name][ev_t] = (ag_amount, ag_satisfaction) 
-                    #print(self.dlist[ag_name])
 
             
         if port == "req_empty":  #garbage 양 반환 process
-            #print("[truck]1")
             self.avaliable_amount = msg.retrieve()[0]
             self._cur_state = "PROC_TRUCK"
 
     def output(self, msg_deliver):
         if self._cur_state == "PROCESS":
-            #print('[check]$')
-            #print(self.human_port_map[self.recv_checker_port])
             port = self.recv_checker_port.pop(0)
             msg = SysMessage(self.get_name(), self.human_port_map[port])
             msg.insert(float(self.cur_amount/self.can_size))
-            #print("$")
-            #print("[gc] " + str(float(self.cur_amount/self.can_size)))
             msg_deliver.insert_message(msg)
             return
 
         if self._cur_state == "PROC_TRUCK":
-            #print("!@@")
-#            if self.avaliable_amount < 0:
-#               self.avaliable_amount = 0
 
             msg = SysMessage(self.get_name(), "res_garbage")
             if self.cur_amount < self.avaliable_amount:

@@ -1,25 +1,14 @@
 import contexts
-import sys,os
 
-from pyjevsim.system_executor import SysExecutor
 from pyjevsim.snapshot_manager import SnapshotManager
 from pyjevsim.definition import *
 from pyjevsim.restore_handler import RestoreHandler
 
 from config import *
 
-from examples.mwmsim.clock import Clock
-from examples.mwmsim.core_component import HumanType
-from examples.mwmsim.core_component import FamilyType
 
 from examples.mwmsim.job import *
 
-from examples.mwmsim.human import Human
-from examples.mwmsim.check import Check
-from examples.mwmsim.government import Government
-from examples.mwmsim.garbagecan import GarbageCan
-from examples.mwmsim.garbage_truck import GarbageTruck
-from examples.mwmsim.family import Family
 
 
 max_simtime = 1000
@@ -78,7 +67,6 @@ for building in blist:
             #hid = get_human_id()
             name = htype.get_name()
             cname = "check[{0}]".format(htype.get_name())
-            #print(name)               
             h1 = Human(cname, htype)
             ch = Check(name, htype)
 

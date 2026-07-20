@@ -26,7 +26,6 @@ class ManueverObject:
 		self.heading = heading
 
 	def calc_next_pos_with_heading(self, dt):
-		#print("h", self.x, self.y, self.z)
 		# Convert heading from degrees to radians
 		heading_radians = math.radians(self.heading)
 
@@ -39,7 +38,6 @@ class ManueverObject:
 			self.z = 0
 
 	def calc_next_pos_with_pos(self, target, dt):
-		#print("p", self.x, self.y, self.z)
 		# Calculate the vector from current position to target
 		dx = target[0] - self.x
 		dy = target[1] - self.y

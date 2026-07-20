@@ -21,14 +21,12 @@ In a terminal in the parent directory, run the following command.
 import sys
 import contexts
 import yaml
-import time 
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 from pyjevsim.snapshot_manager import SnapshotManager
 from pyjevsim.restore_handler import RestoreHandler
 
 from examples.banksim.model.model_accountant import BankAccountant
-from examples.banksim.model.model_queue import BankQueue
 
 with open("scenario.yaml", "r") as f:
     config = yaml.safe_load(f)

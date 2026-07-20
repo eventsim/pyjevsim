@@ -1,6 +1,5 @@
 from utils.object_db import ObjectDB
-from pyjevsim import BehaviorModel, Infinite
-import datetime
+from pyjevsim import BehaviorModel
 
 class StationaryDecoy(BehaviorModel):
     def __init__(self, name, platform):

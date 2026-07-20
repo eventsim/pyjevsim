@@ -1,9 +1,7 @@
 import project_config
 import sys
 
-from pyjevsim import SysExecutor, ExecutionType, Infinite
-from model.manuever import Manuever
-from model.surfaceship import SurfaceShip
+from pyjevsim import SysExecutor, ExecutionType
 from utils.scenario_manager import ScenarioManager
 from utils.pos_plotter import PositionPlotter
 from utils.object_db import ObjectDB
@@ -55,7 +53,6 @@ for _ in range(30):
 	# keeps the Qt window responsive (see PositionPlotter docstring).
 	pos_plot.render(pause=FRAME_DELAY)
 
-#print(se.model_map)
 se.terminate_simulation()
 pos_plot.keep_open()  # keep the window interactive after the run
 
