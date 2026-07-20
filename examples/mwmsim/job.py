@@ -1,12 +1,8 @@
-import random
 
 from .core_component import Statistic
 from .core_component import HumanType
 from .core_component import TimeStruct
 from .core_component import TimeStructContstraintToDay
-from .core_component import TimeStructConstraintRandom
-from .core_component import TimeStructDeterministic
-from .core_component import TimeStructContstraintToDayDeterministic
 
 
 from config import *
@@ -14,7 +10,6 @@ class Housewife(HumanType):
     def __init__(self,_id):
         HumanType.__init__(self ,_id)
         self.out_time = TimeStructContstraintToDay(13,00, Statistic(0, AVG_TIME, TIME_STDDEV))
-        #self.out_time = TimeStructContstraintToDayDeterministic(13,00)
         self.trash = Statistic(RANDOM_SEED,0.9,TRASH_STDDEV)
         pass
     
@@ -29,7 +24,6 @@ class Housewife(HumanType):
         
     def get_out(self):
         return self.out_time 
-        #return TimeStructConstraintRandom(self.get_wakeup(), self.get_sleep(), Statistic(0, 10, 6))
         
     def get_in(self):
         return TimeStruct(15, 0, Statistic(RANDOM_SEED, 0, 1))
@@ -66,7 +60,6 @@ class Student(HumanType):
     def __init__(self,_id):
         HumanType.__init__(self ,_id)
         self.out_time = TimeStructContstraintToDay(7,58, Statistic(0, AVG_TIME, TIME_STDDEV))
-        #self.out_time = TimeStructContstraintToDayDeterministic(9,58)
         self.trash = Statistic(RANDOM_SEED+1,0.9,TRASH_STDDEV)
         pass
     
@@ -168,7 +161,6 @@ class Blue_collar(HumanType):
     def __init__(self,_id):
         HumanType.__init__(self ,_id)
         self.out_time = TimeStructContstraintToDay(6,22, Statistic(0, AVG_TIME, TIME_STDDEV))
-        #self.out_time = TimeStructContstraintToDayDeterministic(6,22)
         self.trash = Statistic(RANDOM_SEED+2,0.9,TRASH_STDDEV)
         pass
     

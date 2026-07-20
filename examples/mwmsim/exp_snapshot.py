@@ -1,5 +1,5 @@
 import contexts
-import sys,os
+import os
 
 from pyjevsim.system_executor import SysExecutor
 from pyjevsim.snapshot_manager import SnapshotManager
@@ -8,7 +8,6 @@ from pyjevsim.definition import *
 from config import *
 
 from examples.mwmsim.clock import Clock
-from examples.mwmsim.core_component import HumanType
 from examples.mwmsim.core_component import FamilyType
 
 from examples.mwmsim.job import *
@@ -50,7 +49,6 @@ for i in range(len(lines)):
     if i == len(lines)-1:
         blist.append(hlist)
 
-#print(blist)
 snapshot_manager = SnapshotManager()
 se = SysExecutor(TIME_DENSITY, "engine", SIMULATION_MODE, snapshot_manager=snapshot_manager)
 
@@ -80,7 +78,6 @@ for building in blist:
             #hid = get_human_id()
             name = htype.get_name()
             cname = "check[{0}]".format(htype.get_name())
-            #print(name)               
             h1 = Human(cname, htype)
             ch = Check(name, htype)
 
@@ -124,9 +121,7 @@ se.coupling_relation(None, "end", gt, "end")
 
 # Connect Truck & Can
 
-#print(se.model_map)
 se.insert_external_event("start", None)
-#print(se.port_map)
 
 for i in range(max_simtime) :
     if i % 100 == 0 :

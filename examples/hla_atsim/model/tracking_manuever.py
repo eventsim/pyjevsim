@@ -1,5 +1,4 @@
 from pyjevsim import BehaviorModel, Infinite
-import datetime
 
 
 class TrackingManuever(BehaviorModel):
@@ -20,7 +19,6 @@ class TrackingManuever(BehaviorModel):
 
     def ext_trans(self, port, msg):
         if port == "start":
-            print(f"{self.get_name()}[start_recv]: {datetime.datetime.now()}")
             self._cur_state = "Manuever"
         # The "target" port is retained for coupling compatibility but is no
         # longer the pursuit path: the target is committed to the physics

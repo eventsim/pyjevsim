@@ -2,15 +2,10 @@ from pyjevsim.behavior_model import BehaviorModel
 from pyjevsim.system_message import SysMessage
 from pyjevsim.definition import *
 
-import os
-import datetime
 
 from config import *
-#from instance.config import *
 
-import math
 
-from .core_component import FamilyType
 
 import copy
 
@@ -22,7 +17,6 @@ class Family(BehaviorModel):
         self.insert_state("IDLE", Infinite)
         self.insert_state("FLUSH", 0)
 
-        #self.insert_input_port("start")
         self.insert_input_port("receive_membertrash") #trash input port from human
         self.insert_output_port("takeout_trash")  #trash output port -> garbage can
 
@@ -34,8 +28,6 @@ class Family(BehaviorModel):
             
             self.family_type.get_members()[data[0]] += data[0].get_trash()
             self.family_type.stack_garbage(data[0].get_trash())
-            #print("$")
-            #print("!family",self.family_type.get_stack_amount())
             
             if self.family_type.should_empty():
                 if self.family_type.is_flush(data[0]):
@@ -44,7 +36,6 @@ class Family(BehaviorModel):
     def output(self, msg_deliver):
         msg = SysMessage(self.get_name(), "takeout_trash")
         msg.insert(copy.deepcopy(self.family_type.get_members()))
-        #print(self.family_type.get_stack_amount())
         self.family_type.empty_stack()
 
         msg_deliver.insert_message(msg)

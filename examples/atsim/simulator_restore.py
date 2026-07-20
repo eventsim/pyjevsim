@@ -3,10 +3,7 @@ import sys
 import yaml
 
 
-from pyjevsim import SysExecutor, ExecutionType, Infinite, SnapshotManager, RestoreHandler
-from model.manuever import Manuever
-from model.surfaceship import SurfaceShip
-from utils.scenario_manager import ScenarioManager
+from pyjevsim import SysExecutor, ExecutionType, SnapshotManager, RestoreHandler
 from utils.pos_plotter import PositionPlotter
 from utils.object_db import ObjectDB
 

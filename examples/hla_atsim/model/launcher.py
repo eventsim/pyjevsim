@@ -1,4 +1,3 @@
-import datetime
 import math
 
 from pyjevsim import BehaviorModel, Infinite
@@ -25,7 +24,6 @@ class Launcher(BehaviorModel):
 
     def ext_trans(self, port, msg):
         if port == "order":
-            print(f"{self.get_name()}[order_recv]: {datetime.datetime.now()}")
             self._cur_state = "Launch"
 
     def output(self, msg_deliver):

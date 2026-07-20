@@ -1,5 +1,4 @@
 from pyjevsim import BehaviorModel, Infinite
-import datetime
 
 class TrackingManuever(BehaviorModel):
     def __init__(self, name, platform):
@@ -19,10 +18,8 @@ class TrackingManuever(BehaviorModel):
 
     def ext_trans(self,port, msg):
         if port == "start":
-            print(f"{self.get_name()}[start_recv]: {datetime.datetime.now()}")
             self._cur_state = "Manuever"
         elif port == "target":
-            print(f"{self.get_name()}[target_recv]: {datetime.datetime.now()}")
             self.target_platform = msg.retrieve()[0]
             self.cancel_rescheduling()
 

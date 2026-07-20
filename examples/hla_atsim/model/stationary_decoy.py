@@ -1,5 +1,4 @@
-from pyjevsim import BehaviorModel, Infinite
-import datetime
+from pyjevsim import BehaviorModel
 
 
 class StationaryDecoy(BehaviorModel):

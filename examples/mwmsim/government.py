@@ -1,12 +1,8 @@
 from pyjevsim.behavior_model import BehaviorModel
-from pyjevsim.system_message import SysMessage
 from pyjevsim.definition import *
 
-import os
-import datetime
 
 from config import *
-#from instance.config import *
 
 class Government(BehaviorModel):
     def __init__(self, name):
@@ -21,7 +17,6 @@ class Government(BehaviorModel):
 
     def ext_trans(self,port, msg):
         if port == "recv_report":
-            #self._cur_state = "PROCESS"
             member=msg.retrieve()[0]
             if member.get_type() in self.reported:
                 self.reported[member.get_type()] += 1
@@ -32,8 +27,6 @@ class Government(BehaviorModel):
         output_str = ""
         for k, v in self.reported.items():
             output_str += f"{k},{v},"
-        #print(output_str)
-        #print(self.report)
 
     def output(self, msg_deliver):
         self.report += 1

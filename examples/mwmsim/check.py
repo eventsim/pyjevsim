@@ -2,11 +2,8 @@ from pyjevsim.behavior_model import BehaviorModel
 from pyjevsim.system_message import SysMessage
 from pyjevsim.definition import *
 
-import os
-import datetime
 from .core_component import Statistic
 from config import *
-#from instance.config import *
 
 class Check(BehaviorModel):
     def __init__(self, name, htype):
@@ -25,9 +22,6 @@ class Check(BehaviorModel):
 
         self.stat=Statistic(0,20,4)
         self.htype = htype
-#        self.satis_func = satis_func
-#        self.satisfaction = 100
-#        self.hid = hid
 
     def get_satis(self, trash):
         if trash > 0.5:
@@ -49,7 +43,6 @@ class Check(BehaviorModel):
                     self.htype.satisfaction=100
                     self.htype.satisfaction += self.htype.get_satisfaction_func(msg.retrieve()[0])
                 else:                            
-                #    self.htype.satisfaction += self.htype.get_satisfaction_func(msg.retrieve()[0])
                     self.htype.satisfaction += self.get_satis(msg.retrieve()[0])
 
                 
@@ -58,8 +51,6 @@ class Check(BehaviorModel):
                 if self.htype.satisfaction < 0:
                     self.htype.satisfaction += self.stat.get_delta()
                     self._cur_state = "REPORT"
-                #print(self.htype)
-                #print(SystemSimulator().get_engine("sname").get_global_time(),"[check] "+self.get_name() + ":" + str(self.htype.satisfaction))
 
     def output(self, msg_deliver):
         if self._cur_state == "CHECK":
@@ -72,7 +63,6 @@ class Check(BehaviorModel):
             return
 
         if self._cur_state == "REPORT":
-            #print('[check]#')
             msg = SysMessage(self.get_name(), "gov_report")
             msg.insert(self.htype)
             msg_deliver.insert_message(msg)

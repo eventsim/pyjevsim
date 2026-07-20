@@ -15,7 +15,7 @@ import sys
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 sys.path.insert(0, os.path.dirname(__file__))
 
-from run_standalone_headless import run as run_standalone, resolve_scenario, SCENARIOS  # noqa: E402
+from run_standalone_headless import run as run_standalone, SCENARIOS  # noqa: E402
 from run_hla_inprocess import run as run_hla  # noqa: E402
 
 

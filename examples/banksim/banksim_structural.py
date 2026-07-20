@@ -36,9 +36,7 @@ def execute_simulation(t_resol=1, execution_mode=ExecutionType.V_TIME):
 
     ## simulation run  
     for i in range(10):
-        #print("[time] : ", i)
         ss.simulate(1)
-        #print()
         
 start_time = time.time()
 execute_simulation(1, ExecutionType.V_TIME)

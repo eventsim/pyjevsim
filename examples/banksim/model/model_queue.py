@@ -65,17 +65,14 @@ class BankQueue(BehaviorModel):
             if len(self.user) < self.queue_size:
                 user = msg.retrieve()[0]
                 self.user.append(user)  # Add user to the queue
-                #print(f"[Q][in] ID:{user.get_id()} Time:{_time}")
                 self._cur_state = "SEND"
             else:
                 user = msg.retrieve()[0]
-                #print(f"User Dropped: {user}")
                 self._cur_state = "DROP"
                 user.set_drop_time(self.global_time)
                 self.dropped_user.append(user)
 
         elif port == "proc_checked":
-            #print("proc_checked")
             self.usable_proc.append(msg.retrieve()[0])  # Add processor to usable list
             self._cur_state = "SEND"
 
@@ -93,7 +90,6 @@ class BankQueue(BehaviorModel):
         _time = self.global_time
         if self._cur_state == "SEND":
             user = self.user.pop(0)  # Get the first user in the queue
-            #print(f"[Q][out] ID:{user.get_id()} Time:{_time}")
             
             msg = SysMessage(self.get_name(), self.usable_proc.pop(0))
             msg.insert(user)  # Insert user into message
@@ -107,7 +103,6 @@ class BankQueue(BehaviorModel):
         
         if self._cur_state == "DROP":
             #user = self.user.pop(0)  # Get the first user in the queue
-            #print(f"[Q][out] Dropped")
             
             msg = SysMessage(self.get_name(), "result")
             #msg.insert(user)  # Insert user into message

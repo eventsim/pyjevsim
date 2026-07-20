@@ -11,7 +11,6 @@ This module contains Banksim User Generator Model
 from pyjevsim.behavior_model import BehaviorModel
 from pyjevsim.definition import *
 from pyjevsim.system_message import SysMessage
-from pyjevsim.system_executor import SysExecutor
 import random
 
 class BankUser:  
@@ -109,10 +108,7 @@ class BankUserGenerator(BehaviorModel):
         self.insert_input_port("start")  # Add input port "start"
         self.insert_output_port("user_out")  # Add output port "user_out"
 
-        #self.cycle = cycle  # Generation cycle time
         self.generated_user = 0  # Counter for generated users
-        #self.max_user = max_user  # Maximum number of users to generate
-        #self.proc_time = proc_time  # Processing time for each user
         
     def ext_trans(self, port, msg):
         """
@@ -123,7 +119,6 @@ class BankUserGenerator(BehaviorModel):
             msg (SysMessage): The received message
         """
         if port == "start":
-            #print(f"[Gen][IN]: started")
             self._cur_state = "GEN"  # Transition state to "GEN"        
             self.update_state("GEN", random.randint(1,10))
         if port == "stop" :
@@ -137,7 +132,6 @@ class BankUserGenerator(BehaviorModel):
             SysMessage: The output message
         """
         _time = self.global_time
-        #print(f"[G] ID:{self.get_name()}-{self.generated_user} Time:{_time}")
 
         msg = SysMessage(self.get_name(), "user_out")
 
@@ -154,7 +148,6 @@ class BankUserGenerator(BehaviorModel):
         """Handles internal transitions based on the current state."""
         self.update_state("GEN", random.randint(1,10))  # Update "GEN" state with cycle time
         
-        #xprint("state update : ", self._states["GEN"])
         
     def get_user(self) : 
         return self.generated_user

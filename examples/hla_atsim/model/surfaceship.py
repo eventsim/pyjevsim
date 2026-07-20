@@ -1,6 +1,6 @@
 import project_config
 
-from pyjevsim import StructuralModel, Infinite
+from pyjevsim import StructuralModel
 
 from .manuever import Manuever
 from mobject.manuever_object import ManueverObject

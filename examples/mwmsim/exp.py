@@ -2,14 +2,11 @@ import contexts
 import sys,os
 
 from pyjevsim.system_executor import SysExecutor
-from pyjevsim.behavior_model import BehaviorModel
-from pyjevsim.system_message import SysMessage
 from pyjevsim.definition import *
 
 from config import *
 
 from examples.mwmsim.clock import Clock
-from examples.mwmsim.core_component import HumanType
 from examples.mwmsim.core_component import FamilyType
 
 from examples.mwmsim.job import *
@@ -50,7 +47,6 @@ for kndx in range(1):
         if i == len(lines)-1:
             blist.append(hlist)
 
-    #print(blist)
     
     se = SysExecutor(TIME_DENSITY, f"sname{kndx}", SIMULATION_MODE)
 
@@ -81,7 +77,6 @@ for kndx in range(1):
                 #hid = get_human_id()
                 name = htype.get_name()
                 cname = "check[{0}]".format(htype.get_name())
-                #print(name)               
                 h1 = Human(cname, htype)
                 ch = Check(name, htype)
 
