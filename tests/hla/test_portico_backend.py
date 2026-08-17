@@ -17,10 +17,12 @@ from __future__ import annotations
 
 import os
 import struct
+import threading
 
 import pytest
 
 from pyjevsim.hla.backends.pitch import PitchTransport
+from pyjevsim.hla.transport import IdentityCodec
 from pyjevsim.hla.backends.portico import (
     PorticoTransport,
     decode_unicode_string,
@@ -111,10 +113,15 @@ class _NoJVM(PorticoTransport):
     """PorticoTransport with the JPype/RTI half of __init__ skipped."""
 
     def __init__(self):
-        self._release_at = None
         self._settle = 0.0
+        self._quiet = 0.0
+        self._inbox = []
+        self._inbox_lock = threading.Lock()
+        self._rx_count = 0
         self._logical_time = 0.0
         self._lookahead = 1.0
+        self._callback = None
+        self._codec = IdentityCodec()
 
 
 def test_rti_time_axis_is_three_sub_steps_per_tick():
@@ -124,20 +131,48 @@ def test_rti_time_axis_is_three_sub_steps_per_tick():
     assert tx._rti_lookahead() == 1.0     # one sub-step, not one tick
 
 
-def test_time_advance_defers_the_release_sub_step(monkeypatch):
-    """data, barrier, then the release deferred into the *next* advance."""
-    calls = []
+def test_time_advance_settles_before_the_release_sub_step(monkeypatch):
+    """The wait for reflections sits between the sync and release steps."""
+    events = []
     monkeypatch.setattr(
         PitchTransport, "_do_request_time_advance",
-        lambda self, target: (calls.append(target), target)[1],
+        lambda self, target: (events.append(target), target)[1],
     )
+    monkeypatch.setattr(_NoJVM, "_settle_inbound",
+                        lambda self: events.append("settle"))
+    monkeypatch.setattr(_NoJVM, "_release_inbox",
+                        lambda self: events.append("release"))
     tx = _NoJVM()
     for t in (1.0, 2.0, 3.0):
         assert tx._do_request_time_advance(t) == t      # caller ticks, not RTI time
         assert tx._logical_time == t
-    assert calls == [3.0, 4.0,           # tick 1: data, barrier
-                     5.0, 6.0, 7.0,      # tick 2: release, data, barrier
-                     8.0, 9.0, 10.0]     # tick 3: release, data, barrier
+    assert events == [3.0, 4.0, "settle", "release", 5.0,
+                      6.0, 7.0, "settle", "release", 8.0,
+                      9.0, 10.0, "settle", "release", 11.0]
+
+
+def test_reflections_are_invisible_until_the_inbox_is_released():
+    """Nothing reaches the models until the transport says so."""
+    seen = []
+    tx = _NoJVM()
+    tx.on_receive(lambda *a: seen.append(a))
+    tx._emit("attribute", "X.Y", [{"v": 1}], 3.0)
+    tx._emit("attribute", "X.Y", [{"v": 2}], 3.0)
+    assert seen == []                       # buffered, not delivered
+    tx._release_inbox()
+    assert seen == [("attribute", "X.Y", [{"v": 1}], 3.0),
+                    ("attribute", "X.Y", [{"v": 2}], 3.0)]   # arrival order
+    tx._release_inbox()
+    assert len(seen) == 2                   # drained, not replayed
+
+
+def test_settle_returns_once_the_inbound_stream_is_idle():
+    tx = _NoJVM()
+    tx._settle, tx._quiet = 5.0, 0.01     # cap far above the idle threshold
+    import time as _t
+    started = _t.monotonic()
+    tx._settle_inbound()
+    assert _t.monotonic() - started < 1.0  # left early, nowhere near the cap
 
 
 # -------------------------------------------------------------- live Portico

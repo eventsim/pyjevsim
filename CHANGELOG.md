@@ -19,14 +19,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   overrides only what Portico needs: a standard-conformant `HLAunicodeString`
   codec (Portico's own encoder over-allocates and its decoder reads the
   4-octet length prefix as a single octet, so every string decodes empty) and
-  a three-sub-step time advance that restores a delivery barrier (Portico
-  hands time-stamped reflections to the federate in *receive* order). Portico
-  needs no CRC process.
+  a three-sub-step time advance with buffered inbound delivery that restores
+  the ordering barrier (Portico hands time-stamped reflections to the federate
+  in *receive* order). Portico needs no CRC process.
 - `examples/hla_pingpong/run_portico.py`, `examples/hla_atsim/run_hla_portico.py`
   and `examples/hla_atsim/verify_equivalence_rti.py` — the live-RTI equivalence
   gate, parameterized by `PYJEVSIM_RTI`. Verified against **Portico 2.1.4**
-  (Temurin 11, JPype 1.7.1): both scenarios byte-identical to the standalone
-  reference, 180 rows each.
+  (Temurin 11, JPype 1.7.1): five consecutive runs, both scenarios
+  byte-identical to the standalone reference, 180 rows each.
 - `tests/hla/test_portico_backend.py`.
 
 ### Changed

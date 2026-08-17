@@ -5,8 +5,8 @@ Portico (https://github.com/openlvc/portico) implements the same standard
 against, and needs no central RTI component (CRC): every LRC discovers its
 peers over JGroups. :class:`PorticoTransport` therefore reuses the whole
 Pitch transport -- connect/join, declaration management, object registration,
-TSO send, TAR/grant loop -- and overrides exactly one thing: the encoding of
-``string`` fields (see `HLAunicodeString` below).
+TSO send, TAR/grant loop -- and overrides only what Portico gets wrong: the
+encoding of ``string`` fields, and the time axis (see below).
 
 Registered (lazily) under the name ``"portico"``::
 
@@ -60,16 +60,23 @@ follow them, and a federate that reads its peers' state immediately after a
 grant sees either the current or the previous tick depending on wall-clock
 luck.
 
-The backend narrows this to a one-sided problem by spending three RTI
-sub-steps per caller tick (see
-:meth:`PorticoTransport._do_request_time_advance`): after the barrier step no
-peer can publish for the *next* tick, so nothing from the future can be
-dispatched while the caller is processing this one. What remains is the
-RTI's unbounded dispatch latency for the *current* tick, which the backend
-covers by waiting ``settle`` seconds before returning from the barrier. The
-barrier is what makes that wait safe -- waiting longer costs time but can
-never let a future tick leak in. Measured dispatch latency on a single host
-is 15-40 ms; the default ``settle`` is 0.1 s.
+The backend rebuilds the barrier out of the one thing Portico does honour,
+time regulation: three RTI sub-steps per caller tick (see
+:meth:`PorticoTransport._do_request_time_advance`). Reflections are held in
+a buffer as they arrive and released to the models at a single point, chosen
+so that nothing a peer publishes for tick ``t+1`` can ever be visible during
+tick ``t`` -- the release happens before the sub-step that lets any peer move
+on. That half of the ordering is exact, not probabilistic.
+
+The other half is not. Portico offers no signal that a tick's reflections
+are complete, so before releasing the buffer the backend waits for the
+inbound stream to fall idle for ``quiet`` seconds (capped at ``settle``).
+Measured dispatch latency on a single host is 15-40 ms and the default
+``quiet`` is 0.25 s, but a long enough gap inside one tick's burst -- on a
+loaded machine, say -- can still end the wait early and defer a reflection to
+the next tick. Raise ``quiet`` if a run diverges. Exact trace equivalence on
+Portico therefore rests on a timing assumption; on an RTI that honours
+time-stamp order it does not.
 
 The sub-tick axis is internal: ``request_time_advance`` still takes and
 returns caller ticks, and ``lookahead`` is still expressed in ticks.
@@ -78,6 +85,7 @@ returns caller ticks, and ``lookahead`` is still expressed in ticks.
 from __future__ import annotations
 
 import struct
+import threading
 import time
 from typing import Any
 
@@ -127,11 +135,19 @@ class PorticoTransport(PitchTransport):
     for the ``string`` field codec and the time axis; see the module
     docstring for why each is needed.
 
-    Extra keyword argument:
-        settle: seconds to wait after each barrier grant for Portico to
-            dispatch the tick's receive-order reflections (default 0.1).
-            Raising it only costs wall-clock time; the barrier is what keeps
-            the wait from over-reading into the next tick.
+    Extra keyword arguments:
+        settle: upper bound, in seconds, on the wait for Portico to
+            dispatch the tick's receive-order reflections.
+        quiet: how long the inbound stream must be idle before that wait
+            ends early. The normal cost per tick is ``quiet``; ``settle`` is
+            only reached on a loaded machine.
+
+    Raising either only costs wall-clock time: reflections are released to the
+    models before any peer is let past the tick, so a longer wait can never
+    pull the next tick in.
+
+    Inbound events are delivered from :meth:`request_time_advance`, not from
+    the RTI callback thread. A caller that never advances time never sees them.
     """
 
     capabilities = RTICapabilities(
@@ -143,17 +159,38 @@ class PorticoTransport(PitchTransport):
         default_lookahead=1.0,
     )
 
-    #: RTI time units per caller tick: data, barrier, release (see above).
+    #: RTI time units per caller tick: data, sync, move-on (see below).
     _RTI_SCALE = 3.0
 
-    def __init__(self, *args, settle: float = 0.1, **kwargs) -> None:
-        # Set before _boot_jvm() (called from the base __init__) can dispatch
-        # a callback, and before the first time advance defers its release.
-        self._release_at: "float | None" = None
-        #: Seconds to wait, after the barrier grant, for Portico to dispatch
-        #: the current tick's receive-order reflections. Safe to raise.
+    #: Polling interval of the inter-sub-step wait, in seconds.
+    _SETTLE_POLL = 0.002
+
+    def __init__(self, *args, settle: float = 2.0, quiet: float = 0.25,
+                 **kwargs) -> None:
+        # All set before _boot_jvm() (called from the base __init__) can
+        # dispatch a callback.
         self._settle = float(settle)
+        self._quiet = float(quiet)
+        self._inbox: list = []
+        self._inbox_lock = threading.Lock()
+        self._rx_count = 0
         super().__init__(*args, **kwargs)
+
+    # ----------------------------------------------------- inbound buffering
+
+    def _emit(self, *args) -> None:
+        """Buffer instead of delivering; :meth:`_release_inbox` delivers."""
+        with self._inbox_lock:
+            self._inbox.append(args)
+            # Counted so _settle_inbound can tell "still arriving" from "idle".
+            self._rx_count += 1
+
+    def _release_inbox(self) -> None:
+        """Hand every buffered reflection to the models, in arrival order."""
+        with self._inbox_lock:
+            pending, self._inbox = self._inbox, []
+        for event in pending:
+            super()._emit(*event)
 
     def _encode_value(self, datatype: str, value: Any):
         if datatype.lower() in _STRING_TYPES:
@@ -172,40 +209,61 @@ class PorticoTransport(PitchTransport):
         return self._RTI_SCALE * logical
 
     def _rti_lookahead(self) -> float:
-        # One sub-step. Any larger and requesting the barrier step would not
-        # hold the peer back; any smaller and a granted federate could not
-        # publish for the next tick.
+        # One sub-step: the smallest interval that still lets a federate
+        # granted the barrier sub-step publish for the next tick.
         return 1.0
 
     def _do_request_time_advance(self, target: float) -> float:
-        """Advance one caller tick as three RTI sub-steps.
+        """Advance one caller tick as three RTI sub-steps around a settle.
 
-        ``3t``   data     -- granted once every peer has requested ``3t``,
-                            which each does only after publishing its
-                            tick-``t`` state; per-sender FIFO delivery then
-                            puts those reflections ahead of the grant in the
-                            LRC queue, so they are dispatched first.
-        ``3t+1`` barrier  -- a peer publishes for tick ``t+1`` at ``3t+3``,
-                            which it may not do until it is granted ``3t+2``,
-                            which in turn waits on this federate requesting
-                            ``3t+2``.
-        ``3t+2`` release  -- deferred to the *next* call. That deferral is
-                            what holds every peer still for the whole of the
-                            caller's tick-``t`` processing. Publishing tick
-                            ``t+1`` at ``3t+3`` from logical time ``3t+1`` is
-                            still legal with a lookahead of one sub-step.
+        ``3t``   data    -- granted once every peer has requested ``3t``,
+                           which each does only after publishing its
+                           tick-``t`` state, so that state is already in
+                           flight.
+        ``3t+1`` sync    -- granted once every peer has been granted ``3t``.
+                           Their publishes preceded their ``3t+1`` requests on
+                           the same channel, so per-sender FIFO delivery means
+                           this federate's LRC has the data by now; only the
+                           hand-off to the federate may still be pending.
+        settle           -- wait for that hand-off.
+        release inbox    -- everything buffered so far becomes visible to the
+                           models. Nothing from tick ``t+1`` can be in it: a
+                           peer publishes tick ``t+1`` only after its ``3t+2``
+                           grant, and no peer can be granted ``3t+2`` until
+                           the next line runs.
+        ``3t+2``         -- lets the federation move on, once every peer has
+                           released its own inbox.
         """
         step = super()._do_request_time_advance   # PitchTransport's TAR + wait
-        if self._release_at is not None:
-            step(self._release_at)
         base = self._RTI_SCALE * target
         step(base)
         step(base + 1.0)
-        if self._settle:
-            time.sleep(self._settle)     # dispatch latency, bounded by the barrier
-        self._release_at = base + 2.0
+        self._settle_inbound()
+        self._release_inbox()
+        step(base + 2.0)
         self._logical_time = target               # keep caller-tick units
         return target
+
+    def _settle_inbound(self) -> None:
+        """Wait out Portico's reflection dispatch latency.
+
+        Returns once the inbound stream has been idle for ``quiet``, or after
+        ``settle`` at the latest. Waiting too long is harmless -- the buffer
+        is released afterwards and no peer moves on until it is -- so the only
+        failure mode is ending too early.
+        """
+        if self._settle <= 0:
+            return
+        now = time.monotonic
+        deadline = now() + self._settle
+        last, idle_since = self._rx_count, now()
+        while now() < deadline:
+            time.sleep(self._SETTLE_POLL)
+            seen = self._rx_count
+            if seen != last:
+                last, idle_since = seen, now()
+            elif now() - idle_since >= self._quiet:
+                return
 
 
 register_rti("portico", lambda **kw: PorticoTransport(**kw))
