@@ -19,7 +19,8 @@ Pitch pRTI. Only the transport (chosen via `create_rti(...)`) changes.
 | `pingpong_models.py` | `Ping` / `Pong` models + HLA bindings + Pitch FOM map |
 | `fom/PingPong.xml` | IEEE 1516-2010 FOM (interactions `Ping`/`Pong`, object `PingPaddle`) |
 | `run_inprocess.py` | Offline demo — two federates over `InProcessRTI` (no Java) |
-| `run_pitch.py` | Live demo — two federates (two threads) in one process over Pitch pRTI |
+| `run_pitch.py` | Live demo — two federates (two threads) in one process over Pitch pRTI (`PYJEVSIM_RTI` picks the backend) |
+| `run_portico.py` | The same demo over the open-source **Portico** RTI (no CRC needed) |
 | `run_pitch_federate.py` | **One federate per OS process** (`ping`/`pong` arg) — true distributed run |
 | `run_pitch_multiprocess.py` | Launcher that spawns both federate processes and streams their output |
 
@@ -124,6 +125,8 @@ tx = create_rti("pitch", federation="PingPong", federate="ping",
 - `tests/hla/test_pingpong.py` — always runs; verifies join/resign,
   interaction exchange (both directions) and object sync deterministically
   over the in-process bus.
+- `tests/hla/test_portico_backend.py` — hermetic codec / time-axis tests plus
+  a guarded live case (`PYJEVSIM_PORTICO_LIVE=1`).
 - `tests/hla/test_pitch_backend.py` — guarded; runs the encoder round-trip
   when JPype + Java ≥ 9 + `prti1516e.jar` are present, and the full live
   federation when `PYJEVSIM_PITCH_LIVE=1` with a running CRC. Skips otherwise.

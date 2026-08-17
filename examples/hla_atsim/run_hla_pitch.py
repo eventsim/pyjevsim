@@ -10,9 +10,13 @@ lookahead = 1.0; the local physics is pumped exactly like the in-process
 build (commit_tick -> publish_local -> snapshot.refresh -> step), so the
 same deterministic 1-tick snapshot discipline applies.
 
+The same driver runs against any registered IEEE 1516-2010 backend; see
+run_hla_portico.py, which reuses it with ``backend="portico"``.
+
 Env:
   PYJEVSIM_JVM   path to jvm.dll   (default: Adoptium JDK 11)
-  PYJEVSIM_JAR   path to prti1516e.jar (default: C:\\Program Files\\prti1516e\\lib)
+  PYJEVSIM_JAR   path to the RTI jar (default: C:\\Program Files\\prti1516e\\lib)
+  PYJEVSIM_RTI   backend name      (default: pitch)
 
 Run:  python examples/hla_atsim/run_hla_pitch.py
 """
@@ -36,6 +40,7 @@ JAR = os.environ.get(
     "PYJEVSIM_JAR",
     r"C:\Program Files\prti1516e\lib\prti1516e.jar",
 )
+RTI = os.environ.get("PYJEVSIM_RTI", "pitch")
 TICKS = 30
 
 
@@ -48,14 +53,15 @@ def _preflight():
     if not os.path.exists(JVM_PATH):
         return f"JVM not found at {JVM_PATH} (set PYJEVSIM_JVM)"
     if not os.path.exists(JAR):
-        return f"prti1516e.jar not found at {JAR} (set PYJEVSIM_JAR)"
+        return f"RTI jar not found at {JAR} (set PYJEVSIM_JAR)"
     return None
 
 
-def run(scenario=None):
+def run(scenario=None, backend=None):
+    backend = backend or RTI
     reason = _preflight()
     if reason is not None:
-        print(f"[skip] Pitch run not available: {reason}")
+        print(f"[skip] {backend} run not available: {reason}")
         return None
 
     from pyjevsim import ExecutionType, SysExecutor
@@ -78,7 +84,7 @@ def run(scenario=None):
         se = SysExecutor(_time_resolution=1, ex_mode=ExecutionType.HLA_TIME)
         ctx.set_executor(se)
         tx = create_rti(
-            "pitch",
+            backend,
             federation="AntiTorpedo",
             federate=fed_name,
             fom=FOM,
@@ -134,13 +140,14 @@ def run(scenario=None):
     return sorted(rows)
 
 
-def main():
+def main(backend=None):
+    backend = backend or RTI
     from run_standalone_headless import resolve_scenario
     tag, path = resolve_scenario(sys.argv[1] if len(sys.argv) > 1 else None)
-    rows = run(path)
+    rows = run(path, backend)
     if rows is None:
         return
-    out = os.path.join(os.path.dirname(__file__), f"hla_pitch_{tag}.csv")
+    out = os.path.join(os.path.dirname(__file__), f"hla_{backend}_{tag}.csv")
     with open(out, "w") as f:
         f.write("tick,object_name,x,y,z\n")
         for r in rows:

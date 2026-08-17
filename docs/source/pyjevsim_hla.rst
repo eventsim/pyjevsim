@@ -56,6 +56,15 @@ Built-in backends
    * - ``pitch``
      - Pitch pRTI (IEEE 1516-2010), live federation
      - ``pip install pyjevsim[hla-pitch]`` + Java >= 9 + a running CRC
+   * - ``portico``
+     - Portico (open source, IEEE 1516-2010), live federation
+     - ``pip install pyjevsim[hla-pitch]`` + Java >= 9 + ``portico.jar``
+
+Both live backends drive the standard ``hla.rti1516e`` Java API discovered
+through ``RtiFactoryFactory``, so selecting an RTI is a matter of putting its
+jar on the classpath. :class:`~pyjevsim.hla.backends.portico.PorticoTransport`
+subclasses the Pitch one and overrides only what Portico gets wrong: the
+``HLAunicodeString`` codec, and the absence of time-stamp-ordered delivery.
 
 Turning a model into a federate
 -------------------------------
@@ -134,6 +143,11 @@ or against a live Pitch pRTI (``pitch`` backend, with a CRC running)::
 
    python examples/hla_pingpong/run_pitch.py
 
+or against the open-source Portico RTI (``portico`` backend, no CRC)::
+
+   set RTI_HOME=C:\path\to\portico-2.1.4
+   python examples/hla_pingpong/run_portico.py
+
 Anti-torpedo co-simulation (hla_atsim)
 --------------------------------------
 
@@ -157,10 +171,19 @@ gate that proves the federated run reproduces a single-executor reference
 
 The same trajectories are produced by the single-process reference
 (``run_standalone_headless.py``), the two-federate in-process bus
-(``run_hla_inprocess.py``), and two federates over a live Pitch pRTI
-(``run_hla_pitch.py``) — identical in every case. This demonstrates that the
-RTI-mediated position exchange faithfully reproduces the monolithic
-simulation's dynamics.
+(``run_hla_inprocess.py``), two federates over a live Pitch pRTI
+(``run_hla_pitch.py``) and two federates over a live Portico RTI
+(``run_hla_portico.py``) — identical in every case. This demonstrates that
+the RTI-mediated position exchange faithfully reproduces the monolithic
+simulation's dynamics, and that it does so independently of the RTI
+implementation. ``verify_equivalence_rti.py`` runs the byte-comparison
+against whichever live RTI ``PYJEVSIM_RTI`` selects::
+
+   set PYJEVSIM_RTI=portico
+   set PYJEVSIM_JAR=C:\path\to\portico-2.1.4\lib\portico.jar
+   python examples/hla_atsim/verify_equivalence_rti.py
+   # -> MATCH self_propelled: 180 rows (standalone vs portico, byte-identical)
+   # -> MATCH stationary: 180 rows (standalone vs portico, byte-identical)
 
 .. figure:: ../../examples/hla_atsim/figures/atsim_self_propelled.png
    :width: 70%

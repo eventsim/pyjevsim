@@ -13,6 +13,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   attributes, reproducing the single-executor reference byte-for-byte for the
   self-propelled and stationary decoy scenarios (verified on the in-process bus
   and on live Pitch pRTI via ``verify_equivalence.py``).
+- **Second live RTI backend: Portico** (`portico`, open source, IEEE
+  1516-2010). `PorticoTransport` subclasses `PitchTransport` — both drive the
+  standard `hla.rti1516e` Java API, so the RTI is selected by classpath — and
+  overrides only what Portico needs: a standard-conformant `HLAunicodeString`
+  codec (Portico's own encoder over-allocates and its decoder reads the
+  4-octet length prefix as a single octet, so every string decodes empty) and
+  a three-sub-step time advance that restores a delivery barrier (Portico
+  hands time-stamped reflections to the federate in *receive* order). Portico
+  needs no CRC process.
+- `examples/hla_pingpong/run_portico.py`, `examples/hla_atsim/run_hla_portico.py`
+  and `examples/hla_atsim/verify_equivalence_rti.py` — the live-RTI equivalence
+  gate, parameterized by `PYJEVSIM_RTI`. Verified against **Portico 2.1.4**
+  (Temurin 11, JPype 1.7.1): both scenarios byte-identical to the standalone
+  reference, 180 rows each.
+- `tests/hla/test_portico_backend.py`.
+
+### Changed
+- `PitchTransport` gained four no-op extension seams for subclasses —
+  `_encode_value` / `_decode_value` (field codec) and `_rti_time` /
+  `_rti_lookahead` (RTI time axis). Behaviour on Pitch is unchanged.
 
 ## [2.1.2] — 2026-06-28
 

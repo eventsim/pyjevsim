@@ -247,7 +247,7 @@ class PitchTransport(RTIConnector):
 
         # Time management: regulating + constrained with our lookahead.
         self._time_factory = self._rtiamb.getTimeFactory()
-        interval = self._time_factory.makeInterval(self._lookahead)
+        interval = self._time_factory.makeInterval(self._rti_lookahead())
         self._rtiamb.enableTimeRegulation(interval)
         self._reg_enabled.wait(timeout=10)
         self._rtiamb.enableTimeConstrained()
@@ -296,6 +296,35 @@ class PitchTransport(RTIConnector):
         # We deliberately do NOT shutdown the JVM: other transports in the
         # same process may still need it, and JPype cannot restart a JVM.
 
+    # ------------------------------------------------------------- time axis
+
+    # pyjevsim logical time and RTI logical time coincide for a conformant
+    # 1516e RTI. Backends that need a finer RTI timeline than the caller's
+    # (e.g. an extra half-step barrier) override these two seams.
+
+    def _rti_time(self, logical: float) -> float:
+        """Map a pyjevsim logical time onto the RTI's time axis."""
+        return logical
+
+    def _rti_lookahead(self) -> float:
+        """Lookahead interval, in RTI time units, for enableTimeRegulation."""
+        return self._lookahead
+
+    # ----------------------------------------------------------- field codec
+
+    # Every field (de)serialization goes through these two seams so that a
+    # subclass can substitute the encoding of a single FOM datatype without
+    # touching the data plane. ``backends/portico.py`` uses this to replace
+    # HLAunicodeString, whose Portico implementation is defective.
+
+    def _encode_value(self, datatype: str, value: Any):
+        """Encode one Python value to an HLA ``byte[]``."""
+        return _encode_field(self._ef, datatype, value)
+
+    def _decode_value(self, datatype: str, raw):
+        """Decode one HLA ``byte[]`` back to a Python value."""
+        return _decode_field(self._ef, datatype, raw)
+
     # ----------------------------------------------------------- data plane
 
     def _do_send(self, binding, wire: Any, timestamp: "float | None") -> None:
@@ -304,8 +333,10 @@ class PitchTransport(RTIConnector):
         record = wire[0] if isinstance(wire, (list, tuple)) and wire else wire
         # TSO send time: the model's output() runs inside step(granted), so the
         # earliest legal timestamp is the current logical time + lookahead.
-        send_t = timestamp if timestamp is not None else \
-            self._logical_time + self._lookahead
+        send_t = self._rti_time(
+            timestamp if timestamp is not None
+            else self._logical_time + self._lookahead
+        )
         if spec["kind"] == "interaction":
             self._send_interaction(binding.fom_id, spec, record, send_t)
         else:
@@ -318,7 +349,7 @@ class PitchTransport(RTIConnector):
         )
         ph = self._param_handles[fom_id]
         for field, dtype in spec["fields"].items():
-            params.put(ph[field], _encode_field(self._ef, dtype, record[field]))
+            params.put(ph[field], self._encode_value(dtype, record[field]))
         tag = self._jpype.JArray(self._jpype.JByte)(0)
         self._rtiamb.sendInteraction(
             h, params, tag, self._time_factory.makeTime(float(send_t))
@@ -332,7 +363,7 @@ class PitchTransport(RTIConnector):
         )
         ah = self._attr_handles[fom_id]
         for field, dtype in spec["fields"].items():
-            amap.put(ah[field], _encode_field(self._ef, dtype, record[field]))
+            amap.put(ah[field], self._encode_value(dtype, record[field]))
         tag = self._jpype.JArray(self._jpype.JByte)(0)
         self._rtiamb.updateAttributeValues(
             obj, amap, tag, self._time_factory.makeTime(float(send_t))
@@ -347,7 +378,7 @@ class PitchTransport(RTIConnector):
         spec = self._fom_map[fom_id]
         ph = self._param_handles[fom_id]
         record = {
-            field: _decode_field(self._ef, dtype, parameters.get(ph[field]))
+            field: self._decode_value(dtype, parameters.get(ph[field]))
             for field, dtype in spec["fields"].items()
         }
         self._emit("interaction", fom_id, [record], _extract_time(rest))
@@ -359,7 +390,7 @@ class PitchTransport(RTIConnector):
         spec = self._fom_map[fom_id]
         ah = self._attr_handles[fom_id]
         record = {
-            field: _decode_field(self._ef, dtype, attributes.get(ah[field]))
+            field: self._decode_value(dtype, attributes.get(ah[field]))
             for field, dtype in spec["fields"].items()
             if attributes.containsKey(ah[field])
         }
