@@ -6,7 +6,7 @@ prti1516e). Both federates run in this one process for simplicity; in a real
 deployment each would be its own process/host.
 
 Prerequisites:
-  * pip install jpype1   (matching your Python; JPype>=1.6 needs Java>=9)
+  * pip install jpype1   (matching your Python; JPype>=1.6 needs Java>=11)
   * Pitch pRTI installed; a CRC running.
   * PRTI_HOME pointing at the install (default: C:\\Program Files\\prti1516e).
 
@@ -42,7 +42,7 @@ PRTI_HOME = os.environ.get("PRTI_HOME", r"C:\Program Files\prti1516e")
 JAR = os.environ.get("PYJEVSIM_JAR", os.path.join(PRTI_HOME, "lib", "prti1516e.jar"))
 RTI = os.environ.get("PYJEVSIM_RTI", "pitch")
 FOM = os.path.join(os.path.dirname(__file__), "fom", "PingPong.xml")
-# Optional explicit JVM (use a Java>=9 runtime for JPype>=1.6):
+# Optional explicit JVM (use a Java>=11 runtime for JPype>=1.6):
 JVM_PATH = os.environ.get("PYJEVSIM_JVM")  # e.g. .../jre/bin/server/jvm.dll
 
 

@@ -55,10 +55,10 @@ Built-in backends
      - none
    * - ``pitch``
      - Pitch pRTI (IEEE 1516-2010), live federation
-     - ``pip install pyjevsim[hla-pitch]`` + Java >= 9 + a running CRC
+     - ``pip install pyjevsim[hla-pitch]`` + Java >= 11 + a running CRC
    * - ``portico``
      - Portico (open source, IEEE 1516-2010), live federation
-     - ``pip install pyjevsim[hla-pitch]`` + Java >= 9 + ``portico.jar``
+     - ``pip install pyjevsim[hla-pitch]`` + Java >= 11 + ``portico.jar``
 
 Both live backends drive the standard ``hla.rti1516e`` Java API discovered
 through ``RtiFactoryFactory``, so selecting an RTI is a matter of putting its

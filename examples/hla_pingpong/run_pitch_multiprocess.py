@@ -3,7 +3,7 @@
 Spawns ``run_pitch_federate.py pong`` and ``run_pitch_federate.py ping`` as
 two separate OS processes (each with its own JVM/LRC) joined to the same
 live Pitch pRTI federation, and streams their output. Requires a running
-CRC and ``PYJEVSIM_JVM`` set to a Java >= 9 ``jvm.dll``.
+CRC and ``PYJEVSIM_JVM`` set to a Java >= 11 ``jvm.dll``.
 
     python examples/hla_pingpong/run_pitch_multiprocess.py
 """

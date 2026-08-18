@@ -5,7 +5,7 @@ name and the RTI jar change. Portico needs no CRC process: the first
 federate to create the federation elects itself co-ordinator.
 
 Prerequisites:
-  * pip install jpype1   (matching your Python; JPype>=1.6 needs Java>=9)
+  * pip install jpype1   (matching your Python; JPype>=1.6 needs Java>=11)
   * a Portico distribution (https://github.com/openlvc/portico/releases)
 
 Env:

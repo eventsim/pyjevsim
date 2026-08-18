@@ -41,7 +41,7 @@ from pyjevsim.hla import Federate, HLAExecutorFactory, create_rti  # noqa: E402
 PRTI_HOME = os.environ.get("PRTI_HOME", r"C:\Program Files\prti1516e")
 JAR = os.path.join(PRTI_HOME, "lib", "prti1516e.jar")
 FOM = os.path.join(os.path.dirname(__file__), "fom", "PingPong.xml")
-JVM_PATH = os.environ.get("PYJEVSIM_JVM")          # Java >= 9 jvm.dll
+JVM_PATH = os.environ.get("PYJEVSIM_JVM")          # Java >= 11 jvm.dll
 CRC = os.environ.get("PYJEVSIM_CRC")               # e.g. 192.168.1.10:8989
 SYNC = "ready"
 
