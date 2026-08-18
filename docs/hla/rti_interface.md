@@ -180,8 +180,19 @@ Backends register themselves on import so their dependencies stay optional:
 |-----|-----|------------|
 | `loopback` | built-in (`transport.py`) | none |
 | Pitch pRTI 1516e | JPype in-process **or** Java/C++ surrogate over IPC | `jpype1` + `prti1516e.jar`, or a surrogate process |
+| Portico 1516e | JPype in-process; subclasses the Pitch transport (`backends/portico.py`) | `jpype1` + `portico.jar` (no CRC) |
 | CERTI | Python `rti1516e`/`hla` binding, or surrogate | CERTI libs |
-| Portico / OpenRTI / MÄK | C++/Java binding via JPype/JNI, or surrogate | vendor libs |
+| OpenRTI / MÄK | C++/Java binding via JPype/JNI, or surrogate | vendor libs |
+
+Because `backends/pitch.py` programs against the *standard* `hla.rti1516e`
+Java API discovered through `RtiFactoryFactory`, a second 1516e RTI is
+mostly a classpath change. `backends/portico.py` is the worked example: it
+inherits everything and overrides four seams — `_encode_value` /
+`_decode_value` (Portico's `HLAunicodeString` codec is broken in both
+directions) and `_rti_time` / `_rti_lookahead` (Portico delivers
+time-stamped reflections in receive order, so the backend buys the ordering
+back with a three-sub-step time advance). Those seams exist for exactly this
+purpose; add more of them rather than forking the transport.
 
 See [`instruction.md`](instruction.md) §7 for the kdx-rti migration notes and
 the Pitch-specific surrogate vs. in-process JPype trade-off discussed in the

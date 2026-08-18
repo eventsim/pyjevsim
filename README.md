@@ -338,9 +338,9 @@ from pyjevsim.hla import (
     create_rti, available_rtis, HLAExecutorFactory, HLAInteraction, Federate,
 )
 
-print(available_rtis())            # ['inprocess', 'loopback', 'pitch']
+print(available_rtis())     # ['inprocess', 'loopback', 'pitch', 'portico']
 
-transport = create_rti("inprocess")            # or "pitch" for live Pitch pRTI
+transport = create_rti("inprocess")   # or "pitch" / "portico" for a live RTI
 sys_exec = SysExecutor(1, ex_mode=ExecutionType.HLA_TIME)
 sys_exec.exec_factory = HLAExecutorFactory(
     transport, {"chatter": {"out": HLAInteraction("Comm.Msg", direction="out")}}
@@ -361,8 +361,15 @@ Built-in backends:
 | `loopback` | self-mirror, single-federate unit tests | none |
 | `inprocess` | multi-federate in-process bus (tests/demos) | none |
 | `pitch` | **Pitch pRTI** IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 9 + a running CRC |
+| `portico` | **Portico** (open source) IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 9 + `portico.jar` (no CRC) |
 
-**Adding your own RTI** (CERTI, Portico, OpenRTI, MÄK, …): subclass
+Both live backends program against the standard `hla.rti1516e` Java API; the
+`portico` backend is a ~40-line subclass of the `pitch` one that works around
+two Portico defects (its `HLAunicodeString` codec, and receive-order delivery
+of time-stamped reflections). See
+[`pyjevsim/hla/backends/portico.py`](pyjevsim/hla/backends/portico.py).
+
+**Adding your own RTI** (CERTI, OpenRTI, MÄK, …): subclass
 `RTIConnector` and implement `_do_send` + `_do_request_time_advance`
 (plus optional lifecycle hooks), then `register_rti("name", factory)`.
 See [`docs/hla/rti_interface.md`](docs/hla/rti_interface.md) for the full

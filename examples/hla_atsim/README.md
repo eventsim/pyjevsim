@@ -10,8 +10,10 @@ reference run, tick-for-tick and bit-for-bit.
 |------|------|
 | `run_standalone_headless.py` | single `SysExecutor` reference (writes `standalone_<tag>.csv`) |
 | `run_hla_inprocess.py` | two federates over the in-process RTI bus (writes `hla_<tag>.csv`) — **no Java needed** |
-| `run_hla_pitch.py` | optional live pRTI 1516e run (guarded; writes `hla_pitch_<tag>.csv`) |
+| `run_hla_pitch.py` | optional live 1516e run (guarded; writes `hla_<rti>_<tag>.csv`; `PYJEVSIM_RTI` selects the backend) |
+| `run_hla_portico.py` | the same driver against the open-source Portico RTI (writes `hla_portico_<tag>.csv`) |
 | `verify_equivalence.py` | the gate: runs both headless builds and asserts identical CSVs for every scenario |
+| `verify_equivalence_rti.py` | the same gate against a **live** RTI (`PYJEVSIM_RTI=pitch\|portico`) |
 | `plot_trajectories.py` | headless matplotlib — renders `figures/atsim_<tag>.png` (top-down, 3-D, range) from the CSV |
 | `make_animation.py` | headless matplotlib — renders `figures/atsim_<tag>.gif` engagement animation |
 | `fom/AntiTorpedo.xml` | IEEE 1516-2010 FOM, one `Platform` object class |
@@ -63,9 +65,10 @@ in-process bus and a real RTI:
 | `run_standalone_headless.py` | single `SysExecutor` (reference) | no |
 | `run_hla_inprocess.py` | two federates, `InProcessRTI` | no |
 | `run_hla_pitch.py` | two federates, **live Pitch pRTI 1516e** | yes (JPype + running CRC) |
+| `run_hla_portico.py` | two federates, **live Portico 2.1.4** (open source) | yes (JPype + `portico.jar`, no CRC) |
 
 For each scenario, `standalone_<tag>.csv` == `hla_<tag>.csv` ==
-`hla_pitch_<tag>.csv`, 180 rows, byte-for-byte:
+`hla_pitch_<tag>.csv` == `hla_portico_<tag>.csv`, 180 rows, byte-for-byte:
 
 ```
 MATCH self_propelled: 180 rows
@@ -151,14 +154,31 @@ Position exchange is pumped explicitly between `step()` calls
 (`publish_local` → `ProxySink`), not through a bound DEVS "uplink" model, so
 it reads settled end-of-tick positions and stays outside the tick.
 
-## Optional Pitch run
+## Optional live-RTI runs
 
-`run_hla_pitch.py` bridges to a real pRTI 1516e CRC. It is **not** part of
-the gate and self-skips unless `jpype`, a JVM, `prti1516e.jar`, and a
-reachable CRC are all present:
+`run_hla_pitch.py` bridges to a real 1516e RTI. It is **not** part of the
+default gate and self-skips unless `jpype`, a JVM and the RTI jar are all
+present:
 
 ```bash
 set PYJEVSIM_JVM=...\jvm.dll
 set PYJEVSIM_JAR=...\prti1516e.jar
-python examples/hla_atsim/run_hla_pitch.py
+python examples/hla_atsim/run_hla_pitch.py            # needs a running CRC
 ```
+
+The same driver runs against the open-source **Portico** RTI, which needs no
+CRC — only the backend name and the jar change:
+
+```bash
+set PYJEVSIM_JVM=...\jvm.dll
+set RTI_HOME=...\portico-2.1.4
+set PYJEVSIM_JAR=%RTI_HOME%\lib\portico.jar
+python examples/hla_atsim/run_hla_portico.py          # -> hla_portico_<tag>.csv
+
+set PYJEVSIM_RTI=portico
+python examples/hla_atsim/verify_equivalence_rti.py   # byte-compares both scenarios
+```
+
+Verified against **Portico 2.1.4** (Temurin 11, JPype 1.7.1): `MATCH
+self_propelled: 180 rows` and `MATCH stationary: 180 rows`, byte-identical to
+the standalone reference.
