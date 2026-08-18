@@ -50,10 +50,10 @@ federation members after resign: 0
 Prerequisites:
 
 1. `pip install jpype1` — must match your Python **and** Java. JPype ≥ 1.6
-   requires **Java ≥ 9**; for Java 8 pin `jpype1<=1.5`.
+   requires **Java ≥ 11**; for Java 8 pin `jpype1<=1.5`.
 2. Pitch pRTI installed and a **CRC running**.
 3. `PRTI_HOME` set (default `C:\Program Files\prti1516e`). Optionally
-   `PYJEVSIM_JVM` to point at a specific `jvm.dll` (use a Java ≥ 9 runtime).
+   `PYJEVSIM_JVM` to point at a specific `jvm.dll` (use a Java ≥ 11 runtime).
 
 Single process (two federates as two threads):
 
@@ -128,7 +128,7 @@ tx = create_rti("pitch", federation="PingPong", federate="ping",
 - `tests/hla/test_portico_backend.py` — hermetic codec / time-axis tests plus
   a guarded live case (`PYJEVSIM_PORTICO_LIVE=1`).
 - `tests/hla/test_pitch_backend.py` — guarded; runs the encoder round-trip
-  when JPype + Java ≥ 9 + `prti1516e.jar` are present, and the full live
+  when JPype + Java ≥ 11 + `prti1516e.jar` are present, and the full live
   federation when `PYJEVSIM_PITCH_LIVE=1` with a running CRC. Skips otherwise.
 
 ## How it maps to HLA

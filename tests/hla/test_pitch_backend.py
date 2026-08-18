@@ -3,7 +3,7 @@
 These exercise the *real* PitchTransport against a live Pitch pRTI. They are
 skipped automatically unless the full stack is available:
 
-  * JPype importable AND able to start a JVM (needs Java >= 9 for JPype>=1.6);
+  * JPype importable AND able to start a JVM (needs Java >= 11 for JPype>=1.6);
   * ``prti1516e.jar`` discoverable (PRTI_HOME env var or the default install);
   * for the live-federation cases, the env var ``PYJEVSIM_PITCH_LIVE=1`` and a
     running CRC.
@@ -37,7 +37,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(
     os.path.dirname(__file__), "..", "..", "examples", "hla_pingpong")))
 
 
-JVM = os.environ.get("PYJEVSIM_JVM")  # explicit Java>=9 jvm.dll (optional)
+JVM = os.environ.get("PYJEVSIM_JVM")  # explicit Java>=11 jvm.dll (optional)
 
 
 def _jvm_bootable() -> bool:
@@ -63,7 +63,7 @@ live = os.environ.get("PYJEVSIM_PITCH_LIVE") == "1"
 
 requires_jvm = pytest.mark.skipif(
     not jvm_ok,
-    reason="JPype + Java>=9 + prti1516e.jar required (set PRTI_HOME)",
+    reason="JPype + Java>=11 + prti1516e.jar required (set PRTI_HOME)",
 )
 requires_live = pytest.mark.skipif(
     not (jvm_ok and live),

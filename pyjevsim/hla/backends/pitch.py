@@ -18,7 +18,7 @@ Registered (lazily) under the name ``"pitch"``::
 
 Requirements (NOT needed to import this module — only to *use* it):
   * ``pip install jpype1`` matching your Python and Java versions
-    (JPype >= 1.6 needs Java 9+; for Java 8 pin ``jpype1<=1.5``).
+    (JPype >= 1.6 needs Java 11+; for Java 8 pin ``jpype1<=1.5``).
   * Pitch pRTI installed; its ``prti1516e.jar`` on the classpath.
   * A running CRC (Central RTI Component) to ``connect``/``join``.
 

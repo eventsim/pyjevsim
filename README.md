@@ -360,8 +360,8 @@ Built-in backends:
 |------|-----|------------|
 | `loopback` | self-mirror, single-federate unit tests | none |
 | `inprocess` | multi-federate in-process bus (tests/demos) | none |
-| `pitch` | **Pitch pRTI** IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 9 + a running CRC |
-| `portico` | **Portico** (open source) IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 9 + `portico.jar` (no CRC) |
+| `pitch` | **Pitch pRTI** IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 11 + a running CRC |
+| `portico` | **Portico** (open source) IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 11 + `portico.jar` (no CRC) |
 
 Both live backends program against the standard `hla.rti1516e` Java API; the
 `portico` backend is a ~40-line subclass of the `pitch` one that works around
