@@ -13,12 +13,14 @@ authoritative — fix the test, or fix the spec, but do not let them drift.
 class HLAInteraction:
     fom_id: str                                     # e.g. "Communication.ChatMsg"
     direction: Literal["in", "out", "inout"] = "out"
-    kind: str = "interaction"                       # constant; never overridden
+    kind: str = field(default="interaction", init=False)
 ```
 
 - `fom_id` is opaque to pyjevsim — only the `Transport` interprets it.
 - `direction="in"` means inbound only (subscribe). `"out"` means outbound
   only (publish). `"inout"` does both.
+- `publish` rejects an inbound-only binding and `subscribe` rejects an
+  outbound-only binding with `ValueError`; `"inout"` is valid for both.
 
 ### 1.2 `HLAAttribute`
 
@@ -27,18 +29,23 @@ class HLAInteraction:
 class HLAAttribute:
     fom_id: str                                     # e.g. "Vehicle.position"
     direction: Literal["in", "out", "inout"] = "out"
-    kind: str = "attribute"
+    kind: str = field(default="attribute", init=False)
     object_class: str | None = None
 ```
 
-- For an outbound attribute update, `object_class` is required.
-- For an inbound reflect, `object_class` may be `None`; the transport
-  resolves it from the wire payload.
+- `object_class` is optional transport metadata. A custom transport may use it
+  when registering an outbound instance; the built-in live adapters resolve
+  the object class from their FOM map. It may be `None` for inbound reflects.
 
 ### 1.3 Both classes
 
 - `frozen=True` — bindings are hashable and used as dict keys. Required.
 - `eq=True` (default) — bindings with identical fields compare equal.
+- `kind` is not accepted as a constructor argument; each binding class fixes
+  its own wire kind.
+- `direction` accepts exactly `"in"`, `"out"`, or `"inout"`; construction
+  with any other value raises `ValueError` before the binding reaches a
+  transport or executor.
 
 ## 2. Transport (M0)
 

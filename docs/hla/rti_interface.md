@@ -1,8 +1,8 @@
 # pyjevsim — RTI-agnostic Interface
 
-This document describes the interface that lets **any** HLA/RTI implementation
-drive pyjevsim, and how to add a new backend (Pitch pRTI, CERTI, Portico,
-OpenRTI, MÄK, a custom gRPC/ZMQ surrogate, …).
+This document describes the adapter interface and how to add a backend. The
+repository validates Pitch pRTI and Portico; CERTI, OpenRTI, MÄK, and custom
+surrogates are potential adapters, not shipped implementations.
 
 It extends the M0 contract in [`specification.md`](specification.md) §2. Where
 this document and the spec disagree on the *interface surface*, this document
@@ -35,9 +35,11 @@ Four collaborating pieces, each independently replaceable:
 
 ## 2. `RTIConnector` — the extension point
 
-A backend subclasses `RTIConnector` and implements the **RTI-specific hooks**
-only. Everything else (direction enforcement, codec calls, single-callback
-dispatch, join/resign state machine, idempotent close) is inherited.
+A backend subclasses `RTIConnector`. Two methods form the minimum abstract
+surface used by test/surrogate backends. A live HLA adapter also overrides the
+otherwise optional lifecycle/declaration hooks and invokes `_emit` from its
+RTI receive callback. Common direction checks, codec calls, callback dispatch,
+state tracking, and idempotent close are inherited.
 
 ### Required (abstract)
 
@@ -66,8 +68,9 @@ def _do_close(self) -> None
   the callback. Thread-safe downstream (`insert_external_event` takes a lock).
 - `request_time_advance`, `join`, `publish`, `subscribe`, `resign`, `close`,
   `joined` — public surface; they call the `_do_*` hooks and maintain state
-  (e.g. `publish` before `join` raises `RuntimeError`; `close` auto-resigns
-  and is idempotent).
+  (`publish`/`subscribe` before `join` raises `RuntimeError`; publishing an
+  inbound-only binding or subscribing an outbound-only binding raises
+  `ValueError`; `close` auto-resigns and is idempotent).
 
 ## 3. Adding a backend in 4 steps
 
@@ -142,13 +145,13 @@ codec built on the `EncoderFactory` (`HLAfixedRecord`, `HLAinteger32BE`, …).
 Because the codec is injected (`MyRTI(codec=...)`), one FOM codec can be
 reused across RTIs, and one RTI can carry different FOMs.
 
-## 5. Capabilities — adapt or fail fast
+## 5. Capabilities — information for callers
 
 `RTICapabilities` lets callers branch on what a backend supports:
 
 | flag | meaning |
 |------|---------|
-| `time_management` | regulating/constrained TAR/NER available |
+| `time_management` | some regulating/constrained logical-time service is available; consult the backend service matrix for TAR/NER coverage |
 | `timestamp_ordered` | TSO delivery (vs receive-order RO) |
 | `interactions` / `object_attributes` | interaction vs object-attribute classes |
 | `ddm` / `ownership` | data distribution / ownership management |
@@ -157,6 +160,11 @@ reused across RTIs, and one RTI can carry different FOMs.
 E.g. an app may refuse to use `HLAAttribute` bindings against a backend whose
 `object_attributes` is `False`, or skip passing timestamps when
 `timestamp_ordered` is `False`.
+
+These flags are descriptive metadata; the base connector does not negotiate
+features with an RTI or automatically reject every unsupported operation.
+`InProcessRTI`, for example, advertises neither time management nor TSO because
+it returns identity grants and relies on the application to drive lock-step.
 
 ## 6. Threading & time
 
@@ -168,31 +176,34 @@ E.g. an app may refuse to use `HLAAttribute` bindings against a backend whose
   land at the right simulated instant — pyjevsim's confluent/TSO tick
   (`SysExecutor.step` / `_run_instant`) then delivers `con_trans` correctly
   when an inbound event coincides with an imminent model.
-- **Time advance** is logical-only. `Federate.run_until` enforces
-  `lookahead > 0` and loops `request_time_advance(target)` → `step(granted)`
-  until `global_time >= end_time`. A backend may grant `≤ target`.
+- **Time advance** is logical-only. `Federate.run_until` enforces a positive
+  request increment (its second argument is historically named `lookahead`)
+  and loops `request_time_advance(target)` → `step(granted)` until
+  `global_time >= end_time`. The backend owns the separate HLA regulating
+  interval and time-unit mapping: Pitch uses its configured lookahead, while
+  Portico uses one internal RTI sub-step. A backend may grant `≤ target`.
 
 ## 7. Concrete backends (where they live)
 
 Backends register themselves on import so their dependencies stay optional:
 
-| RTI | how | dependency |
+| RTI | repository status/how | dependency |
 |-----|-----|------------|
-| `loopback` | built-in (`transport.py`) | none |
-| Pitch pRTI 1516e | JPype in-process **or** Java/C++ surrogate over IPC | `jpype1` + `prti1516e.jar`, or a surrogate process |
-| Portico 1516e | JPype in-process; subclasses the Pitch transport (`backends/portico.py`) | `jpype1` + `portico.jar` (no CRC) |
-| CERTI | Python `rti1516e`/`hla` binding, or surrogate | CERTI libs |
-| OpenRTI / MÄK | C++/Java binding via JPype/JNI, or surrogate | vendor libs |
+| `loopback` | shipped test backend (`transport.py`) | none |
+| Pitch pRTI 1516e | shipped JPype backend | `jpype1` + `prti1516e.jar` + CRC |
+| Portico 1516e | shipped JPype backend; subclasses Pitch (`backends/portico.py`) | `jpype1` + `portico.jar` (no CRC) |
+| CERTI | not shipped; possible Python binding or surrogate extension | CERTI libs |
+| OpenRTI / MÄK | not shipped; possible JPype/JNI or surrogate extension | vendor libs |
 
 Because `backends/pitch.py` programs against the *standard* `hla.rti1516e`
 Java API discovered through `RtiFactoryFactory`, a second 1516e RTI is
 mostly a classpath change. `backends/portico.py` is the worked example: it
 inherits everything and overrides four seams — `_encode_value` /
-`_decode_value` (Portico's `HLAunicodeString` codec is broken in both
-directions) and `_rti_time` / `_rti_lookahead` (Portico delivers
-time-stamped reflections in receive order, so the backend buys the ordering
-back with a three-sub-step time advance). Those seams exist for exactly this
-purpose; add more of them rather than forking the transport.
+`_decode_value` (an interoperable `HLAunicodeString` path) and `_rti_time` /
+`_rti_lookahead` (Portico delivers the tested reflections in receive order).
+The three-sub-step barrier is designed to prevent next-tick over-read, but
+current-batch completeness depends on configurable `quiet`/`settle` timing. Those seams
+exist for this purpose; add more of them rather than forking the transport.
 
 See [`instruction.md`](instruction.md) §7 for the kdx-rti migration notes and
 the Pitch-specific surrogate vs. in-process JPype trade-off discussed in the

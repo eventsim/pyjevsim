@@ -1,0 +1,3 @@
+# Same-process Portico examples only. Both ambassadors share one JVM.
+# Override RTI_RID_FILE for multi-process or multi-host configurations.
+portico.connection = jvm

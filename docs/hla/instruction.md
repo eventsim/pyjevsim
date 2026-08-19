@@ -149,10 +149,10 @@ bindings_vehicle = {
 }
 ```
 
-`object_class` is **required** for outbound updates because the
-transport needs to know which object class to register the instance
-under. For inbound reflects, the transport receives the class on the
-wire and the binding does not need to repeat it.
+`object_class` is optional transport metadata. A custom transport may use it
+to decide which object class to register. The built-in Pitch/Portico adapters
+instead resolve the class from their explicit FOM map; inbound bindings can
+therefore leave it unset.
 
 ## 4. Threading model
 
@@ -169,17 +169,19 @@ wire and the binding does not need to repeat it.
 1. **Bound `out` ports are RTI-only.** A `SysMessage` emitted on a bound
    `out` port goes to the transport and is **not** also delivered through
    local coupling. If you need both, declare two ports.
-2. **Direction is enforced.** Sending on a port whose binding is
-   `direction="in"` is a programming error (the message will be dropped
-   with a warning). Conversely, transport-delivered events for a binding
-   marked `direction="out"` are dropped.
-3. **`object_class` is required for outbound `HLAAttribute`.** Caught at
-   construction time — no silent failure.
+2. **Direction is enforced.** Sending through an `in` binding is ignored;
+   inbound events have routes only for `in`/`inout` bindings. Calling
+   `publish(in_binding)` or `subscribe(out_binding)` raises `ValueError`.
+3. **`object_class` is optional.** Built-in live transports use the FOM map;
+   custom transports may choose to require the binding hint themselves.
 4. **HLA_TIME is logical-time only.** If you also want wallclock pacing,
    wrap your `run_until` loop with a sleep that matches your
    `time_resolution`. The framework will not do it for you.
-5. **`lookahead > 0` always.** RTI semantics. `Federate.run_until`
-   raises `ValueError` if you forget.
+5. **The grant increment must be positive.** The second argument to
+   `Federate.run_until` is historically named `lookahead` and raises
+   `ValueError` when non-positive. The backend owns the separate HLA regulating
+   interval: Pitch uses its configured lookahead; Portico uses one internal
+   RTI sub-step.
 
 ## 6. Implementing a `Transport`
 

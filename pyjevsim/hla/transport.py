@@ -40,14 +40,13 @@ OnReceive = Callable[[str, str, Any, "float | None"], None]
 class RTICapabilities:
     """What an RTI backend can do.
 
-    Callers (and HLAExecutor / Federate) may consult these to adapt or to
-    fail fast — e.g. warn when timestamps are supplied but the backend
-    cannot deliver time-stamp-ordered (TSO), or when an ``HLAAttribute``
-    binding is used against an interactions-only transport.
+    Callers may consult this descriptive metadata to adapt or fail fast.
+    The base connector does not negotiate or automatically enforce every
+    flag; the service matrix for a concrete backend remains authoritative.
     """
 
     name: str = "unknown"
-    time_management: bool = False        # regulating/constrained TAR/NER
+    time_management: bool = False        # regulating/constrained logical time
     timestamp_ordered: bool = False      # TSO delivery vs receive-order (RO)
     interactions: bool = True            # sendInteraction / receiveInteraction
     object_attributes: bool = False      # update/reflect attribute values
@@ -182,10 +181,18 @@ class RTIConnector(ABC):
 
     def publish(self, binding) -> None:
         self._require_joined("publish")
+        if binding.direction not in ("out", "inout"):
+            raise ValueError(
+                "publish() requires a binding with direction 'out' or 'inout'"
+            )
         self._do_publish(binding)
 
     def subscribe(self, binding) -> None:
         self._require_joined("subscribe")
+        if binding.direction not in ("in", "inout"):
+            raise ValueError(
+                "subscribe() requires a binding with direction 'in' or 'inout'"
+            )
         self._do_subscribe(binding)
 
     def resign(self) -> None:

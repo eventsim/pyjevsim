@@ -59,8 +59,10 @@ class InProcessRTI(RTIConnector):
 
     capabilities = RTICapabilities(
         name="inprocess",
-        time_management=True,
-        timestamp_ordered=True,
+        # This test bus returns identity grants and forwards in caller order;
+        # it does not implement federation-wide HLA time management or TSO.
+        time_management=False,
+        timestamp_ordered=False,
         interactions=True,
         object_attributes=True,
     )

@@ -10,7 +10,8 @@ PyJEvSim is a DEVS (Discrete Event System Specification) modeling and
 simulation environment with built-in journaling. It supports snapshot and
 restore of individual models or the full simulation engine, virtual-time
 and real-time execution, and HLA (IEEE 1516-2010) federate integration
-with pluggable RTI backends (including Pitch pRTI).
+with pluggable RTI backends. The tagged v2.1.2 release includes Pitch pRTI;
+the current development tree also includes the open-source Portico RTI.
 
   - GitHub: `eventsim/pyjevsim <https://github.com/eventsim/pyjevsim>`_
   - PyPI: `pyjevsim <https://pypi.org/project/pyjevsim/>`_
@@ -19,9 +20,11 @@ What's new in 2.1
 -----------------
 
 - **Pluggable RTI backends.** A new ``RTIConnector`` interface
-  (``pyjevsim.hla``) lets any RTI drive a pyjevsim federate without
-  touching model code. A backend implements just ``_do_send`` and
-  ``_do_request_time_advance``; direction enforcement, FOM codec,
+  (``pyjevsim.hla``) defines the extension boundary through which an RTI can
+  drive a pyjevsim federate without embedding RTI calls in model code. A
+  minimal backend implements ``_do_send`` and
+  ``_do_request_time_advance``; a live HLA adapter also supplies lifecycle,
+  declaration, and receive hooks. Direction enforcement, FOM codec,
   callback dispatch and the join/resign state machine are inherited.
   Ships an in-process bus (``inprocess``) and a **Pitch pRTI**
   (IEEE 1516-2010) backend (``pitch``, via JPype). Select by name with

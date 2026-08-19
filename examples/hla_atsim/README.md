@@ -1,8 +1,8 @@
 # hla_atsim — HLA co-simulation of the anti-torpedo example
 
 A self-contained HLA/RTI split of `examples/atsim` into **two federates**
-(surfaceship + torpedo) that provably reproduces a single-executor
-reference run, tick-for-tick and bit-for-bit.
+(surfaceship + torpedo) whose canonical application-state rows reproduce a
+committed single-executor reference at every observed tick.
 
 ## What's here
 
@@ -12,8 +12,8 @@ reference run, tick-for-tick and bit-for-bit.
 | `run_hla_inprocess.py` | two federates over the in-process RTI bus (writes `hla_<tag>.csv`) — **no Java needed** |
 | `run_hla_pitch.py` | optional live 1516e run (guarded; writes `hla_<rti>_<tag>.csv`; `PYJEVSIM_RTI` selects the backend) |
 | `run_hla_portico.py` | the same driver against the open-source Portico RTI (writes `hla_portico_<tag>.csv`) |
-| `verify_equivalence.py` | the gate: runs both headless builds and asserts identical CSVs for every scenario |
-| `verify_equivalence_rti.py` | the same gate against a **live** RTI (`PYJEVSIM_RTI=pitch\|portico`) |
+| `verify_equivalence.py` | strict gate: checks both headless builds against committed canonical rows for every scenario |
+| `verify_equivalence_rti.py` | strict live-RTI gate (`PYJEVSIM_RTI=pitch\|portico`); missing toolchain/trace is an error |
 | `plot_trajectories.py` | headless matplotlib — renders `figures/atsim_<tag>.png` (top-down, 3-D, range) from the CSV |
 | `make_animation.py` | headless matplotlib — renders `figures/atsim_<tag>.gif` engagement animation |
 | `fom/AntiTorpedo.xml` | IEEE 1516-2010 FOM, one `Platform` object class |
@@ -34,8 +34,10 @@ python examples/hla_atsim/verify_equivalence.py
 ```
 
 The gate verifies **both** scenarios and exits 0 only if both are
-byte-identical. Select a scenario for the individual run scripts via CLI arg
-or the `PYJEVSIM_SCENARIO` env var (defaults to `self_propelled`):
+exactly equal to the full committed references in
+[`docs/hla-validation/results`](../../docs/hla-validation/results/).
+Select a scenario for the individual run scripts via CLI arg or the
+`PYJEVSIM_SCENARIO` env var (defaults to `self_propelled`):
 
 ```bash
 python examples/hla_atsim/run_standalone_headless.py stationary   # -> standalone_stationary.csv
@@ -54,11 +56,10 @@ CLI arg); both mirror the corresponding `examples/atsim` scenario:
 | scenario | decoys | behaviour |
 |----------|--------|-----------|
 | `self_propelled` (default) | 4 self-propelled | decoys run outward on their own headings; the torpedo is seduced onto a moving decoy |
-| `stationary` | 4 stationary | decoys hold their drop positions; the torpedo is seduced onto a fixed decoy |
+| `stationary` | 4 stationary | decoys hold their drop positions; seduction fails and the torpedo continues along the ship's track |
 
-Each scenario is verified **byte-identical** across three execution paths — the
-single-process reference and the two-federate HLA co-simulation on both the
-in-process bus and a real RTI:
+Each scenario has been checked across the single-process reference and the
+two-federate HLA co-simulation on the in-process bus and two live RTIs:
 
 | run script | backend | Java? |
 |------------|---------|-------|
@@ -67,30 +68,29 @@ in-process bus and a real RTI:
 | `run_hla_pitch.py` | two federates, **live Pitch pRTI 1516e** | yes (JPype + running CRC) |
 | `run_hla_portico.py` | two federates, **live Portico 2.1.4** (open source) | yes (JPype + `portico.jar`, no CRC) |
 
-For each scenario, `standalone_<tag>.csv` == `hla_<tag>.csv` ==
-`hla_pitch_<tag>.csv` == `hla_portico_<tag>.csv`, 180 rows, byte-for-byte:
+Behavioral equivalence means exact equality of the 180 sorted rows
+`(tick, sense_id, "%.10g" % x, "%.10g" % y, "%.10g" % z)`. It does not
+compare file headers/newlines, wire bytes, wall-clock timing, or raw RTI
+callback order. Successful checks report:
 
 ```
 MATCH self_propelled: 180 rows
 MATCH stationary:      180 rows
 ```
 
-To reproduce all six runs and the two-scenario gate:
+To reproduce the offline two-scenario gate:
 
 ```bash
-python examples/hla_atsim/verify_equivalence.py                       # both scenarios, no Java
-for s in self_propelled stationary; do
-  python examples/hla_atsim/run_standalone_headless.py $s
-  python examples/hla_atsim/run_hla_inprocess.py       $s
-done
+python examples/hla_atsim/verify_equivalence.py  # both scenarios, no Java
 ```
 
 ## Trajectories
 
-Engagement over 30 ticks. Because the standalone and both HLA runs are
-byte-identical, one set of figures represents all three. Regenerate the static
-figures with `python examples/hla_atsim/plot_trajectories.py` (top-down, 3-D,
-range-vs-tick per scenario) and the animations with
+Engagement over 30 ticks. Because the checked paths have the same canonical
+positions, one set of figures represents their application-state trajectory.
+Regenerate the static figures with `python
+examples/hla_atsim/plot_trajectories.py` (top-down, 3-D, range-vs-tick per
+scenario) and the animations with
 `python examples/hla_atsim/make_animation.py` (headless matplotlib).
 
 ### Animation
@@ -136,8 +136,8 @@ reproducible, applied identically to both builds:
    TorpedoControl references) read a frozen snapshot taken at the tick
    boundary — end-of-previous-tick positions — never live mid-tick objects.
    Iteration is sorted by a stable `sense_id`. In HLA the snapshot is fed by
-   local objects + peer/decoy positions reflected over the RTI with
-   lookahead = 1. See `utils/sensing.py`.
+   local objects + peer/decoy positions reflected over the RTI with a
+   one-caller-tick exchange offset. See `utils/sensing.py`.
 
 2. **Once-per-tick physics + tick-boundary decision commit.** The atsim
    models mutate shared physics objects inside `output()`; under DEVS
@@ -160,25 +160,49 @@ it reads settled end-of-tick positions and stays outside the tick.
 default gate and self-skips unless `jpype`, a JVM and the RTI jar are all
 present:
 
-```bash
-set PYJEVSIM_JVM=...\jvm.dll
-set PYJEVSIM_JAR=...\prti1516e.jar
+```powershell
+$env:PYJEVSIM_JVM = "C:\path\to\jvm.dll"
+$env:PYJEVSIM_JAR = "C:\path\to\prti1516e.jar"
 python examples/hla_atsim/run_hla_pitch.py            # needs a running CRC
 ```
+
+The recorded Windows validation used CPython 3.11.15, JPype 1.7.1,
+Temurin 11.0.31+11, and Pitch pRTI Free 5.5.2. One CPython 3.14.0 run with
+that same JPype/JVM/RTI combination terminated in native code, so CPython
+3.11 is the recommended environment for reproducing this particular Pitch
+configuration. This observation does not narrow pyjevsim's general Python
+support range.
 
 The same driver runs against the open-source **Portico** RTI, which needs no
 CRC — only the backend name and the jar change:
 
-```bash
-set PYJEVSIM_JVM=...\jvm.dll
-set RTI_HOME=...\portico-2.1.4
-set PYJEVSIM_JAR=%RTI_HOME%\lib\portico.jar
+```powershell
+$env:PYJEVSIM_JVM = "C:\path\to\jvm.dll"
+$env:RTI_HOME = "C:\path\to\portico-2.1.4"
+$env:PYJEVSIM_JAR = "$env:RTI_HOME\lib\portico.jar"
+$env:RTI_RID_FILE = (Resolve-Path "docs/hla-validation/config/portico-jvm.rid").Path
 python examples/hla_atsim/run_hla_portico.py          # -> hla_portico_<tag>.csv
 
-set PYJEVSIM_RTI=portico
-python examples/hla_atsim/verify_equivalence_rti.py   # byte-compares both scenarios
+$env:PYJEVSIM_RTI = "portico"
+python examples/hla_atsim/verify_equivalence_rti.py   # compares both scenarios
 ```
 
-Verified against **Portico 2.1.4** (Temurin 11, JPype 1.7.1): `MATCH
-self_propelled: 180 rows` and `MATCH stationary: 180 rows`, byte-identical to
-the standalone reference.
+If `RTI_RID_FILE` is unset, `run_hla_portico.py` selects the same bundled
+RID automatically. Its `portico.connection = jvm` setting is intentionally
+limited to the two federates sharing this example's single Python process and
+JVM. Multi-process or multi-host Portico execution requires an explicit RID
+for the intended network transport; the bundled setting is not wire or
+multi-host evidence. The driver also fails if either expected peer reflection
+is absent at the first time grant, preventing isolated one-member federations
+from producing a partial trace that appears successful. The strict verifier
+also terminates a scenario subprocess after 180 seconds by default; set
+`PYJEVSIM_LIVE_TIMEOUT` to an appropriate positive number for a slower RTI.
+
+The changelog records five consecutive checks against **Portico 2.1.4**
+(Temurin 11, JPype 1.7.1), with 180 matching canonical rows per scenario; raw
+logs from those historical runs were not retained. Portico delivers the tested
+reflections in receive order. The adapter's three-sub-step barrier is designed
+to prevent next-tick data from appearing early, but current-tick completeness
+still depends on configurable `quiet`/`settle` waits; a sufficiently late reflection
+can be deferred to the next tick. See
+[`portico.py`](../../pyjevsim/hla/backends/portico.py) for that boundary.

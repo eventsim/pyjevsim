@@ -59,6 +59,33 @@ class TestBindings:
         a = HLAAttribute(fom_id="X", direction="in")
         assert a.object_class is None
 
+    @pytest.mark.parametrize(
+        ("binding_type", "wrong_kind"),
+        ((HLAInteraction, "attribute"), (HLAAttribute, "interaction")),
+    )
+    def test_M0_3_kind_is_not_constructor_overridable(
+        self, binding_type, wrong_kind
+    ):
+        with pytest.raises(TypeError):
+            binding_type("X", kind=wrong_kind)
+
+    @pytest.mark.parametrize("binding_type", (HLAInteraction, HLAAttribute))
+    @pytest.mark.parametrize(
+        "direction", ("", "input", "OUT", None, [], {})
+    )
+    def test_M0_3_invalid_direction_raises_value_error(
+        self, binding_type, direction
+    ):
+        with pytest.raises(ValueError, match="direction must be one of"):
+            binding_type("X", direction=direction)
+
+    @pytest.mark.parametrize("binding_type", (HLAInteraction, HLAAttribute))
+    @pytest.mark.parametrize("direction", ("in", "out", "inout"))
+    def test_M0_3_all_documented_directions_are_accepted(
+        self, binding_type, direction
+    ):
+        assert binding_type("X", direction=direction).direction == direction
+
 
 # ----------------------------------------------------------------- transport
 

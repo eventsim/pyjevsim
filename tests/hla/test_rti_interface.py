@@ -124,6 +124,35 @@ class TestRTIConnectorTemplate:
             ("resign",),
         ]
 
+    def test_publish_rejects_inbound_only_binding(self):
+        rti = _MiniRTI()
+        rti.join("Fed", "a", [])
+
+        with pytest.raises(ValueError, match="publish.*out.*inout"):
+            rti.publish(HLAInteraction("X", direction="in"))
+
+        assert ("publish", "X") not in rti.lifecycle
+
+    def test_subscribe_rejects_outbound_only_binding(self):
+        rti = _MiniRTI()
+        rti.join("Fed", "a", [])
+
+        with pytest.raises(ValueError, match="subscribe.*in.*inout"):
+            rti.subscribe(HLAInteraction("X", direction="out"))
+
+        assert ("subscribe", "X") not in rti.lifecycle
+
+    def test_inout_binding_can_be_published_and_subscribed(self):
+        rti = _MiniRTI()
+        binding = HLAInteraction("X", direction="inout")
+        rti.join("Fed", "a", [])
+
+        rti.publish(binding)
+        rti.subscribe(binding)
+
+        assert ("publish", "X") in rti.lifecycle
+        assert ("subscribe", "X") in rti.lifecycle
+
     def test_close_is_idempotent_and_auto_resigns(self):
         rti = _MiniRTI()
         rti.join("Fed", "a", [])

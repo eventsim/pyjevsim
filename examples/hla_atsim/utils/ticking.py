@@ -20,8 +20,8 @@ uniformly to both builds:
     ``t`` therefore reads decisions frozen at the end of tick ``t-1`` — the
     same 1-tick-delay discipline the detector snapshot already uses.
 
-Both builds run identical models over identical frozen inputs, so the
-trajectories are bit-for-bit equal and reproducible.
+Both builds run identical models over identical frozen inputs; the validation
+gate checks exact equality of their sorted, formatted trajectory rows.
 """
 
 

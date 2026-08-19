@@ -9,8 +9,8 @@ scenario, three figures under ``figures/``:
   * ``atsim_<tag>_range.png``  — torpedo range to the ship and to each decoy vs. tick
 
 The federated HLA runs (``run_hla_inprocess.py`` / ``run_hla_pitch.py``)
-produce byte-identical CSVs, so one set of figures represents both the
-standalone reference and the two-federate co-simulation.
+have produced the same canonical positions, so one set of figures represents
+both the standalone reference and the two-federate co-simulation.
 
     python examples/hla_atsim/plot_trajectories.py            # both scenarios
     python examples/hla_atsim/plot_trajectories.py stationary # one scenario

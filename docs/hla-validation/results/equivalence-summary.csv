@@ -1,0 +1,7 @@
+date,backend,environment,scenario,independent_invocations,reference_rows,federated_rows,first_divergence,canonical_reference_sha256
+2026-08-18,inprocess,"CPython 3.11.15; dill 0.4.1; PyYAML 6.0.3; Windows build 26200",self_propelled,5,180,180,none,0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205
+2026-08-18,inprocess,"CPython 3.11.15; dill 0.4.1; PyYAML 6.0.3; Windows build 26200",stationary,5,180,180,none,2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c
+2026-08-19,pitch,"CPython 3.11.15; JPype 1.7.1; Temurin 11.0.31+11; Pitch pRTI Free 5.5.2; Windows build 26200",self_propelled,5,180,180,none,0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205
+2026-08-19,pitch,"CPython 3.11.15; JPype 1.7.1; Temurin 11.0.31+11; Pitch pRTI Free 5.5.2; Windows build 26200",stationary,5,180,180,none,2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c
+2026-08-19,portico,"CPython 3.14.0; JPype 1.7.1; Temurin 11.0.31+11; Portico 2.1.4; portico.connection=jvm; Windows build 26200",self_propelled,5,180,180,none,0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205
+2026-08-19,portico,"CPython 3.14.0; JPype 1.7.1; Temurin 11.0.31+11; Portico 2.1.4; portico.connection=jvm; Windows build 26200",stationary,5,180,180,none,2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c
