@@ -1,12 +1,12 @@
 {
   "schema_version": 1,
-  "recorded_at_utc": "2026-08-19T04:36:53.2114411Z",
+  "recorded_at_utc": "2026-08-19T04:59:05.9167667Z",
   "source_state": {
-    "base_commit": "fee68c35491b7f8d73ddc495530dd2570dc231e0",
-    "git_describe": "v2.1.2-20-gfee68c3-dirty",
-    "clean_revision": false,
+    "acceptance_source_commit": "ad9f54a6ee8b81694db2f42af2504b21e18779c4",
+    "git_describe": "v2.1.2-21-gad9f54a",
+    "clean_revision": true,
     "archive_ready": false,
-    "note": "Repeat this acceptance capture after committing the final revision and before creating the immutable release archive."
+    "note": "The source revision was clean during acceptance. A new immutable tag and archive/DOI are still pending."
   },
   "text_hash_normalization": "validation source artifacts convert CRLF to LF before size and SHA-256 calculation",
   "criterion": {
@@ -87,6 +87,8 @@
   "acceptance_runs": [
     {
       "backend": "pitch",
+      "started_at_utc": "2026-08-19T04:58:45.3141242Z",
+      "finished_at_utc": "2026-08-19T04:59:05.9167667Z",
       "return_code": 0,
       "stdout": [
         "MATCH self_propelled: 180 canonical rows (pitch vs reference)",
@@ -109,6 +111,8 @@
     },
     {
       "backend": "portico",
+      "started_at_utc": "2026-08-19T04:58:46.0263439Z",
+      "finished_at_utc": "2026-08-19T04:59:05.1390285Z",
       "return_code": 0,
       "configuration": "docs/hla-validation/config/portico-jvm.rid",
       "stdout": [

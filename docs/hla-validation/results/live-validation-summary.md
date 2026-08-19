@@ -2,10 +2,12 @@
 
 This record separates functional equivalence, callback/batch
 characterization, process topology, and claims that were not tested. The
-campaigns ran on 2026-08-19 against base commit
-`fee68c35491b7f8d73ddc495530dd2570dc231e0` plus the uncommitted
-reviewer-response worktree. They must therefore be repeated or explicitly
-linked to the final clean revision before publication archival.
+five-invocation campaigns ran on 2026-08-19 against base commit
+`fee68c35491b7f8d73ddc495530dd2570dc231e0` plus the then-uncommitted
+reviewer-response worktree. After committing those changes, the post-fix
+acceptance gate was repeated once per backend against clean source commit
+`ad9f54a6ee8b81694db2f42af2504b21e18779c4`; both scenarios passed for both
+backends. A new immutable tag and archive are still required.
 
 ## Functional equivalence
 
@@ -35,7 +37,8 @@ at the first grant with process status 1 instead of writing a 60-row result.
 The compact [acceptance manifest](live-acceptance-manifest.json) records the
 runner, verifier, configuration, reference, toolchain, return-code, and output
 hashes for that post-fix check. It deliberately marks itself `archive_ready:
-false` because the source state was not yet a clean final commit.
+false` because the new immutable tag and archive/DOI have not yet been made;
+the acceptance source commit itself was clean.
 
 ## Callback order and batch characterization
 
