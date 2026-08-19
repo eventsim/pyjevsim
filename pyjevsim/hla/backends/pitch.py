@@ -96,6 +96,7 @@ class PitchTransport(RTIConnector):
         object_attributes=True,
         default_lookahead=1.0,
     )
+    _TIME_ENABLE_TIMEOUT = 10.0
 
     def __init__(self, federation: str, federate: str, fom: str,
                  fom_map: dict, *, federate_type: str = "pyjevsim",
@@ -246,12 +247,31 @@ class PitchTransport(RTIConnector):
         )
 
         # Time management: regulating + constrained with our lookahead.
-        self._time_factory = self._rtiamb.getTimeFactory()
-        interval = self._time_factory.makeInterval(self._rti_lookahead())
-        self._rtiamb.enableTimeRegulation(interval)
-        self._reg_enabled.wait(timeout=10)
-        self._rtiamb.enableTimeConstrained()
-        self._con_enabled.wait(timeout=10)
+        # Do not report a successful join until both enable callbacks arrive.
+        try:
+            self._reg_enabled.clear()
+            self._con_enabled.clear()
+            self._time_factory = self._rtiamb.getTimeFactory()
+            interval = self._time_factory.makeInterval(self._rti_lookahead())
+            self._rtiamb.enableTimeRegulation(interval)
+            self._wait_for_time_enable(self._reg_enabled, "time regulation")
+            self._rtiamb.enableTimeConstrained()
+            self._wait_for_time_enable(self._con_enabled, "time constrained")
+        except Exception:
+            # joinFederationExecution already succeeded; clean it up before
+            # propagating the activation error to RTIConnector.join().
+            try:
+                self._do_resign()
+            except Exception:
+                pass
+            raise
+
+    def _wait_for_time_enable(self, event, service: str) -> None:
+        if not event.wait(timeout=self._TIME_ENABLE_TIMEOUT):
+            raise TimeoutError(
+                f"{service} activation callback was not received within "
+                f"{self._TIME_ENABLE_TIMEOUT:g} seconds"
+            )
 
     def _do_publish(self, binding) -> None:
         spec = self._fom_map[binding.fom_id]

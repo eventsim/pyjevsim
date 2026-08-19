@@ -1,0 +1,13 @@
+scenario,tick,object_name,x,y,z
+self_propelled,1,blue_ship_0,0,3,0
+self_propelled,1,red_torpedo_0,15,20,-9
+self_propelled,13,blue_ship_0,-36,3,0
+self_propelled,13,red_torpedo_0,-9,7,0
+self_propelled,30,blue_ship_0,-87,3,0
+self_propelled,30,red_torpedo_0,-9,7,0
+stationary,1,blue_ship_0,0,3,0
+stationary,1,red_torpedo_0,15,20,-9
+stationary,13,blue_ship_0,-36,3,0
+stationary,13,red_torpedo_0,-27.92048075,3.098322483,0
+stationary,30,blue_ship_0,-87,3,0
+stationary,30,red_torpedo_0,-81,3,0

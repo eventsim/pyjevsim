@@ -87,6 +87,12 @@ def _run(ctx, rounds=8):
 # ----------------------------------------------------- 2. join / resign
 
 
+def test_inprocess_capabilities_do_not_claim_hla_time_or_tso():
+    caps = InProcessRTI.capabilities
+    assert caps.time_management is False
+    assert caps.timestamp_ordered is False
+
+
 def test_join_attaches_both_federates(pingpong):
     assert len(pingpong["federation"].members) == 0
     _join_all(pingpong)

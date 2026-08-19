@@ -196,6 +196,7 @@ log/
 /utils/
 /performance_profiling.py
 /test_correctness.py
+/tmp/
 # Internal design / planning notes (not part of the user documentation)
 /docs/improvements/
 /docs/cascade_scheduling_proposal.md

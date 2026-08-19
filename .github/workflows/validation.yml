@@ -1,0 +1,30 @@
+name: Test and behavioral validation
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install package and test dependencies
+        run: python -m pip install -e . -r docs/hla-validation/requirements-validation.txt
+      - name: Run unit tests
+        run: python -m pytest -q
+      - name: Verify committed result artifacts
+        run: python docs/hla-validation/results/verify_results.py
+      - name: Verify standalone and two-federate equivalence
+        run: python examples/hla_atsim/verify_equivalence.py

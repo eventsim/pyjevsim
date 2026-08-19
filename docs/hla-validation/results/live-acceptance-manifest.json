@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-08-19T04:59:05.9167667Z",
+  "source_state": {
+    "acceptance_source_commit": "ad9f54a6ee8b81694db2f42af2504b21e18779c4",
+    "git_describe": "v2.1.2-21-gad9f54a",
+    "clean_revision": true,
+    "archive_ready": false,
+    "note": "The source revision was clean during acceptance. A new immutable tag and archive/DOI are still pending."
+  },
+  "text_hash_normalization": "validation source artifacts convert CRLF to LF before size and SHA-256 calculation",
+  "criterion": {
+    "row": ["tick", "sense_id", "x", "y", "z"],
+    "coordinate_format": "%.10g",
+    "comparison": "exact sorted tuple equality",
+    "excluded": [
+      "raw file equality",
+      "RTI packet equality",
+      "RTI callback order",
+      "network latency or throughput",
+      "multi-host scalability"
+    ]
+  },
+  "validation_source_artifacts": [
+    {
+      "path": "examples/hla_atsim/run_hla_pitch.py",
+      "size_lf": 7559,
+      "sha256_lf": "f9df595adfe3e5ea7d8dda7cf1f45927599449bb4d3d02c20dee767c5f01f11c"
+    },
+    {
+      "path": "examples/hla_atsim/run_hla_portico.py",
+      "size_lf": 1543,
+      "sha256_lf": "24a8cc230cab2b5b8e47a643fbd415168e2fcf98c24b2f0fe2e12420c0b62bd4"
+    },
+    {
+      "path": "examples/hla_atsim/verify_equivalence_rti.py",
+      "size_lf": 4177,
+      "sha256_lf": "348326a98efcf75037f49f70b8c902c5460eeadd6544bfec52c9a65096550009"
+    },
+    {
+      "path": "tests/hla/test_validation_verifier.py",
+      "size_lf": 4948,
+      "sha256_lf": "605cc7853c301c20534791084da33b3e5e94ec817df6ad2c2483added33e2d21"
+    },
+    {
+      "path": "docs/hla-validation/config/portico-jvm.rid",
+      "size_lf": 167,
+      "sha256_lf": "f2d3310541422723aadf1f6cc0bd199a0b50779c866141d79a82f0f2d3856430"
+    }
+  ],
+  "reference_artifacts": [
+    {
+      "path": "docs/hla-validation/results/expected_self_propelled.csv",
+      "rows": 180,
+      "size": 6265,
+      "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+    },
+    {
+      "path": "docs/hla-validation/results/expected_stationary.csv",
+      "rows": 180,
+      "size": 6067,
+      "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+    }
+  ],
+  "toolchain_artifacts": [
+    {
+      "name": "CPython 3.11.15 launcher",
+      "size": 45568,
+      "sha256": "9221fdf01cdafac7d42acec3cb5cf55e02a3f49982e2edf83ee9a986c447ca67"
+    },
+    {
+      "name": "Pitch pRTI Free 5.5.2 prti1516e.jar",
+      "size": 259984,
+      "sha256": "48c1545b89cc741610bef59abc0d7444439e35a693386365f0a509df56871978"
+    },
+    {
+      "name": "Portico 2.1.4 portico.jar",
+      "size": 6105681,
+      "sha256": "146dc0a7916b168396c6e595c42aaed0bdc69d64c5c54e728b7cb53fdd94ea84"
+    },
+    {
+      "name": "Temurin 11.0.31+11 jvm.dll",
+      "size": 12028584,
+      "sha256": "de36fc880fe3ec2bd027255b96d25060b1c426ba7cc38bd31e8551a9dfd50601"
+    }
+  ],
+  "acceptance_runs": [
+    {
+      "backend": "pitch",
+      "started_at_utc": "2026-08-19T04:58:45.3141242Z",
+      "finished_at_utc": "2026-08-19T04:59:05.9167667Z",
+      "return_code": 0,
+      "stdout": [
+        "MATCH self_propelled: 180 canonical rows (pitch vs reference)",
+        "MATCH stationary: 180 canonical rows (pitch vs reference)"
+      ],
+      "outputs": [
+        {
+          "scenario": "self_propelled",
+          "rows": 180,
+          "size": 6446,
+          "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+        },
+        {
+          "scenario": "stationary",
+          "rows": 180,
+          "size": 6248,
+          "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+        }
+      ]
+    },
+    {
+      "backend": "portico",
+      "started_at_utc": "2026-08-19T04:58:46.0263439Z",
+      "finished_at_utc": "2026-08-19T04:59:05.1390285Z",
+      "return_code": 0,
+      "configuration": "docs/hla-validation/config/portico-jvm.rid",
+      "stdout": [
+        "MATCH self_propelled: 180 canonical rows (portico vs reference)",
+        "MATCH stationary: 180 canonical rows (portico vs reference)"
+      ],
+      "outputs": [
+        {
+          "scenario": "self_propelled",
+          "rows": 180,
+          "size": 6446,
+          "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+        },
+        {
+          "scenario": "stationary",
+          "rows": 180,
+          "size": 6248,
+          "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+        }
+      ]
+    }
+  ]
+}

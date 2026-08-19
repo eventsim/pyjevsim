@@ -3,8 +3,8 @@
 Headless (matplotlib Agg + PillowWriter). Reads the deterministic
 ``standalone_<tag>.csv`` (generating it via ``run_standalone_headless.py`` if
 missing) and writes ``figures/atsim_<tag>.gif`` — the surfaceship, torpedo and
-decoys advancing tick by tick with growing trails. The federated HLA runs
-produce byte-identical CSVs, so the animation represents both.
+decoys advancing tick by tick with growing trails. Checked federated HLA runs
+produce the same canonical positions, so the animation represents both.
 
     python examples/hla_atsim/make_animation.py            # both scenarios
     python examples/hla_atsim/make_animation.py stationary # one scenario

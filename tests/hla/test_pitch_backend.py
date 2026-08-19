@@ -8,11 +8,16 @@ skipped automatically unless the full stack is available:
   * for the live-federation cases, the env var ``PYJEVSIM_PITCH_LIVE=1`` and a
     running CRC.
 
-Verified live against **Pitch pRTI Free 5.5.2** with **Temurin 11** via::
+Verified live against **Pitch pRTI Free 5.5.2** with **Temurin 11** and
+CPython 3.11 via::
 
     set PYJEVSIM_JVM=C:\\Program Files\\Eclipse Adoptium\\jdk-11...\\bin\\server\\jvm.dll
     set PYJEVSIM_PITCH_LIVE=1            # with a running CRC
     pytest tests/hla/test_pitch_backend.py
+
+One Windows run using CPython 3.14.0, JPype 1.7.1, and the same Pitch/JVM
+combination terminated in native code; CPython 3.11 is therefore recommended
+for reproducing this optional proprietary-toolchain integration test.
 
 Without ``PYJEVSIM_JVM`` the default suite stays hermetic (these cases skip);
 the protocol-level ping-pong behaviour is also covered deterministically by
@@ -41,6 +46,10 @@ JVM = os.environ.get("PYJEVSIM_JVM")  # explicit Java>=11 jvm.dll (optional)
 
 
 def _jvm_bootable() -> bool:
+    # Keep the default suite hermetic. Live/codec integration is opt-in via an
+    # explicit JVM path, as documented above.
+    if not JVM:
+        return False
     try:
         import jpype
     except Exception:
@@ -49,10 +58,7 @@ def _jvm_bootable() -> bool:
         return False
     try:
         if not jpype.isJVMStarted():
-            if JVM:
-                jpype.startJVM(JVM, classpath=[JAR])
-            else:
-                jpype.startJVM(classpath=[JAR])
+            jpype.startJVM(JVM, classpath=[JAR])
         return True
     except Exception:
         return False
@@ -82,6 +88,20 @@ def test_pitch_import_does_not_require_jpype():
     import importlib
     mod = importlib.import_module("pyjevsim.hla.backends.pitch")
     assert hasattr(mod, "PitchTransport")
+
+
+def test_time_enable_timeout_is_not_silently_accepted():
+    from pyjevsim.hla.backends.pitch import PitchTransport
+
+    class NeverEnabled:
+        def wait(self, timeout):
+            assert timeout == 0
+            return False
+
+    tx = object.__new__(PitchTransport)
+    tx._TIME_ENABLE_TIMEOUT = 0
+    with pytest.raises(TimeoutError, match="time regulation.*not received"):
+        tx._wait_for_time_enable(NeverEnabled(), "time regulation")
 
 
 @requires_jvm

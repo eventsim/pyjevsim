@@ -1,0 +1,2 @@
+-r requirements-validation.txt
+JPype1==1.7.1

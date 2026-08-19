@@ -12,7 +12,8 @@ pyjevsim is a DEVS (discrete event system specification) modeling and
 simulation environment with built-in journaling. It supports snapshot
 and restore of individual models or the full simulation engine,
 virtual-time and real-time execution, and HLA (IEEE 1516-2010) federate
-integration with pluggable RTI backends (including Pitch pRTI).
+integration with pluggable RTI backends. The tagged v2.1.2 release includes
+Pitch pRTI; the current development tree also includes Portico.
 Compatible with Python 3.10+.
 
 Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
@@ -20,8 +21,10 @@ Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
 ### What's new in 2.1
 
 - **Pluggable RTI backends.** A new `RTIConnector` interface
-  (`pyjevsim.hla`) lets any RTI drive a pyjevsim federate without
-  touching model code. A backend implements just two methods; direction
+  (`pyjevsim.hla`) defines the extension boundary through which an RTI can
+  drive a pyjevsim federate without embedding RTI calls in model code. A
+  minimal backend implements two abstract methods; a live HLA adapter also
+  supplies lifecycle/declaration and inbound callback hooks. Direction
   enforcement, FOM codec, callback dispatch and the join/resign state
   machine are inherited. Ships an in-process bus (`inprocess`) for
   multi-federate testing and a **Pitch pRTI** (IEEE 1516-2010) backend
@@ -154,9 +157,9 @@ The [`examples/`](examples/) directory contains:
   live Pitch pRTI (`run_pitch.py`).
 - **`hla_atsim/`** — the `atsim` anti-torpedo scenario split into two HLA
   federates (surfaceship + torpedo) exchanging positions as HLA object
-  attributes. Reproduces the single-executor reference **byte-for-byte**
-  for both the self-propelled and stationary decoy scenarios, verified on
-  the in-process bus and on live Pitch pRTI (`verify_equivalence.py`).
+  attributes. Its sorted, formatted application-state rows exactly reproduce
+  a committed single-executor reference for both decoy scenarios; the
+  offline gate needs no Java or proprietary RTI (`verify_equivalence.py`).
 
 ### Output messages are shared by reference
 
@@ -324,13 +327,18 @@ pyjevsim integrates with HLA (IEEE 1516-2010) at two levels: a high-level
 models as federates, and the low-level `HLA_TIME` stepping hooks for
 custom federate ambassadors.
 
+The repository's [HLA validation and reproducibility guide](docs/hla-validation/README.md)
+collects the architecture diagrams, exact equivalence criterion, full expected
+traces, RTI/service coverage, limitations, and related-work boundary.
+
 ### Pluggable RTI backends (`pyjevsim.hla`)
 
 Your `BehaviorModel` declares HLA *bindings* on its ports (an
 `HLAInteraction` or `HLAAttribute` per FOM id); an `HLAExecutorFactory`
 bridges those ports to a transport; and a `Federate` drives the
 time-advance loop. The transport is chosen by name — the same models run
-on any backend:
+on the shipped backends when their FOM and required service subset are
+supported:
 
 ```python
 from pyjevsim import SysExecutor, ExecutionType
@@ -354,6 +362,11 @@ fed.run_until(end_time=60.0, lookahead=1.0)
 fed.resign()
 ```
 
+The `run_until` argument historically named `lookahead` is the grant-request
+increment. The backend owns the distinct HLA regulating interval and time-unit
+mapping: Pitch uses its configured interval; Portico uses one internal RTI
+sub-step.
+
 Built-in backends:
 
 | Name | Use | Dependency |
@@ -364,14 +377,16 @@ Built-in backends:
 | `portico` | **Portico** (open source) IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 11 + `portico.jar` (no CRC) |
 
 Both live backends program against the standard `hla.rti1516e` Java API; the
-`portico` backend is a ~40-line subclass of the `pitch` one that works around
-two Portico defects (its `HLAunicodeString` codec, and receive-order delivery
-of time-stamped reflections). See
+`portico` backend subclasses the `pitch` implementation and adapts its
+`HLAunicodeString` codec and receive-order delivery of time-stamped
+reflections. See
 [`pyjevsim/hla/backends/portico.py`](pyjevsim/hla/backends/portico.py).
 
 **Adding your own RTI** (CERTI, OpenRTI, MÄK, …): subclass
 `RTIConnector` and implement `_do_send` + `_do_request_time_advance`
-(plus optional lifecycle hooks), then `register_rti("name", factory)`.
+(the minimal abstract surface). A live HLA adapter also overrides join,
+declaration, cleanup, and invokes `_emit` from its receive callback. Then call
+`register_rti("name", factory)`.
 See [`docs/hla/rti_interface.md`](docs/hla/rti_interface.md) for the full
 guide and [`examples/hla_pingpong/`](examples/hla_pingpong/) for a
 working two-federate example.
@@ -420,13 +435,13 @@ for the RTI.
 
 ### Federate ambassador
 
-pyjevsim ships a ready-made Pitch pRTI backend (above) and an
+pyjevsim ships ready-made Pitch pRTI and Portico backends (above) and an
 `RTIConnector` interface for adding others. If instead you want to embed
 the simulator into an existing federate ambassador, wire `step` /
 `get_next_event_time` / `insert_external_event` /
 `set_output_event_callback` into the ambassador of your chosen IEEE
-1516-2010 RTI client directly — this is exactly what the `pitch` backend
-does internally.
+1516-2010 RTI client directly — this is the core path used by `pitch` and its
+`portico` subclass.
 
 ## Graceful Termination
 

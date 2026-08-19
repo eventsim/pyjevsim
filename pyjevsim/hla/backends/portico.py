@@ -79,7 +79,9 @@ Portico therefore rests on a timing assumption; on an RTI that honours
 time-stamp order it does not.
 
 The sub-tick axis is internal: ``request_time_advance`` still takes and
-returns caller ticks, and ``lookahead`` is still expressed in ticks.
+returns caller ticks. The configured ``lookahead`` remains the default
+outbound timestamp offset in caller ticks, while the HLA regulating interval
+is fixed at one RTI sub-step (one third of a caller tick).
 """
 
 from __future__ import annotations

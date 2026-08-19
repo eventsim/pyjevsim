@@ -1,9 +1,9 @@
 """OPTIONAL live Pitch (pRTI 1516e) run of the two-federate anti-torpedo sim.
 
-This is NOT part of the equivalence gate — the gate (verify_equivalence.py)
-uses only the in-process backend and needs no Java. This script is a
-best-effort bridge to a real RTI and is guarded: if the JVM / prti1516e.jar
-/ a reachable CRC are not available it prints a skip message and exits 0.
+This is NOT part of the default equivalence gate — verify_equivalence.py uses
+only the in-process backend and needs no Java. This script is guarded: a
+missing local JPype/JVM/JAR toolchain prints a skip message, while RTI join,
+declaration, worker, and cleanup failures propagate as process errors.
 
 Each federate runs in its own thread driving Federate.run_until with
 lookahead = 1.0; the local physics is pumped exactly like the in-process
@@ -57,6 +57,23 @@ def _preflight():
     return None
 
 
+def _require_peer_reflection(name, remote, expected_peer_id):
+    """Reject a live run that joined an isolated RTI partition."""
+    if expected_peer_id not in remote:
+        raise RuntimeError(
+            f"{name} received no reflection for expected peer "
+            f"{expected_peer_id!r} by the first grant; check "
+            "RTI_RID_FILE and federation connectivity"
+        )
+
+
+def _raise_worker_errors(worker_errors):
+    """Turn a background federate failure into a failing process."""
+    if worker_errors:
+        name, exc = worker_errors[0]
+        raise RuntimeError(f"{name} live-RTI worker failed") from exc
+
+
 def run(scenario=None, backend=None):
     backend = backend or RTI
     reason = _preflight()
@@ -100,44 +117,87 @@ def run(scenario=None, backend=None):
         se.init_sim()
         se.insert_external_event("start", None)
         fed = Federate(se, tx)
-        fed.join("AntiTorpedo", fed_name, fom_paths=[FOM])
-        fed.publish(PLATFORM_OUT)
-        fed.subscribe(PLATFORM_IN)
-        se.exec_factory._router.subscribe("attribute", PLATFORM_FOM, ProxySink(ctx))
-        return se, tx, fed
+        try:
+            fed.join("AntiTorpedo", fed_name, fom_paths=[FOM])
+            fed.publish(PLATFORM_OUT)
+            fed.subscribe(PLATFORM_IN)
+            se.exec_factory._router.subscribe(
+                "attribute", PLATFORM_FOM, ProxySink(ctx)
+            )
+            return se, tx, fed
+        except BaseException:
+            try:
+                fed.resign()
+            except Exception:
+                pass
+            raise
 
     ship_ctx, torp_ctx = SimContext(), SimContext()
     ship = build_ship("blue_ship_0", data["SurfaceShip"][0], ship_ctx)
     torp = build_torpedo("red_torpedo_0", data["Torpedo"][0], torp_ctx)
 
+    ship_fed = None
     try:
         ship_se, ship_tx, ship_fed = build_fed("ship", ship, ship_ctx)
         torp_se, torp_tx, torp_fed = build_fed("torpedo", torp, torp_ctx)
-    except Exception as e:
-        print(f"[skip] could not join federation (CRC not reachable?): {e}")
-        return None
+    except BaseException:
+        if ship_fed is not None:
+            try:
+                ship_fed.resign()
+            except Exception:
+                pass
+        raise
 
     rows_lock = threading.Lock()
+    errors_lock = threading.Lock()
     rows = []
+    worker_errors = []
 
-    def drive(se, ctx, tx, other_ready):
-        for t in range(1, TICKS + 1):
-            commit_tick(ctx, t)
-            publish_local(ctx, tx)
-            # request a grant to t (lookahead 1); real RTI blocks until peer
-            tx.request_time_advance(float(t))
-            ctx.snapshot.refresh(list(ctx.items) + list(ctx.remote.values()))
-            se.step(t)
-            with rows_lock:
-                record(rows, t, ctx.items)
+    def drive(name, se, ctx, tx, expected_peer_id):
+        try:
+            for t in range(1, TICKS + 1):
+                commit_tick(ctx, t)
+                publish_local(ctx, tx)
+                # request a grant to t (lookahead 1); real RTI blocks until peer
+                tx.request_time_advance(float(t))
+                if t == 1:
+                    _require_peer_reflection(name, ctx.remote, expected_peer_id)
+                ctx.snapshot.refresh(list(ctx.items) + list(ctx.remote.values()))
+                se.step(t)
+                with rows_lock:
+                    record(rows, t, ctx.items)
+        except BaseException as exc:  # propagate worker failures to the process
+            with errors_lock:
+                worker_errors.append((name, exc))
 
-    th_s = threading.Thread(target=drive, args=(ship_se, ship_ctx, ship_tx, None))
-    th_t = threading.Thread(target=drive, args=(torp_se, torp_ctx, torp_tx, None))
-    th_s.start(); th_t.start()
-    th_s.join(); th_t.join()
+    body_failed = False
+    try:
+        th_s = threading.Thread(
+            target=drive,
+            args=("ship", ship_se, ship_ctx, ship_tx, torp.sense_id),
+        )
+        th_t = threading.Thread(
+            target=drive,
+            args=("torpedo", torp_se, torp_ctx, torp_tx, ship.sense_id),
+        )
+        th_s.start(); th_t.start()
+        th_s.join(); th_t.join()
 
-    ship_fed.resign(); torp_fed.resign()
-    return sorted(rows)
+        _raise_worker_errors(worker_errors)
+        return sorted(rows)
+    except BaseException:
+        body_failed = True
+        raise
+    finally:
+        cleanup_errors = []
+        for name, fed in (("ship", ship_fed), ("torpedo", torp_fed)):
+            try:
+                fed.resign()
+            except Exception as exc:  # keep both cleanup attempts observable
+                cleanup_errors.append((name, exc))
+        if cleanup_errors and not body_failed:
+            name, exc = cleanup_errors[0]
+            raise RuntimeError(f"{name} federate resign failed") from exc
 
 
 def main(backend=None):

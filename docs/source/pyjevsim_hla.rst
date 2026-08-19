@@ -5,7 +5,11 @@ pyjevsim runs ordinary DEVS models as HLA (IEEE 1516-2010) federates. The
 model code stays pure DEVS; what changes is the *factory* that wraps each
 model and the *transport* (RTI backend) it talks to. The same model runs
 unchanged in a standalone simulation, on the in-process test bus, or
-against a live RTI such as Pitch pRTI.
+against a live RTI such as Pitch pRTI or Portico.
+
+The repository's `HLA validation and reproducibility guide
+<https://github.com/eventsim/pyjevsim/tree/main/docs/hla-validation>`_
+defines the tested claim, committed traces, service coverage, and limitations.
 
 Architecture
 ------------
@@ -26,8 +30,9 @@ Architecture
 Four replaceable pieces live in ``pyjevsim.hla``:
 
 ``RTIConnector``
-   Base class for RTI backends. A backend implements only the
-   RTI-specific hooks; the common plumbing is inherited.
+   Base class for RTI backends. Two methods are the minimum abstract surface;
+   a live adapter also supplies lifecycle, declaration, and receive hooks.
+   Common plumbing is inherited.
 ``Codec`` / ``IdentityCodec``
    FOM (de)serialization, decoupled from the wire transport.
 ``RTICapabilities``
@@ -63,8 +68,9 @@ Built-in backends
 Both live backends drive the standard ``hla.rti1516e`` Java API discovered
 through ``RtiFactoryFactory``, so selecting an RTI is a matter of putting its
 jar on the classpath. :class:`~pyjevsim.hla.backends.portico.PorticoTransport`
-subclasses the Pitch one and overrides only what Portico gets wrong: the
-``HLAunicodeString`` codec, and the absence of time-stamp-ordered delivery.
+subclasses the Pitch one and adapts the ``HLAunicodeString`` codec and
+receive-order reflections. Its tick barrier has a documented
+``quiet``/``settle`` timing assumption; see the validation record above.
 
 Turning a model into a federate
 -------------------------------
@@ -98,8 +104,9 @@ Turning a model into a federate
    fed.run_until(end_time=60.0, lookahead=1.0)
    fed.resign()
 
-Object attributes use ``HLAAttribute`` instead of ``HLAInteraction``;
-an outbound attribute additionally needs ``object_class``.
+Object attributes use ``HLAAttribute`` instead of ``HLAInteraction``.
+``object_class`` is an optional hint for custom transports; the built-in live
+adapters resolve the class from their FOM map.
 
 Adding a new RTI backend
 ------------------------
@@ -158,12 +165,15 @@ another through a shared global registry; the HLA version replaces that with
 **HLA object attributes** — each federate publishes its own hull and decoy
 positions and reflects the peer's into a per-federate one-tick position
 snapshot that the detectors read from (bidirectional sensing requires
-``lookahead = 1``).
+a one-caller-tick exchange discipline. The driver grant increment and default
+outbound timestamp offset are 1 caller tick; Portico's internal regulating
+lookahead is one RTI sub-step, or one third of a caller tick).
 
 The example ships two decoy scenarios, ``self_propelled`` (default) and
 ``stationary`` (select with ``PYJEVSIM_SCENARIO`` or a CLI argument), and a
-gate that proves the federated run reproduces a single-executor reference
-**byte-for-byte** for both::
+gate that verifies the federated run against a single-executor reference
+with exact equality of sorted, ``%.10g``-formatted application-state rows for
+both scenarios::
 
    python examples/hla_atsim/verify_equivalence.py
    # -> MATCH self_propelled: 180 rows
@@ -173,17 +183,17 @@ The same trajectories are produced by the single-process reference
 (``run_standalone_headless.py``), the two-federate in-process bus
 (``run_hla_inprocess.py``), two federates over a live Pitch pRTI
 (``run_hla_pitch.py``) and two federates over a live Portico RTI
-(``run_hla_portico.py``) — identical in every case. This demonstrates that
-the RTI-mediated position exchange faithfully reproduces the monolithic
-simulation's dynamics, and that it does so independently of the RTI
-implementation. ``verify_equivalence_rti.py`` runs the byte-comparison
-against whichever live RTI ``PYJEVSIM_RTI`` selects::
+(``run_hla_portico.py``) have produced the same canonical rows in the recorded
+checks. This functional result concerns application-visible tick state, not
+raw callback order or performance. ``verify_equivalence_rti.py`` compares a
+selected live RTI against the committed reference and fails when the external
+toolchain does not produce a trace::
 
    set PYJEVSIM_RTI=portico
    set PYJEVSIM_JAR=C:\path\to\portico-2.1.4\lib\portico.jar
    python examples/hla_atsim/verify_equivalence_rti.py
-   # -> MATCH self_propelled: 180 rows (standalone vs portico, byte-identical)
-   # -> MATCH stationary: 180 rows (standalone vs portico, byte-identical)
+   # -> MATCH self_propelled: 180 canonical rows (portico vs committed reference)
+   # -> MATCH stationary: 180 canonical rows (portico vs committed reference)
 
 .. figure:: ../../examples/hla_atsim/figures/atsim_self_propelled.png
    :width: 70%
@@ -243,5 +253,5 @@ backend, drive ``HLA_TIME`` mode directly:
 ``step(granted_time)`` runs the same two-phase Parallel-DEVS tick as the
 V_TIME path (correct ``int`` / ``ext`` / ``con`` transitions, multi-round
 sigma=0 cascades in one call) and returns the output events drained
-during the grant. This is exactly what the ``pitch`` backend uses
-internally.
+during the grant. This is the core path used by the ``pitch`` backend and its
+``portico`` subclass.

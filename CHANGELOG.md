@@ -10,29 +10,43 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - ``examples/hla_atsim`` — the ``atsim`` anti-torpedo scenario split into two
   HLA federates (surfaceship + torpedo) exchanging positions as HLA object
-  attributes, reproducing the single-executor reference byte-for-byte for the
-  self-propelled and stationary decoy scenarios (verified on the in-process bus
-  and on live Pitch pRTI via ``verify_equivalence.py``).
+  attributes, reproducing the exact sorted canonical trajectory rows of the
+  single-executor reference for the self-propelled and stationary decoy
+  scenarios (verified on the in-process bus and recorded on live Pitch pRTI).
 - **Second live RTI backend: Portico** (`portico`, open source, IEEE
   1516-2010). `PorticoTransport` subclasses `PitchTransport` — both drive the
   standard `hla.rti1516e` Java API, so the RTI is selected by classpath — and
   overrides only what Portico needs: a standard-conformant `HLAunicodeString`
   codec (Portico's own encoder over-allocates and its decoder reads the
   4-octet length prefix as a single octet, so every string decodes empty) and
-  a three-sub-step time advance with buffered inbound delivery that restores
-  the ordering barrier (Portico hands time-stamped reflections to the federate
-  in *receive* order). Portico needs no CRC process.
+  a three-sub-step time advance with buffered inbound delivery (Portico hands
+  the tested time-stamped reflections to the federate in *receive* order).
+  The barrier is designed to prevent next-tick over-read; current-tick
+  completeness depends on the configurable quiet/settle wait. Portico needs
+  no CRC process.
 - `examples/hla_pingpong/run_portico.py`, `examples/hla_atsim/run_hla_portico.py`
   and `examples/hla_atsim/verify_equivalence_rti.py` — the live-RTI equivalence
   gate, parameterized by `PYJEVSIM_RTI`. Verified against **Portico 2.1.4**
   (Temurin 11, JPype 1.7.1): five consecutive runs, both scenarios
-  byte-identical to the standalone reference, 180 rows each.
+  matched the standalone canonical trajectory, 180 rows each.
 - `tests/hla/test_portico_backend.py`.
+- A bundled same-JVM Portico RID for the live examples, backend-specific live
+  verifier dispatch, and first-grant peer-reflection checks. An isolated
+  one-member federation or background worker failure now produces an error
+  instead of a partial trajectory; a configurable per-scenario process
+  watchdog also bounds RTI or worker deadlock in the strict live verifier.
+- HLA validation and reproducibility material under `docs/hla-validation/`, including
+  architecture/workflow diagrams, a service-coverage matrix, related-work
+  positioning, full 180-row canonical traces, and an offline CI gate.
+- Runtime validation for binding directions and publish/subscribe direction
+  guards, with regression tests.
 
 ### Changed
 - `PitchTransport` gained four no-op extension seams for subclasses —
   `_encode_value` / `_decode_value` (field codec) and `_rti_time` /
   `_rti_lookahead` (RTI time axis). Behaviour on Pitch is unchanged.
+- `InProcessRTI` capability metadata no longer claims HLA time management or
+  timestamp-order delivery; it remains an identity-grant lock-step test bus.
 
 ## [2.1.2] — 2026-06-28
 
@@ -66,8 +80,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - RTI-agnostic HLA interface so backends other than the test loopback can be
   plugged in:
   - `RTIConnector` template-method base class (`pyjevsim/hla/transport.py`) —
-    a new backend implements only `_do_send` / `_do_request_time_advance`
-    (plus optional lifecycle hooks); direction enforcement, codec calls,
+    `_do_send` / `_do_request_time_advance` form the minimum abstract surface;
+    live HLA adapters also supply lifecycle, declaration, and receive hooks;
+    direction enforcement, codec calls,
     single-callback dispatch, the join/resign state machine and idempotent
     close are inherited.
   - `RTICapabilities` (feature negotiation), `Codec` / `IdentityCodec`
