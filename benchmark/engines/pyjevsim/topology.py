@@ -1,4 +1,4 @@
-"""Canonical DEVStone topology built on pyjevsim's SysExecutor.
+"""Flattened DEVStone topology for the pyjevsim benchmark adapter.
 
 The graph mirrors the *flattened* shape of the canonical xdevs DEVStone:
 
@@ -6,10 +6,7 @@ The graph mirrors the *flattened* shape of the canonical xdevs DEVStone:
   - LI(d, w) has 1 + (d-1) * (w-1) atomics. Seeder feeds every atomic.
   - HI adds an internal chain inside every non-innermost level:
         atomic[i].out -> atomic[i+1].in
-  - HO is HI plus an "escape" output from every atomic. We model that as a
-    second output port that fans out to the default message catcher; that
-    keeps the per-atomic transition count aligned with the canonical model
-    while still exercising additional coupling traversal.
+  - HO uses the same flattened chain construction described below.
 
 Transition counts may differ marginally between engines because pyjevsim and
 xdevs implement confluent transitions differently. The cross-engine runner
@@ -55,7 +52,7 @@ def build(variant: str, depth: int, width: int,
             row.append(atomic)
         levels.append(row)
 
-    # Seeder fans out to every atomic — flattened EICs.
+    # The seeder represents flattened external-input couplings.
     for row in levels:
         for atomic in row:
             ss.coupling_relation(seeder, "out", atomic, "in")
@@ -67,11 +64,8 @@ def build(variant: str, depth: int, width: int,
             for i in range(len(row) - 1):
                 ss.coupling_relation(row[i], "out", row[i + 1], "in")
 
-    # HO additionally has an escape path from every atomic. With a single
-    # output port per atomic the simplest faithful approximation is to leave
-    # the outputs uncoupled at the root (default catcher absorbs them) which
-    # already happens for the chain-tail atomics. We deliberately do not add
-    # extra ports here so per-atomic transition counts remain comparable.
+    # This flattened adapter leaves chain-tail output ports uncoupled rather
+    # than adding a separate HO escape port.
 
     atomics = [a for row in levels for a in row]
     return ss, atomics, levels
@@ -80,9 +74,8 @@ def build(variant: str, depth: int, width: int,
 def simulate(ss, depth: int, width: int):
     """Simulate until the FEL drains.
 
-    All DEVStone transitions in our build use deadline 0 so the entire
-    cascade completes within a few simulated seconds. We loop a generous
-    number of ticks and stop when the simulator self-terminates.
+    All transitions in this adapter use deadline 0. The calculated horizon
+    allows the simulator to drain its future-event list.
     """
     horizon = max(8, depth * width + 4)
     ss.simulate(horizon, _tm=False)

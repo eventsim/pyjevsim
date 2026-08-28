@@ -1,12 +1,7 @@
-"""RTI backend implementations.
+"""Built-in RTI backend registrations.
 
-Importing this package registers the always-available ``inprocess`` backend
-and the optional ``pitch`` / ``portico`` backends. The optional ones
-self-register but import their heavy dependency (JPype + an IEEE 1516-2010
-Java RTI) lazily, so importing this package never fails even when JPype /
-Java / an RTI are absent — the error surfaces only when
-``create_rti("pitch", ...)`` / ``create_rti("portico", ...)`` actually tries
-to boot the JVM.
+The in-process backend is always available. Pitch and Portico import their
+Java dependencies only when a connector is created.
 """
 
 from . import inprocess  # noqa: F401  registers "inprocess"

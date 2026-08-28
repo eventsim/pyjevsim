@@ -1,9 +1,7 @@
-"""Shared chat federate model — used by both the Pitch and gorti examples.
+"""Chat model shared by the Pitch and gorti examples.
 
-This is a pure-DEVS BehaviorModel; it does not import anything from
-pyjevsim.hla. The same class is wrapped by an HLAExecutor in both
-example bring-ups, demonstrating that switching transports requires
-zero changes to the model.
+The ``BehaviorModel`` has no RTI calls. Each example supplies its transport
+and port bindings outside the model.
 
 State machine:
 
@@ -12,7 +10,7 @@ State machine:
                        ▼ output()              ▼ output()
                   emits one chat message every period
 
-External input port "inbox" prints whatever it receives. That's it.
+The ``inbox`` port prints received chat messages.
 """
 
 from __future__ import annotations
@@ -42,10 +40,7 @@ class Chatter(BehaviorModel):
         items = msg.retrieve() if msg is not None else []
         for item in items:
             sender = item.get("from", "?") if isinstance(item, dict) else "?"
-            # Skip self-echoes. Real RTIs (Pitch, gorti) don't redeliver
-            # a federate's own publications, but LoopbackTransport does
-            # (it has no notion of "publisher"). Filtering here keeps
-            # the same model usable across all transports.
+            # LoopbackTransport echoes the sender's publication, so ignore it.
             if sender == self.get_name():
                 continue
             text = item.get("text", "<no text>") if isinstance(item, dict) else str(item)

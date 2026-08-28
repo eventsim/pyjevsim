@@ -1,9 +1,7 @@
-"""Per-federate simulation context — replaces the global ObjectDB singleton.
+"""Simulation state owned by one AT/SIM federate.
 
-A singleton is fatal for the HLA build: ``run_hla_inprocess.py`` runs *two*
-``SysExecutor`` federates in one process, and each federate needs its own
-``items``/``decoys``/owning ``executor``/``snapshot``. Standalone uses one
-shared ``SimContext``; HLA uses two (one per federate).
+``run_hla_inprocess.py`` runs two executors in one process, so each federate
+keeps separate objects, decoys, executor, and position snapshot.
 """
 
 from utils.sensing import PositionSnapshot

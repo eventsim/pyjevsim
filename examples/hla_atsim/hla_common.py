@@ -1,4 +1,4 @@
-"""Shared HLA descriptors for hla_atsim: FOM ids, bindings, ProxySink, publish.
+"""FOM bindings and position exchange used by the HLA AT/SIM examples.
 
 The Platform attribute carries a whole physics object's end-of-tick state.
 Both federates publish and subscribe the same ``fom_id``; the in-process bus
@@ -32,11 +32,11 @@ ANTITORPEDO_FOM_MAP = {
 
 
 class ProxySink:
-    """Duck-typed router subscriber (has ``_on_rti_event``).
+    """Update the remote-object table from reflected attributes.
 
-    Synchronously upserts reflected peers into ``ctx.remote`` — NOT via
-    ``insert_external_event`` — so the position exchange stays *outside*
-    the DEVS tick and equivalence with standalone is exact.
+    The router calls this receiver synchronously rather than inserting a DEVS
+    external event. Position exchange therefore remains at the driver-managed
+    tick boundary.
     """
 
     def __init__(self, ctx):

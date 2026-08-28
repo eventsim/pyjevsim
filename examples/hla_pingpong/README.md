@@ -8,9 +8,9 @@ Two federates, **ping** and **pong**, rally a ball across an HLA federation:
   reflects — demonstrating **object synchronization** alongside the
   **interaction** rally.
 
-The DEVS models ([`pingpong_models.py`](pingpong_models.py)) are
-**RTI-agnostic**: the exact same classes run on the in-process bus and on real
-Pitch pRTI. Only the transport (chosen via `create_rti(...)`) changes.
+The DEVS model classes in [`pingpong_models.py`](pingpong_models.py) are used
+with the in-process bus, Pitch pRTI, and Portico. Backend selection and runtime
+configuration are handled outside the model classes.
 
 ## Files
 
@@ -21,7 +21,7 @@ Pitch pRTI. Only the transport (chosen via `create_rti(...)`) changes.
 | `run_inprocess.py` | Offline demo — two federates over `InProcessRTI` (no Java) |
 | `run_pitch.py` | Live demo — two federates (two threads) in one process over Pitch pRTI (`PYJEVSIM_RTI` picks the backend) |
 | `run_portico.py` | The same demo over the open-source **Portico** RTI (no CRC needed) |
-| `run_pitch_federate.py` | **One federate per OS process** (`ping`/`pong` arg) — true distributed run |
+| `run_pitch_federate.py` | **One federate per OS process** (`ping`/`pong` arg) |
 | `run_pitch_multiprocess.py` | Launcher that spawns both federate processes and streams their output |
 
 ## Run offline (no Java / RTI needed)
@@ -61,12 +61,11 @@ Single process (two federates as two threads):
 python examples/hla_pingpong/run_pitch.py
 ```
 
-### Distributed: one federate per process
+### One federate per process
 
-Each federate runs in its own OS process (own JVM and LRC), joined to the
-same federation through the CRC — a genuine distributed run. The federates
-may live on different hosts; point each at the CRC (e.g. `PYJEVSIM_CRC` /
-your pRTI client settings).
+Each federate runs in its own OS process (own JVM and LRC) and joins the same
+federation through the CRC. The recorded validation for this launcher is
+limited to processes on one host.
 
 One command (spawns both, starts `pong` then `ping`):
 
@@ -84,32 +83,48 @@ python examples/hla_pingpong/run_pitch_federate.py pong
 python examples/hla_pingpong/run_pitch_federate.py ping
 ```
 
-### Across two hosts
+## Run against Portico
 
-The only thing that distinguishes a multi-host run is where the CRC lives.
-Run the CRC on one machine and point each federate at it with
+Portico 2.1.4 uses the same model and bindings without a CRC. Install the
+`hla-java` extra, use Java 11 or later, and point the launcher at
+`portico.jar`:
+
+```powershell
+python -m pip install "pyjevsim[hla-java]"
+$env:RTI_HOME = "C:\path\to\portico-2.1.4"
+$env:PYJEVSIM_JAR = "$env:RTI_HOME\lib\portico.jar"
+# Optional when Java discovery does not select the intended runtime:
+$env:PYJEVSIM_JVM = "C:\path\to\jvm.dll"
+python examples/hla_pingpong/run_portico.py
+```
+
+The launcher selects the repository's same-JVM RID when `RTI_RID_FILE` is
+unset. Set `RTI_RID_FILE` to a suitable Portico configuration for another
+process topology. The recorded validation covers only the same-process setup.
+
+## Remote-host configuration for Pitch (not validated here)
+
+To configure federates on separate hosts, run the CRC on one machine and point
+each federate at it with
 `PYJEVSIM_CRC=<crc-host>:8989` (the LRC then connects to the CRC over the
 network instead of localhost):
 
-```bash
+```powershell
 # host A (also runs the CRC) — responder
-set PYJEVSIM_CRC=192.168.1.10:8989
+$env:PYJEVSIM_CRC = "192.168.1.10:8989"
 python examples/hla_pingpong/run_pitch_federate.py pong
 # host B — server
-set PYJEVSIM_CRC=192.168.1.10:8989
+$env:PYJEVSIM_CRC = "192.168.1.10:8989"
 python examples/hla_pingpong/run_pitch_federate.py ping
 ```
 
-> Verified live (two separate OS processes, Pitch pRTI Free 5.5.2 +
-> Temurin 11): `pong received pings: [0, 1, 2, 3]`,
-> `ping received pongs: [0, 1, 2, 3]`, `pong reflected hits: [0, 1, 2, 3]`,
-> both `resigned`, exit 0. The federates synchronize on a `ready`
-> federation synchronization point before exchanging any event. The same
-> run also succeeds with `PYJEVSIM_CRC` set to the host's routable LAN
-> address (not `localhost`), confirming the network transport path — a
-> second host on the LAN connects identically.
+This is a configuration example, not evidence of a run on two physical hosts.
+Firewall, routing, RTI licensing, and host-specific settings remain the
+operator's responsibility. The federates synchronize on a `ready` federation
+synchronization point before exchanging any event.
 
-Switching backend is the only change — the models and wiring are identical:
+The backends share the model and bindings. Each live launcher supplies its own
+connector and RTI configuration:
 
 ```python
 # offline
@@ -125,7 +140,7 @@ tx = create_rti("pitch", federation="PingPong", federate="ping",
 - `tests/hla/test_pingpong.py` — always runs; verifies join/resign,
   interaction exchange (both directions) and object sync deterministically
   over the in-process bus.
-- `tests/hla/test_portico_backend.py` — hermetic codec / time-axis tests plus
+- `tests/hla/test_portico_backend.py` — offline codec and time-axis tests plus
   a guarded live case (`PYJEVSIM_PORTICO_LIVE=1`).
 - `tests/hla/test_pitch_backend.py` — guarded; runs the encoder round-trip
   when JPype + Java ≥ 11 + `prti1516e.jar` are present, and the full live

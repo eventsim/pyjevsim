@@ -1,9 +1,9 @@
-"""Empirical multi-subscriber output aliasing test.
+"""Inspect output-value sharing between multiple subscribers.
 
 Setup
 -----
-A producer emits ONE message — a mutable list `[1, 2, 3]` — through a single
-output port that is fanned out to TWO subscriber atomics. Each subscriber
+A producer emits one mutable list, ``[1, 2, 3]``, through an output port
+connected to two subscriber atomics. Each subscriber
 appends its own tag ("A" / "B") to the list it receives.
 
 After the simulation completes we inspect:

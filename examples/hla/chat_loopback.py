@@ -1,8 +1,7 @@
-"""Self-contained two-federate chat demo using LoopbackTransport.
+"""Self-contained two-model chat demo using LoopbackTransport.
 
-Runs in a single process, no external RTI binaries needed. Best place
-to start if you want to see pyjevsim.hla in action without standing
-up Pitch or gorti.
+Runs in a single process with no external RTI binaries. Use it to inspect the
+binding-based send and receive path without starting Pitch or gorti.
 
 Usage (from the pyjevsim repo root):
 
@@ -10,7 +9,7 @@ Usage (from the pyjevsim repo root):
     python -m examples.hla.chat_loopback --count 3 --period 0.5
 
 What it demonstrates:
-- One LoopbackTransport shared by both federates.
+- One LoopbackTransport shared by both models.
 - Same Chatter BehaviorModel class (pure DEVS) registered twice with
   different names. No HLA awareness in the model.
 - HLAExecutorFactory with bindings for both models. The factory builds
@@ -51,7 +50,7 @@ def _bindings() -> dict:
 def main() -> None:
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--count", type=int, default=3,
-                   help="messages each federate sends (default 3)")
+                   help="messages each model sends (default 3)")
     p.add_argument("--period", type=float, default=1.0,
                    help="simulated seconds between sends (default 1.0)")
     p.add_argument("--end", type=float, default=10.0,
@@ -82,7 +81,7 @@ def main() -> None:
         Chatter("bob", period=args.period, message_count=args.count)
     )
 
-    print(f"-- chat_loopback: each federate sends {args.count}, period={args.period}s --")
+    print(f"-- chat_loopback: each model sends {args.count}, period={args.period}s --")
     t = 0.0
     while t < args.end:
         t += args.period

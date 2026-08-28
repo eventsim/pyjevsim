@@ -1,11 +1,8 @@
-"""TracingTransport — decorator that emits a canonical event sequence.
+"""Transport decorator that writes a normalized event log.
 
-Wraps any pyjevsim.hla.Transport. Logs every call (lifecycle + data
-+ time advance) as one line in a stable, RTI-agnostic format with
-no wallclock timestamps and no correlation IDs. The output of two
-runs against semantically identical RTIs (e.g. Pitch and gorti)
-should `diff` to the empty set — any line that differs is a
-semantics divergence worth investigating.
+The log covers lifecycle, data, and time-advance calls. It omits wall-clock
+timestamps and correlation IDs so runs can be compared without those
+run-specific values.
 
 Wire format (one event per line, fields are space-separated key=value):
 
@@ -19,14 +16,11 @@ Wire format (one event per line, fields are space-separated key=value):
     RESIGN
     CLOSE
 
-Logical time values (target, granted) ARE included — they are part
-of the HLA semantics under test, and any difference between RTIs
-indicates a time-management divergence. Wallclock timestamps are
-NOT included; correlation IDs are NOT included.
+Logical target and grant values are included. A difference between two logs
+can result from backend time management as well as application behavior.
 
-Payloads are serialized with sorted keys and no whitespace so that
-dict iteration order does not affect the output. Floats are formatted
-with %.6g so platform-specific float-repr differences don't leak.
+Payload keys are sorted and whitespace is removed. Logical-time floats use
+``%.6g`` formatting.
 """
 
 from __future__ import annotations
@@ -50,11 +44,10 @@ def _fmt_time(t: float) -> str:
 
 
 class TracingTransport:
-    """Decorator wrapping any Transport with a canonical event log.
+    """Wrap a transport and record its calls.
 
-    The wrapped transport (`inner`) carries the actual RTI traffic;
-    this class only observes and prints. Any exception from `inner`
-    propagates unchanged.
+    The wrapped transport carries RTI traffic. Exceptions from it propagate
+    to the caller.
     """
 
     def __init__(self, inner, sink: "IO[str] | None" = None) -> None:
@@ -62,9 +55,8 @@ class TracingTransport:
         self._sink: IO[str] = sink if sink is not None else sys.stdout
         self._lock = threading.Lock()
         self._user_cb: OnReceive | None = None
-        # Register our wrapper with the inner transport. Subsequent
-        # on_receive() calls from pyjevsim re-target self._user_cb;
-        # the inner transport keeps seeing our wrapper.
+        # Keep the interceptor registered while allowing the user callback to
+        # be replaced.
         self._inner.on_receive(self._on_receive_wrapper)
 
     # ------------------------------------------------------ tracing helpers
@@ -84,8 +76,7 @@ class TracingTransport:
         self._inner.send(binding, payload)
 
     def on_receive(self, callback: OnReceive) -> None:
-        # pyjevsim's _HLARouter calls this once at construction. Replace
-        # the user callback; keep our wrapper as the inner's callback.
+        # The inner transport continues to call _on_receive_wrapper.
         self._user_cb = callback
 
     def request_time_advance(self, target: float) -> float:

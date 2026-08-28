@@ -15,11 +15,8 @@ class SysMessage(SystemObject):
 
     .. note::
         When a port has multiple downstream subscribers, every receiver
-        gets the **same** `SysMessage` object — pyjevsim does not deep-copy
-        outputs on propagation. Treat received messages as immutable. This
-        is consistent with the Python-DEVS ecosystem (xdevs.py and
-        PythonPDEVS use the same shared-reference model). To mutate a
-        payload, copy it on the receiver side first.
+        gets the same ``SysMessage`` object. Copy a received payload before
+        mutating it when receivers must remain isolated.
     """
 
     def __init__(self, src_name="", dst_name=""):
@@ -105,4 +102,3 @@ class SysMessage(SystemObject):
             float: The message time 
         """
         return self._msg_time
-    

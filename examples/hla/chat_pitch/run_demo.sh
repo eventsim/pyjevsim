@@ -26,7 +26,7 @@ LOOKAHEAD="${LOOKAHEAD:-0.1}"
 
 if [[ ! -x "${KDX_RTI_DIR}/run-gateway.sh" ]]; then
     echo "FATAL: kdx-rti gateway launcher not found at ${KDX_RTI_DIR}/run-gateway.sh"
-    echo "  set KDX_RTI_DIR=<path-to-kdx-rti-repo> and rebuild the shaded jar"
+    echo "  export KDX_RTI_DIR=<path-to-kdx-rti-repo> and rebuild the shaded jar"
     exit 2
 fi
 if ! python3 -c "import kdx_rti" 2>/dev/null; then
@@ -111,7 +111,7 @@ cp "${LOG_DIR}/bob.trace"   /tmp/hla-traces/bob.pitch.trace   2>/dev/null || tru
 echo
 echo "-- traces -------------------------------------------------------"
 echo "  per-federate:  ${LOG_DIR}/{alice,bob}.trace"
-echo "  conformance:   /tmp/hla-traces/{alice,bob}.pitch.trace"
+echo "  saved copy:    /tmp/hla-traces/{alice,bob}.pitch.trace"
 echo "  to compare against gorti, run chat_gorti/run_demo.sh and:"
 echo "    diff /tmp/hla-traces/alice.{pitch,gorti}.trace"
 echo "    diff /tmp/hla-traces/bob.{pitch,gorti}.trace"

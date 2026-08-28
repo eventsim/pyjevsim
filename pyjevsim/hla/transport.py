@@ -1,26 +1,12 @@
-"""RTI-agnostic transport interface + LoopbackTransport + _HLARouter.
+"""Transport interfaces and the in-process loopback backend.
 
-Spec: docs/hla/specification.md §2 (data/time/lifecycle contract).
-Interface design: docs/hla/rti_interface.md (how to add a new RTI backend).
+``Transport`` defines the methods used by the executor. ``RTIConnector`` adds
+lifecycle handling and codec dispatch for concrete RTI adapters.
+``RTICapabilities`` describes optional backend services, and ``_HLARouter``
+dispatches received events to subscribed executors.
 
-Layering
---------
-``Transport``        — minimal *structural* type (Protocol). Anything with
-                       ``send / on_receive / request_time_advance / close``
-                       satisfies it. Kept for back-compat and duck-typed
-                       test stubs.
-``RTIConnector``     — the *nominal* base class new backends should extend.
-                       It implements all the common plumbing (codec hook,
-                       single-callback dispatch, join/resign state machine,
-                       idempotent close) as template methods and leaves only
-                       the RTI-specific operations (``_do_*``) abstract. A
-                       new RTI (CERTI, Portico, OpenRTI, MAK, Pitch, ...)
-                       becomes ~5 small methods.
-``RTICapabilities``  — feature flags a backend advertises so callers can
-                       adapt (TSO? object attributes? time management?).
-``Codec``            — pluggable FOM (de)serialization, orthogonal to the
-                       wire transport. The same RTI can carry different
-                       FOMs; the same FOM codec can be reused across RTIs.
+See ``docs/hla/specification.md`` for the runtime contract and
+``docs/hla/rti_interface.md`` for backend implementation guidance.
 """
 
 from __future__ import annotations
@@ -38,11 +24,10 @@ OnReceive = Callable[[str, str, Any, "float | None"], None]
 
 @dataclass(frozen=True)
 class RTICapabilities:
-    """What an RTI backend can do.
+    """Services reported by an RTI backend.
 
-    Callers may consult this descriptive metadata to adapt or fail fast.
-    The base connector does not negotiate or automatically enforce every
-    flag; the service matrix for a concrete backend remains authoritative.
+    These flags are descriptive. Applications should also check the backend's
+    documented service matrix before relying on an optional HLA service.
     """
 
     name: str = "unknown"
@@ -66,7 +51,7 @@ class Codec(Protocol):
     by ``SysMessage.retrieve()``) into whatever the backend ships on the
     wire. ``decode`` is the inverse for inbound events. The default
     :class:`IdentityCodec` passes objects through unchanged (loopback /
-    in-process backends); real RTIs supply a codec that maps to the FOM
+    in-process backends); live RTIs supply a codec that maps to the FOM
     datatypes (e.g. HLA 1516e ``HLAfixedRecord`` via the EncoderFactory).
     """
 
@@ -75,7 +60,7 @@ class Codec(Protocol):
 
 
 class IdentityCodec:
-    """Pass-through codec. Used by in-process backends (loopback)."""
+    """Pass values through unchanged for in-process backends."""
 
     def encode(self, binding, payload: Any) -> Any:
         return payload
@@ -88,12 +73,11 @@ class IdentityCodec:
 
 
 class Transport(Protocol):
-    """Minimal structural transport contract (spec §2.1).
+    """Structural interface used by HLA executors.
 
-    Retained for back-compat and for duck-typed test stubs. New backends
-    should subclass :class:`RTIConnector` instead, which guarantees the
-    full lifecycle surface (join/publish/subscribe/resign) that
-    :class:`~pyjevsim.hla.federate.Federate` delegates to.
+    Existing duck-typed transports may implement this protocol directly.
+    New RTI adapters normally subclass :class:`RTIConnector` to reuse its
+    lifecycle methods.
     """
 
     def send(self, binding, payload: Any) -> None: ...
@@ -106,25 +90,23 @@ class Transport(Protocol):
 
 
 class RTIConnector(ABC):
-    """Base class for RTI backends — the recommended extension point.
+    """Base class for RTI adapters.
 
-    Implements the common mechanics so a concrete backend only has to
-    provide the RTI-specific ``_do_*`` operations:
+    Subclasses implement the RTI-specific ``_do_*`` operations:
 
     Required (abstract):
         * ``_do_send(binding, wire, timestamp)``
         * ``_do_request_time_advance(target) -> granted``
 
-    Optional (default no-op — override if the RTI needs them):
+    Optional lifecycle hooks have no-op defaults:
         * ``_do_join(federation, federate_name, fom_paths)``
         * ``_do_publish(binding)`` / ``_do_subscribe(binding)``
         * ``_do_resign()`` / ``_do_close()``
 
-    Inbound path: the backend's receive thread calls :meth:`_emit` with
-    the raw wire object; the connector decodes it and forwards to the
-    single registered callback (the ``_HLARouter``). ``_emit`` may be
-    invoked from any thread — the downstream
-    ``SysExecutor.insert_external_event`` is lock-protected.
+    A backend passes received wire values to :meth:`_emit`. The connector
+    decodes the value and calls the registered receiver. Backends that call
+    :meth:`_emit` from an RTI callback thread rely on the executor's
+    thread-safe external-event insertion.
     """
 
     #: Backends override with their own capability set.
@@ -141,11 +123,10 @@ class RTIConnector(ABC):
     def send(self, binding, payload: Any, *, timestamp: "float | None" = None) -> None:
         """Publish an outbound binding's payload to the RTI.
 
-        Direction is enforced here: only ``out``/``inout`` bindings are
-        shipped (an ``in`` binding handed to ``send`` is dropped, matching
-        spec §2.2). ``payload`` is always the list from
-        ``SysMessage.retrieve()``. ``timestamp`` carries the logical send
-        time for TSO-capable backends (``None`` => receive-order).
+        ``in`` bindings are ignored. ``payload`` is the list returned by
+        ``SysMessage.retrieve()``. For timestamp-ordered backends,
+        ``timestamp`` is the logical send time; ``None`` requests
+        receive-order delivery.
         """
         if binding.direction not in ("out", "inout"):
             return
@@ -230,8 +211,7 @@ class RTIConnector(ABC):
     def _do_request_time_advance(self, target: float) -> float:
         """Issue a time-advance request; return the granted logical time."""
 
-    # Optional lifecycle hooks — default no-ops so trivial backends
-    # (loopback, in-process) need not implement them.
+    # Loopback-style backends can use these no-op lifecycle hooks.
     def _do_join(self, federation: str, federate_name: str, fom_paths) -> None:
         pass
 
@@ -252,12 +232,10 @@ class RTIConnector(ABC):
 
 
 class LoopbackTransport(RTIConnector):
-    """In-process transport: mirrors out→in to the registered callback.
+    """Mirror outbound values to the receiver in the current process.
 
-    Test / demo backend. ``send`` on an ``out``/``inout`` binding is
-    delivered straight back through ``_emit`` (the router then fans it out
-    to subscribed executors). ``request_time_advance`` is identity (no flow
-    control). Lifecycle methods are inherited no-ops.
+    This backend has no federation-wide time coordination. A time-advance
+    request returns its target unchanged, and lifecycle hooks are no-ops.
     """
 
     capabilities = RTICapabilities(
@@ -279,10 +257,10 @@ class LoopbackTransport(RTIConnector):
 
 
 class _HLARouter:
-    """Single subscriber on a Transport; demultiplexes to HLAExecutors.
+    """Dispatch transport events to subscribed HLA executors.
 
-    Spec §2.3. One per transport. Multiple executors may subscribe to
-    the same (kind, fom_id); all receive each event.
+    One router is attached to each transport. More than one executor may
+    subscribe to the same ``(kind, fom_id)`` pair.
     """
 
     def __init__(self, transport) -> None:

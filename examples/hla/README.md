@@ -1,8 +1,9 @@
 # pyjevsim HLA examples
 
-Two transport-specific chat-federate examples sharing one `Chatter`
-BehaviorModel (`_chat_model.py`). Same model class runs against both
-RTIs — only the `Transport` and the bring-up script differ.
+This directory contains a local bound-port chat example and two legacy
+integration examples for external RTI gateway projects. They share the
+`Chatter` model in `_chat_model.py`; each runner supplies its own transport and
+startup configuration.
 
 | Demo                | RTI                      | Run with                                              |
 |---------------------|--------------------------|-------------------------------------------------------|
@@ -10,8 +11,9 @@ RTIs — only the `Transport` and the bring-up script differ.
 | `chat_pitch/`       | Pitch pRTI               | `chat_pitch/run_demo.sh` (orchestrates 2 gateways + 2 federates) |
 | `chat_gorti/`       | gorti rtid               | `chat_gorti/run_demo.sh` (orchestrates rtid + 2 federates) |
 
-**Start with `chat_loopback.py`** — no external RTI required, runs in
-one process, demonstrates the full subsystem in ~30 seconds.
+Start with `chat_loopback.py` to see binding-based send and receive in one
+process without an RTI. For federation lifecycle, declarations, and grant
+handling, use [`examples/hla_pingpong`](../hla_pingpong/).
 
 | Directory      | RTI           | Transport implementation                       |
 |----------------|---------------|------------------------------------------------|
@@ -33,19 +35,20 @@ repo root without `pip install`.
 
 ## What's NOT in these examples
 
-- Object-instance lifecycle. Both transports handle interactions
-  only. A production transport would track object handles via
-  `registerObjectInstance` / `discoverObjectInstance`.
+- Object-instance lifecycle. Both transports handle interactions only and do
+  not call `registerObjectInstance` or `discoverObjectInstance`.
 - DDM regions, ownership management, save/restore, sync points.
 - Reconnect after RTI failure.
 
-For production use, extend the transport in `transport.py` (or
-upstream a richer one to the kdx-rti / gorti repo).
+The extension API is documented in
+[`docs/hla/rti_interface.md`](../../docs/hla/rti_interface.md).
 
 ## Verifying without an RTI
 
-`chat_loopback.py` is a complete in-process two-federate demo using
-`pyjevsim.hla.LoopbackTransport`. No external dependencies. Run it:
+`chat_loopback.py` is a two-model in-process demo using one
+`pyjevsim.hla.LoopbackTransport` and one `SysExecutor`. It exercises bound
+send and receive paths without federation lifecycle services or external
+dependencies. Run it:
 
 ```sh
 python -m examples.hla.chat_loopback                  # default 3 messages each
@@ -55,7 +58,7 @@ python -m examples.hla.chat_loopback --count 5 --period 0.5 --end 5
 Expected output:
 
 ```
--- chat_loopback: each federate sends 3, period=1.0s --
+-- chat_loopback: each model sends 3, period=1.0s --
 [alice] heard 'bob': hello from bob #1
 [bob] heard 'alice': hello from alice #1
 [alice] heard 'bob': hello from bob #2
@@ -63,15 +66,15 @@ Expected output:
 -- done at t=3.0 --
 ```
 
-`tests/hla/test_m2_factory.py::test_M2_6` is the same demo expressed
-as a regression test.
+The HLA factory regression tests exercise the same two model-bound senders
+over the loopback transport.
 
-## Automated demos with real RTIs
+## Automated demos with external RTIs
 
 Each subdir has a `run_demo.sh` that brings up the RTI processes,
-runs both federates in parallel, captures their logs, prints the
-chat output, and tears everything down on exit. Both scripts trap
-`EXIT/INT/TERM` to ensure no orphaned processes survive.
+runs both federates in parallel, captures their logs, and prints the chat
+output. Both scripts trap `EXIT/INT/TERM` and stop their child processes
+during cleanup.
 
 ### Pitch (assumes pRTI CRC is already running):
 
@@ -91,14 +94,16 @@ COUNT=3 PERIOD=0.5 END=8 ./examples/hla/chat_gorti/run_demo.sh
 Required env: `RTID` (path to the `rtid` binary, defaults to
 `<sibling-gorti>/rtid`) and the `rti1516e` Python package installed.
 
-## Cross-RTI conformance comparison
+## Comparing application event traces
 
-The chat federate is deterministic, so its event sequence under two
-semantically-identical RTIs should be byte-identical. Both
-`run_demo.sh` scripts emit per-federate **event traces** in a stable
-canonical format (no wallclock timestamps, no correlation IDs, sorted-
-key JSON payloads) — `diff` between Pitch and gorti traces reveals
-any semantics divergence.
+The deterministic chat example can produce a stable, application-level event
+trace for each federate. Both `run_demo.sh` scripts omit wall-clock timestamps
+and correlation identifiers and sort JSON payload keys. Comparing these files
+can reveal differences in the lifecycle, data, or logical-time sequence seen
+by the example.
+
+This comparison covers only the recorded application events. It does not
+compare RTI wire bytes or establish HLA conformance.
 
 ```sh
 # 1. Run both demos with the SAME COUNT/PERIOD/END:
@@ -134,10 +139,9 @@ call (lifecycle + data + time advance) to a sink file. Both runners
 take a `--trace-file <path>` flag; the shell scripts pass it
 automatically.
 
-**Logical time values (TAR target, GRANT granted) are included on
-purpose** — they're part of the HLA semantics under test. If gorti
-grants different times than Pitch under the same time-management
-configuration, that's a real bug worth catching.
+Logical-time request and grant values are included because they affect the
+example's behavior. A difference between traces should be investigated as a
+possible configuration, adapter, or application-behavior difference.
 
-**Wallclock timestamps and correlation IDs are stripped** — those
-naturally differ between runs and would create false-positive diffs.
+Wall-clock timestamps and correlation identifiers are omitted because they
+naturally differ between runs.

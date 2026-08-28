@@ -1,36 +1,45 @@
+Municipal Waste Management Simulation Example
+==============================================
 
-Municipal Waste Management Simulator
-====================================
+This example models households, local waste bins, a collection vehicle, and a
+simple collection policy. It shows agent-style DEVS composition and
+snapshot/restore over longer virtual-time scenarios.
 
-Introduction
-------------
+Model behavior
+--------------
 
-The **Municipal Waste Management Simulator** is an agent-based simulation designed for evaluating urban waste management policies. It predicts waste generation based on resident types and their distribution, reflecting distinct lifestyle patterns across various residential groups. Additionally, it simulates resident satisfaction levels depending on waste collection frequency and methods.
+- Residents follow daily leave-and-return schedules and discard waste when
+  leaving home.
+- A full local bin increases the resident's dissatisfaction measure.
+- The collection vehicle visits bins on a configured schedule and returns to
+  base when its capacity is exhausted.
+- Scenario files describe household composition and building layout.
 
-The simulator models diverse resident behaviors and residential types, enabling the generation of waste disposal patterns specific to single or multi-person households and residential area characteristics. It also includes models for trash bins and waste collection vehicles, facilitating simulation of various waste collection strategies, especially focused on urban residential areas over long-term scenarios. Thus, the model addresses changes in population dynamics and adjusts waste collection policies accordingly.
+Run
+---
 
-Scenario Explanation
---------------------
+From ``examples/mwmsim``, run one named scenario without the ``.txt``
+extension:
 
-- **Resident Daily Pattern:** Residents leave their homes in the morning and return in the evening.
-- **Waste Disposal:** Residents dispose of waste when leaving their homes.
-- **Resident Satisfaction:** Dissatisfaction increases when residents find local waste bins already full.
-- **Waste Collection Vehicles:** Waste is collected according to government-defined collection policies.
-- **Collection Method:** Vehicles collect all waste from bins within residential areas if capacity allows.
-- **Capacity Constraints:** If a collection vehicle lacks sufficient capacity, it collects only as much waste as possible before returning to base.
+.. code-block:: console
 
-Save and Restore Functionality
-------------------------------
+   $ cd examples/mwmsim
+   $ python exp.py 910sbh_N100_seed0
 
-- The simulator utilizes pyjevsim to save simulation states at specific points, enabling detailed analysis of waste disposal patterns and resident dissatisfaction based on changes in population demographics and distributions.
-- Users can restore saved states, adjust resident type and distribution, and analyze the outcomes of modified scenarios.
+``python experiment.py`` runs every file under ``scenario/``. Simulation
+duration, capacities, random seed, and output options are set in ``config.py``.
 
-Important Notes
----------------
+Scope
+-----
 
-Sensitive information has been deliberately excluded to focus solely on fundamental capabilities.
+The household behavior and collection policy are simplified examples for
+software demonstration. Results are not calibrated forecasts of a particular
+municipality.
 
-References
-----------
+Reference
+---------
 
-- Lyoo, Chang-Hyun, et al. "Modeling and simulation of a municipal solid waste management system based on discrete event system specification." *Proceedings of the 11th Annual Symposium on Simulation for Architecture and Urban Design*, 2020.
+- C.-H. Lyoo et al., “Modeling and simulation of a municipal solid waste
+  management system based on discrete event system specification,”
+  *Proceedings of the 11th Annual Symposium on Simulation for Architecture and
+  Urban Design*, 2020.

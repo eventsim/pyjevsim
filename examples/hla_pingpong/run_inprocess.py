@@ -1,4 +1,4 @@
-"""Offline ping-pong demo — two federates over the in-process RTI bus.
+"""Run two ping-pong federates over the in-process bus.
 
 No Java / pRTI required. Two separate SysExecutor federates (``ping`` and
 ``pong``) join one :class:`InProcessFederation` and rally a ball via HLA
@@ -49,7 +49,7 @@ def main(max_volleys: int = 3, rounds: int = 8) -> None:
         Pong("pong"), pong_bindings(), "pong", federation
     )
 
-    # join + publish/subscribe each federate
+    # Join each federate and declare its bindings.
     for fed, name, binds in (
         (ping_fed, "ping", ping_bindings()),
         (pong_fed, "pong", pong_bindings()),
@@ -63,7 +63,8 @@ def main(max_volleys: int = 3, rounds: int = 8) -> None:
 
     print(f"federation members after join: {len(federation.members)}")
 
-    # Coordinated lock-step advance (the in-process bus does no time mgmt).
+    # The driver coordinates steps because the in-process bus has no HLA time
+    # management.
     for t in range(1, rounds + 1):
         ping_se.step(t)
         pong_se.step(t)

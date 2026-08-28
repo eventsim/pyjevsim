@@ -1,10 +1,8 @@
-"""HLAExecutorFactory — produces HLAExecutor for models with bindings.
+"""Create HLA-aware executors for models that have port bindings.
 
-Spec: docs/hla/specification.md §4.
-
-Users opt in by replacing `sys_exec.exec_factory`. Models listed in
-`bindings_by_model` get an HLAExecutor; others get a plain
-BehaviorExecutor.
+Assign an ``HLAExecutorFactory`` to ``sys_exec.exec_factory`` before
+registering models. Models absent from ``bindings_by_model`` continue to use
+``BehaviorExecutor``. See ``docs/hla/specification.md`` section 4.
 """
 
 from __future__ import annotations
@@ -21,8 +19,7 @@ class HLAExecutorFactory(ExecutorFactory):
         self._transport = transport
         self._bindings_by_model = dict(bindings_by_model)
         self._router = _HLARouter(transport)
-        # Reject duplicate model names up front — bindings are keyed by
-        # name, so two models sharing one name would silently collide.
+        # Bindings are indexed by model name.
         if len(self._bindings_by_model) != len({k for k in self._bindings_by_model}):
             raise ValueError("bindings_by_model has duplicate model names")
 

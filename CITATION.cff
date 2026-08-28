@@ -2,10 +2,11 @@ cff-version: 1.2.0
 message: "If you use this software, please cite it using these metadata."
 title: pyjevsim
 abstract: >-
-  A Python DEVS (Discrete Event System Specification) modelling and
-  simulation framework with journaling (snapshot/restore), virtual- and
-  real-time execution, and HLA (IEEE 1516-2010) federate integration through
-  a pluggable, RTI-agnostic backend interface (validated against Pitch pRTI).
+  pyjevsim is a Python framework for Discrete Event System Specification
+  (DEVS) modeling and simulation. It provides journaling, virtual- and
+  real-time execution, and HLA federate integration through pluggable RTI
+  backends. Version 2.2.0 adds a Portico backend, plus AT/SIM reference traces
+  and application-state comparison commands for Pitch and Portico.
 type: software
 authors:
   - family-names: Choi
@@ -16,8 +17,7 @@ authors:
 repository-code: "https://github.com/eventsim/pyjevsim"
 url: "https://pyjevsim.readthedocs.io/"
 license: MIT
-version: 2.1.2
-date-released: "2026-06-28"
+version: 2.2.0
 keywords:
   - DEVS
   - discrete-event simulation
@@ -30,6 +30,3 @@ identifiers:
   - type: doi
     value: "10.5281/zenodo.21002028"
     description: "Concept DOI (all versions)"
-  - type: doi
-    value: "10.5281/zenodo.21002029"
-    description: "Version DOI (v2.1.2)"

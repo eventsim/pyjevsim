@@ -105,15 +105,14 @@ def test_fires_at_correct_simulated_time_with_long_period():
 
 
 def test_long_horizon_stays_fast():
-    """100 events at period 1000 should run in well under 100 ms wall time.
-    Old fixed-tick behaviour took >180 ms for this same configuration."""
+    """A sparse 100-event run stays within the test's wall-time budget."""
     ss, gen_log, sink_log = _build(period=1000, count=100)
     t0 = time.perf_counter()
     ss.simulate(120_000, _tm=False)
     elapsed = time.perf_counter() - t0
     assert len(gen_log) == 100
     assert len(sink_log) == 100
-    # Generous bound — the old code took ~180 ms; jump scheduling takes <2 ms.
+    # Leave headroom for shared CI runners while detecting fixed-step behavior.
     assert elapsed < 0.05, f"simulation wall time {elapsed:.4f}s exceeds budget"
 
 

@@ -1,15 +1,8 @@
-"""Snapshot-based sensing primitives for hla_atsim.
+"""Per-tick position snapshots for the AT/SIM examples.
 
-Replaces the live ``ObjectDB().items`` reads with a *frozen* per-tick
-position snapshot. Detectors read the snapshot instead of live objects so
-that the Manuever(writer)/Detector(reader) order within a tick is
-irrelevant — reads are always end-of-previous-tick and order-independent
-(iteration is sorted by a stable ``sense_id``).
-
-The same mechanism serves both builds:
-  * standalone : snapshot fed from the single executor's local items.
-  * HLA        : snapshot fed from local items + reflected peer/decoy
-                 positions (``RemoteObject`` proxies).
+Detectors read positions captured at the end of the preceding tick instead of
+live ``ObjectDB`` entries. Entries are ordered by ``sense_id``. A standalone
+run supplies local objects; an HLA run also supplies reflected remote objects.
 """
 
 
@@ -52,7 +45,7 @@ class RemoteObject:
 
 
 class PositionSnapshot:
-    """A per-tick, order-independent snapshot keyed by stable ``sense_id``."""
+    """Position values for one tick, keyed by ``sense_id``."""
 
     def __init__(self):
         self._by_id = {}
@@ -73,5 +66,5 @@ class PositionSnapshot:
         return self._by_id.get(sense_id)
 
     def entries(self):
-        """Deterministic: sorted by stable id, never set/hash order."""
+        """Return entries sorted by ``sense_id``."""
         return [self._by_id[k] for k in sorted(self._by_id)]

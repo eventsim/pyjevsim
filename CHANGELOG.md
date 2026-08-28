@@ -7,46 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+The changes below are planned for version 2.2.0.
+
 ### Added
-- ``examples/hla_atsim`` — the ``atsim`` anti-torpedo scenario split into two
-  HLA federates (surfaceship + torpedo) exchanging positions as HLA object
-  attributes, reproducing the exact sorted canonical trajectory rows of the
-  single-executor reference for the self-propelled and stationary decoy
-  scenarios (verified on the in-process bus and recorded on live Pitch pRTI).
-- **Second live RTI backend: Portico** (`portico`, open source, IEEE
-  1516-2010). `PorticoTransport` subclasses `PitchTransport` — both drive the
-  standard `hla.rti1516e` Java API, so the RTI is selected by classpath — and
-  overrides only what Portico needs: a standard-conformant `HLAunicodeString`
-  codec (Portico's own encoder over-allocates and its decoder reads the
-  4-octet length prefix as a single octet, so every string decodes empty) and
-  a three-sub-step time advance with buffered inbound delivery (Portico hands
-  the tested time-stamped reflections to the federate in *receive* order).
-  The barrier is designed to prevent next-tick over-read; current-tick
-  completeness depends on the configurable quiet/settle wait. Portico needs
-  no CRC process.
-- `examples/hla_pingpong/run_portico.py`, `examples/hla_atsim/run_hla_portico.py`
-  and `examples/hla_atsim/verify_equivalence_rti.py` — the live-RTI equivalence
-  gate, parameterized by `PYJEVSIM_RTI`. Verified against **Portico 2.1.4**
-  (Temurin 11, JPype 1.7.1): five consecutive runs, both scenarios
-  matched the standalone canonical trajectory, 180 rows each.
-- `tests/hla/test_portico_backend.py`.
-- A bundled same-JVM Portico RID for the live examples, backend-specific live
-  verifier dispatch, and first-grant peer-reflection checks. An isolated
-  one-member federation or background worker failure now produces an error
-  instead of a partial trajectory; a configurable per-scenario process
-  watchdog also bounds RTI or worker deadlock in the strict live verifier.
-- HLA validation and reproducibility material under `docs/hla-validation/`, including
-  architecture/workflow diagrams, a service-coverage matrix, related-work
-  positioning, full 180-row canonical traces, and an offline CI gate.
+- Open-source Portico 2.1.4 backend for the IEEE 1516-2010 Java API, including
+  a standard-layout `HLAunicodeString` codec and receive-order tick buffering.
+- Two-federate AT/SIM example with self-propelled and stationary decoy
+  scenarios, committed 180-row references, and offline and live comparison
+  commands.
+- Portico versions of the ping-pong and AT/SIM examples, plus a same-JVM RID
+  used by the bundled Portico runs.
+- HLA architecture, service coverage, time-management notes, limitations,
+  related work, expected traces, and reproduction instructions under
+  `docs/hla-validation/`.
+- CI checks for the Java-free equivalence run and committed result files.
+- CI checks that build the Sphinx documentation with warnings as errors and
+  validate both distribution artifacts with Twine.
+- `hla-java` dependency extra for the Java-backed Pitch and Portico adapters;
+  `hla-pitch` remains available for compatibility.
 - Runtime validation for binding directions and publish/subscribe direction
   guards, with regression tests.
 
 ### Changed
-- `PitchTransport` gained four no-op extension seams for subclasses —
-  `_encode_value` / `_decode_value` (field codec) and `_rti_time` /
-  `_rti_lookahead` (RTI time axis). Behaviour on Pitch is unchanged.
-- `InProcessRTI` capability metadata no longer claims HLA time management or
-  timestamp-order delivery; it remains an identity-grant lock-step test bus.
+- `PitchTransport` now provides `_encode_value`, `_decode_value`, `_rti_time`,
+  and `_rti_lookahead` extension hooks used by the Portico adapter.
+- The live AT/SIM verifier fails when the expected peer reflection is missing,
+  a worker exits with an error, or a scenario exceeds the configured watchdog
+  period.
+- `InProcessRTI` capability metadata no longer advertises HLA time management or
+  timestamp-order delivery. It is an identity-grant test bus; example drivers
+  coordinate lock-step explicitly.
 
 ## [2.1.2] — 2026-06-28
 
@@ -59,7 +49,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `PitchTransport`: federation synchronization-point support
   (`register_sync_point` / `wait_sync_announced` / `achieve_sync_point` /
   `wait_synchronized`) and a configurable CRC endpoint
-  (`crc="host:port"`, also via `PYJEVSIM_CRC`) for multi-host federations.
+  (`crc="host:port"`, also via `PYJEVSIM_CRC`) for selecting a local or remote
+  CRC address.
 - Packaging/citation: `.zenodo.json` and `CITATION.cff` for an archival
   DOI; Zenodo DOI badge in the README.
 
@@ -77,7 +68,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.1.0] — 2026-06-28
 
 ### Added
-- RTI-agnostic HLA interface so backends other than the test loopback can be
+- Pluggable HLA connector interface so backends other than the test loopback can be
   plugged in:
   - `RTIConnector` template-method base class (`pyjevsim/hla/transport.py`) —
     `_do_send` / `_do_request_time_advance` form the minimum abstract surface;
@@ -104,17 +95,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - `SysExecutor.schedule` (V_TIME/R_TIME) and `SysExecutor.step` (HLA_TIME) now
-  share a single two-phase tick body, `SysExecutor._run_instant`, so all three
-  execution modes deliver identical DEVS semantics.
+  share the two-phase `SysExecutor._run_instant` transition path.
 
 ### Fixed
 - External events on the V_TIME/R_TIME path were delivered by a legacy
   pre-pass (`handle_external_input_event` → `single_output_handling`) that ran
   `ext_trans` *before* imminent models computed `output()` and could never
   produce `con_trans`. They now flow through the shared two-phase tick: a model
-  that is both imminent and externally influenced at one instant correctly
-  fires `con_trans` (TSO/confluent), matching the HLA `step` path. The legacy
-  methods are retained (deprecated) for back-compat; a latent `msg[1]` indexing
+  that is both imminent and externally influenced at one instant invokes
+  `con_trans` (TSO/confluent), matching the HLA `step` path. The legacy methods
+  are retained (deprecated) for backward compatibility; a latent `msg[1]` indexing
   bug in `single_output_handling` is fixed.
 
 ## [2.0.1] — 2026-05-06
@@ -146,8 +136,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   configs and sweeps with CSV output (commit `80fa704`).
 - Cross-engine comparison harness: `benchmark/engines/` with adapters for
   `pyjevsim`, `pypdevs`, `xdevs`, and a `reference` engine, driven by
-  `run_compare.py` and `run_sparse.py`; results recorded in
-  `benchmark/results/{BASELINE,SPARSE,ALIASING}.md` and matching CSVs.
+  `run_compare.py` and `run_sparse.py`; historical summaries recorded in
+  `benchmark/results/{BASELINE,SPARSE,ALIASING}.md`.
 - New tests:
   - `tests/test_confluent.py` — Parallel-DEVS confluent-transition semantics
     for the two-phase tick.
@@ -157,8 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     instead of advancing by a fixed `time_resolution`.
   - `tests/test_track_uncaught.py` — opt-in `track_uncaught` flag routes
     messages on uncoupled ports to `DefaultMessageCatcher`.
-- Documentation: `docs/source/benchmark.rst`, `docs/cascade_scheduling_proposal.md`,
-  `docs/t1_2_scheduler_analysis.md`, `docs/p_plan.md`.
+- Benchmark usage documented in `docs/source/benchmark.rst`.
 
 ### Changed
 - `SysExecutor` rewritten around a two-phase tick (output → confluent/ext/int
@@ -182,22 +171,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - HLA support: `HLA_TIME` execution mode plus `SysExecutor.step()` and
-  `get_next_event_time()` for federate-driven time advancement
-  (S1+S2+S3, S6).
-- Pause/resume API on `SysExecutor` backed by `threading.Condition`
-  (M1+M2+M3).
-- Thread safety for external event insertion and graceful shutdown
-  (M4+M5+M6+M7+S4, S5).
+  `get_next_event_time()` for federate-driven time advancement.
+- Pause/resume API on `SysExecutor` backed by `threading.Condition`.
+- Thread safety for external event insertion and graceful shutdown.
 - PyPI packaging via `pyproject.toml` and `MANIFEST.in`; minimum Python
   raised to 3.10.
 - `exgen.py` example generator; banksim test suite.
 
 ### Changed
-- `ScheduleQueue` switched from `deque` + `sorted()` to `heapq` (P1).
-- `waiting_obj_map` lookup and external input handling optimized
-  (P2+P3).
+- `ScheduleQueue` switched from `deque` + `sorted()` to `heapq`.
+- `waiting_obj_map` lookup and external input handling optimized.
 - `TerminationManager` now performs a graceful shutdown instead of
-  calling `os._exit(0)` (S5).
+  calling `os._exit(0)`.
 - README updated for the new APIs and execution modes.
 
 ### Fixed

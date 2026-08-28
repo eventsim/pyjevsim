@@ -14,7 +14,7 @@ Buffer Model
    :undoc-members:
    :show-inheritance:
 
-Recieve Model
+Receive Model
 -------------
 
 .. automodule:: tests.model_msg_recv

@@ -1,6 +1,6 @@
-"""Pitch pRTI backend tests — guarded; skip when the toolchain is absent.
+"""Optional Pitch pRTI backend tests.
 
-These exercise the *real* PitchTransport against a live Pitch pRTI. They are
+These exercise ``PitchTransport`` against a live Pitch pRTI. They are
 skipped automatically unless the full stack is available:
 
   * JPype importable AND able to start a JVM (needs Java >= 11 for JPype>=1.6);
@@ -19,7 +19,7 @@ One Windows run using CPython 3.14.0, JPype 1.7.1, and the same Pitch/JVM
 combination terminated in native code; CPython 3.11 is therefore recommended
 for reproducing this optional proprietary-toolchain integration test.
 
-Without ``PYJEVSIM_JVM`` the default suite stays hermetic (these cases skip);
+Without ``PYJEVSIM_JVM`` the default suite stays self-contained (these cases skip);
 the protocol-level ping-pong behaviour is also covered deterministically by
 tests/hla/test_pingpong.py against the in-process bus. The PitchTransport
 remains importable regardless (its JPype import is lazy).
@@ -46,8 +46,7 @@ JVM = os.environ.get("PYJEVSIM_JVM")  # explicit Java>=11 jvm.dll (optional)
 
 
 def _jvm_bootable() -> bool:
-    # Keep the default suite hermetic. Live/codec integration is opt-in via an
-    # explicit JVM path, as documented above.
+    # Codec and live integration are enabled only with an explicit JVM path.
     if not JVM:
         return False
     try:
@@ -78,7 +77,7 @@ requires_live = pytest.mark.skipif(
 
 
 def test_pitch_backend_is_registered():
-    """Always runs: the backend self-registers even without JPype."""
+    """Backend registration does not require JPype."""
     from pyjevsim.hla import available_rtis
     assert "pitch" in available_rtis()
 
@@ -118,7 +117,7 @@ def test_encoder_round_trip():
 
 @requires_live
 def test_live_pingpong_join_interaction_object():
-    """End-to-end against a real CRC: join, rally, object sync, resign.
+    """Join, exchange data, and resign against a live CRC.
 
     Two time-managed federates run in their own threads (each is both
     regulating and constrained); the RTI coordinates time-advance grants

@@ -198,6 +198,7 @@ log/
 /test_correctness.py
 /tmp/
 # Internal design / planning notes (not part of the user documentation)
+/reviewer_response.md
 /docs/improvements/
 /docs/cascade_scheduling_proposal.md
 /docs/p_plan.md

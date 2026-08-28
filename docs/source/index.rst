@@ -1,8 +1,3 @@
-.. pyjevsim documentation master file, created by
-   sphinx-quickstart on Fri Sep 20 10:40:52 2024.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 PyJEvSim documentation
 ======================
 
@@ -10,11 +5,26 @@ PyJEvSim is a DEVS (Discrete Event System Specification) modeling and
 simulation environment with built-in journaling. It supports snapshot and
 restore of individual models or the full simulation engine, virtual-time
 and real-time execution, and HLA (IEEE 1516-2010) federate integration
-with pluggable RTI backends. The tagged v2.1.2 release includes Pitch pRTI;
-the current development tree also includes the open-source Portico RTI.
+with pluggable RTI backends. Version 2.2.0 includes adapters for Pitch pRTI
+and the open-source Portico RTI.
 
   - GitHub: `eventsim/pyjevsim <https://github.com/eventsim/pyjevsim>`_
   - PyPI: `pyjevsim <https://pypi.org/project/pyjevsim/>`_
+
+Changes in 2.2
+--------------
+
+- **Portico backend.** The live HLA adapter now supports Portico 2.1.4 in
+  addition to Pitch pRTI.
+- **AT/SIM reference data.** The two-federate AT/SIM example provides two
+  30-tick scenarios, complete 180-row reference trajectories, and offline and
+  optional live-RTI comparison commands.
+- **HLA design and service documentation.** Architecture, logical-time
+  behavior, the implemented IEEE 1516 service subset, related projects, and
+  limitations are documented alongside the code.
+- **Direction checks and failure reporting.** Binding directions are checked at runtime, and
+  the live AT/SIM runner reports missing peer data, worker failures, and
+  verifier timeouts.
 
 What's new in 2.1
 -----------------
@@ -33,8 +43,8 @@ What's new in 2.1
   federates exchanging interactions and synchronizing an object
   attribute, runnable offline or against a live RTI.
 - **Unified DEVS tick.** ``V_TIME``, ``R_TIME`` and ``HLA_TIME`` share a
-  single two-phase tick body, so external events get correct confluent
-  (``con_trans``) semantics on every path.
+  single two-phase tick body. An imminent model with input at the same
+  simulated instant uses ``con_trans`` in each mode.
 
 What's new in 2.0
 -----------------
@@ -62,7 +72,7 @@ ordering at simultaneous-event boundaries does.
 Installing PyJEvSim
 -------------------
 
-From PyPI (recommended):
+From PyPI:
 
 .. code-block:: console
 
@@ -99,3 +109,19 @@ Quick Start Guides
    pyjevsim_quick_start
    snapshot_quick_start
    pyjevsim_hla
+
+Developer and Maintainer Guides
+-------------------------------
+
+The source repository keeps contributor, security, release, and detailed HLA
+guides next to the code they describe:
+
+.. toctree::
+   :maxdepth: 1
+
+   Contributing <https://github.com/eventsim/pyjevsim/blob/main/CONTRIBUTING.md>
+   Security policy <https://github.com/eventsim/pyjevsim/blob/main/SECURITY.md>
+   HLA developer guide <https://github.com/eventsim/pyjevsim/blob/main/docs/hla/instruction.md>
+   RTI backend interface <https://github.com/eventsim/pyjevsim/blob/main/docs/hla/rti_interface.md>
+   HLA validation and reproducibility <https://github.com/eventsim/pyjevsim/blob/main/docs/hla-validation/README.md>
+   Release checklist <https://github.com/eventsim/pyjevsim/blob/main/docs/releasing.md>

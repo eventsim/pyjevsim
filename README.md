@@ -3,7 +3,7 @@
 [![PyPI](https://img.shields.io/pypi/v/pyjevsim.svg)](https://pypi.org/project/pyjevsim/)
 [![Python](https://img.shields.io/pypi/pyversions/pyjevsim.svg)](https://pypi.org/project/pyjevsim/)
 [![Docs](https://readthedocs.org/projects/pyjevsim/badge/?version=latest)](https://pyjevsim.readthedocs.io/en/latest/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://github.com/eventsim/pyjevsim/blob/main/LICENSE)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21002028.svg)](https://doi.org/10.5281/zenodo.21002028)
 
 ## Introduction
@@ -12,11 +12,27 @@ pyjevsim is a DEVS (discrete event system specification) modeling and
 simulation environment with built-in journaling. It supports snapshot
 and restore of individual models or the full simulation engine,
 virtual-time and real-time execution, and HLA (IEEE 1516-2010) federate
-integration with pluggable RTI backends. The tagged v2.1.2 release includes
-Pitch pRTI; the current development tree also includes Portico.
+integration with pluggable RTI backends. Version 2.2.0 includes adapters for
+Pitch pRTI and the open-source Portico RTI.
 Compatible with Python 3.10+.
 
 Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
+
+### Changes in 2.2
+
+- **Portico backend.** The live HLA adapter now supports Portico 2.1.4 in
+  addition to Pitch pRTI. Portico-specific handling covers its
+  `HLAunicodeString` representation and receive-order reflection behavior.
+- **AT/SIM reference data.** The two-federate AT/SIM example includes two
+  30-tick scenarios, complete 180-row reference trajectories, and commands
+  for offline and optional live-RTI comparison.
+- **Documented service scope.** The HLA guide now includes architecture and
+  sequence diagrams, the implemented IEEE 1516 service subset, logical-time
+  behavior, backend extension guidance, related projects, and known
+  limitations.
+- **Direction checks and failure reporting.** Binding directions are checked at
+  runtime, Portico examples use a bundled same-JVM configuration, and live
+  AT/SIM runs report missing peer data or worker failures.
 
 ### What's new in 2.1
 
@@ -29,13 +45,13 @@ Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
   machine are inherited. Ships an in-process bus (`inprocess`) for
   multi-federate testing and a **Pitch pRTI** (IEEE 1516-2010) backend
   (`pitch`, via JPype). Pick one by name with `create_rti(...)`.
-- **HLA ping-pong example** ([`examples/hla_pingpong/`](examples/hla_pingpong/)):
+- **HLA ping-pong example** ([`examples/hla_pingpong/`](https://github.com/eventsim/pyjevsim/tree/main/examples/hla_pingpong)):
   two federates (ping/pong) exchanging interactions and synchronizing an
   object attribute — runnable offline (no Java) or against a live RTI.
   Verified live against Pitch pRTI Free 5.5.2.
 - **Unified DEVS tick.** V_TIME, R_TIME and HLA_TIME now share one
-  two-phase tick body, so external events get correct confluent
-  (`con_trans`) semantics on every execution path.
+  two-phase tick body. An imminent model with input at the same simulated
+  instant uses `con_trans` in each mode.
 
 ### What's new in 2.0
 
@@ -53,11 +69,14 @@ Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
 
 ## Installing
 
-From PyPI (recommended):
+From PyPI:
 
 ```
 pip install pyjevsim
 ```
+
+This installs the latest published release. Use the source checkout below to
+test changes that have not yet been tagged.
 
 From source:
 
@@ -77,14 +96,15 @@ pip install -e .
 the `dev` extra:
 
 ```
-pip install pyjevsim[dev]
+python -m pip install "pyjevsim[dev]"
 ```
 
-The Pitch pRTI backend needs JPype, declared under the `hla-pitch` extra
-(the `loopback` / `inprocess` backends need nothing beyond the core):
+The Java-backed Pitch and Portico adapters need JPype, declared under the
+`hla-java` extra (the older `hla-pitch` name remains as a compatible alias).
+The `loopback` and `inprocess` backends need nothing beyond the core package:
 
 ```
-pip install pyjevsim[hla-pitch]
+python -m pip install "pyjevsim[hla-java]"
 ```
 
 ## Quick Start
@@ -111,10 +131,6 @@ class Gen(BehaviorModel):
         msg = SysMessage(self.get_name(), "out")
         msg.insert("tick")
         md.insert_message(msg)
-    def time_advance(self):
-        return 1
-
-
 class Sink(BehaviorModel):
     def __init__(self, name):
         super().__init__(name)
@@ -126,10 +142,6 @@ class Sink(BehaviorModel):
         print(f"received: {msg.retrieve()}")
     def int_trans(self): pass
     def output(self, md): pass
-    def time_advance(self):
-        return Infinite
-
-
 se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
 gen = Gen("g")
 sink = Sink("s")
@@ -139,12 +151,15 @@ se.coupling_relation(gen, "out", sink, "in")
 se.simulate(5)
 ```
 
+The duration passed to `insert_state()` is the time advance for that state;
+the executor does not call a model-defined `time_advance()` method.
+
 See the [quick-start guide](https://pyjevsim.readthedocs.io/en/latest/pyjevsim_quick_start.html)
 for structural models, snapshots, and HLA stepped execution.
 
 ### Examples
 
-The [`examples/`](examples/) directory contains:
+The [`examples/`](https://github.com/eventsim/pyjevsim/tree/main/examples) directory contains:
 
 - **`banksim/`** — bank queue simulation demonstrating BehaviorModel,
   StructuralModel, and snapshot/restore.
@@ -159,18 +174,15 @@ The [`examples/`](examples/) directory contains:
   federates (surfaceship + torpedo) exchanging positions as HLA object
   attributes. Its sorted, formatted application-state rows exactly reproduce
   a committed single-executor reference for both decoy scenarios; the
-  offline gate needs no Java or proprietary RTI (`verify_equivalence.py`).
+  offline comparison needs no Java or proprietary RTI (`verify_equivalence.py`).
 
 ### Output messages are shared by reference
 
 When a model's output port has multiple downstream subscribers, every
 subscriber receives the **same** `SysMessage` object. pyjevsim does not
-deep-copy outputs during propagation — and neither does any other major
-Python DEVS engine (xdevs.py and PythonPDEVS share references the same
-way; `benchmark/aliasing_test.py` empirically demonstrates this for all
-four engines in the comparison set). Treat received messages as
-immutable; if your model needs to mutate a payload, copy it on the
-receiver side:
+deep-copy outputs during propagation. Treat received messages as immutable;
+if a model needs to change a payload, copy it on the receiver side. The
+comparison in `benchmark/aliasing_test.py` illustrates this behavior.
 
 ```python
 def ext_trans(self, port, msg):
@@ -179,12 +191,12 @@ def ext_trans(self, port, msg):
     ...
 ```
 
-See [`benchmark/results/ALIASING.md`](benchmark/results/ALIASING.md) for
-the full investigation and per-engine source pointers.
+See [`benchmark/results/ALIASING.md`](https://github.com/eventsim/pyjevsim/blob/main/benchmark/results/ALIASING.md) for
+the test scope and usage notes.
 
 ## Benchmarks
 
-The [`benchmark/`](benchmark/) directory contains a DEVStone suite plus
+The [`benchmark/`](https://github.com/eventsim/pyjevsim/tree/main/benchmark) directory contains a DEVStone suite plus
 adapters that run the same workload against other Python DEVS engines so the
 pyjevsim baseline can be tracked over time.
 
@@ -203,8 +215,8 @@ benchmark/
 ├── run_compare.py                # cross-engine comparison runner
 └── results/
     ├── BASELINE.md               # captured baseline numbers
-    ├── baseline.csv
-    └── devstone_sweep.csv
+    ├── baseline.csv               # generated output, gitignored
+    └── devstone_sweep.csv         # generated output, gitignored
 ```
 
 ### pyjevsim-only sweep
@@ -229,7 +241,7 @@ python -m benchmark.run_compare \
 sweeping the inter-event simulated period. Holds the work constant at
 100 events; only the simulated-time gap between events varies. Isolates
 per-tick overhead in V_TIME mode (see
-[`benchmark/results/SPARSE.md`](benchmark/results/SPARSE.md)):
+[`benchmark/results/SPARSE.md`](https://github.com/eventsim/pyjevsim/blob/main/benchmark/results/SPARSE.md)):
 
 ```
 python -m benchmark.run_sparse --output benchmark/results/sparse.csv
@@ -237,40 +249,34 @@ python -m benchmark.run_sparse --output benchmark/results/sparse.csv
 
 ### Output aliasing test
 
-`benchmark/aliasing_test.py` empirically demonstrates that all four
-engines share output value references across multiple subscribers — see
-[`benchmark/results/ALIASING.md`](benchmark/results/ALIASING.md). The
-prevailing convention is "treat received values as immutable; copy on
-the receiver if you need to mutate".
+`benchmark/aliasing_test.py` checks whether multiple subscribers receive the
+same output value object. pyjevsim shares that value by reference. The script
+also contains optional xdevs, PythonPDEVS, and reference-engine adapters;
+details are in
+[`benchmark/results/ALIASING.md`](https://github.com/eventsim/pyjevsim/blob/main/benchmark/results/ALIASING.md).
+Treat a received value as immutable, or copy it before changing it.
 
-Current baseline (best-of-three, no synthetic CPU work) — see
-[`benchmark/results/BASELINE.md`](benchmark/results/BASELINE.md):
-
-| variant | d × w | pyjevsim tr/s | xdevs tr/s | pypdevs tr/s | reference tr/s |
-|---------|-------|---------------|------------|--------------|----------------|
-| LI      | 4 × 4 |  175 k        |  689 k     |  765 k       | 1.68 M         |
-| HI      | 4 × 4 |  233 k        |  546 k     |  888 k       | 2.00 M         |
-| HO      | 4 × 4 |  241 k        |  757 k     |  918 k       | 1.97 M         |
+The [historical cross-engine record](https://github.com/eventsim/pyjevsim/blob/main/benchmark/results/BASELINE.md) contains
+one capture from 2026-05-05 and its limitations. Run the command above to
+measure the current commit and retain its generated CSV with the environment
+details.
 
 Use `--int-cycles N` / `--ext-cycles N` to inject synthetic CPU work per
 transition and shift the measurement toward user-code cost.
 
 ## Debugging Uncaught Output Messages
 
-By default `SysExecutor` drops output messages that hit a port with no
-downstream coupling — the simulator stays on its fast path and the
-events disappear silently. When wiring up a model graph it is often
-useful to know *which* events are leaking; pass `track_uncaught=True`
-and they get routed to the built-in `DefaultMessageCatcher` (accessible
-as `se.dmc`) so you can observe them:
+By default, `SysExecutor` drops a message emitted on a port with no downstream
+coupling. Pass `track_uncaught=True` to route those messages to the built-in
+`DefaultMessageCatcher`, available as `se.dmc`:
 
 ```python
 se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, track_uncaught=True)
 ```
 
-The flag costs ~10-15% throughput on dense graphs with many dangling
-outputs (every uncoupled emit pays for one `ext_trans` + reschedule on
-the catcher), so leave it off in production runs.
+Each captured message invokes the catcher's `ext_trans` and reschedules it, so
+this diagnostic mode adds work for every uncoupled output. Enable it only when
+that information is needed.
 
 ## Execution Modes
 
@@ -291,11 +297,13 @@ se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
 
 ## Multi-threading Support
 
-SysExecutor provides thread-safe APIs for multi-threaded simulation environments where external threads inject events while the simulation runs.
+`SysExecutor` protects its pause state and external-event queue with a
+condition lock. Model transitions still run on the simulation thread.
 
 ### Pause / Resume
 
-Pause the simulation to allow external threads to accumulate events, then resume.
+`pause_sim()` stops the simulation loop; external threads may continue to add
+events. `resume_sim()` wakes the paused loop.
 
 ```python
 se.pause_sim()    # Pauses the simulation loop
@@ -305,7 +313,8 @@ se.resume_sim()   # Resumes the simulation loop
 
 ### External Event Injection
 
-Insert events from external threads into the simulation. Thread-safe via internal synchronization.
+`insert_external_event()` adds an event to the protected input queue. The
+scheduled time is relative to the executor's current `global_time`.
 
 ```python
 se.insert_external_event("port_name", message, scheduled_time=0)
@@ -313,7 +322,9 @@ se.insert_external_event("port_name", message, scheduled_time=0)
 
 ### Output Event Callback
 
-Register a callback to be notified when output events are generated, avoiding polling.
+`set_output_event_callback()` registers a no-argument callback that runs when
+an external output event is queued. `handle_external_output_event()` returns
+a copied snapshot and clears the queue under the same lock.
 
 ```python
 se.set_output_event_callback(lambda: print("output ready"))
@@ -327,9 +338,9 @@ pyjevsim integrates with HLA (IEEE 1516-2010) at two levels: a high-level
 models as federates, and the low-level `HLA_TIME` stepping hooks for
 custom federate ambassadors.
 
-The repository's [HLA validation and reproducibility guide](docs/hla-validation/README.md)
+The repository's [HLA validation and reproducibility guide](https://github.com/eventsim/pyjevsim/blob/main/docs/hla-validation/README.md)
 collects the architecture diagrams, exact equivalence criterion, full expected
-traces, RTI/service coverage, limitations, and related-work boundary.
+traces, RTI/service coverage, limitations, and related projects.
 
 ### Pluggable RTI backends (`pyjevsim.hla`)
 
@@ -373,22 +384,22 @@ Built-in backends:
 |------|-----|------------|
 | `loopback` | self-mirror, single-federate unit tests | none |
 | `inprocess` | multi-federate in-process bus (tests/demos) | none |
-| `pitch` | **Pitch pRTI** IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 11 + a running CRC |
-| `portico` | **Portico** (open source) IEEE 1516-2010, live federation | `pip install pyjevsim[hla-pitch]` + Java ≥ 11 + `portico.jar` (no CRC) |
+| `pitch` | **Pitch pRTI** IEEE 1516-2010, live federation | `python -m pip install "pyjevsim[hla-java]"` + Java ≥ 11 + a running CRC |
+| `portico` | **Portico** (open source) IEEE 1516-2010, live federation | `python -m pip install "pyjevsim[hla-java]"` + Java ≥ 11 + `portico.jar` (no CRC) |
 
 Both live backends program against the standard `hla.rti1516e` Java API; the
 `portico` backend subclasses the `pitch` implementation and adapts its
 `HLAunicodeString` codec and receive-order delivery of time-stamped
 reflections. See
-[`pyjevsim/hla/backends/portico.py`](pyjevsim/hla/backends/portico.py).
+[`pyjevsim/hla/backends/portico.py`](https://github.com/eventsim/pyjevsim/blob/main/pyjevsim/hla/backends/portico.py).
 
 **Adding your own RTI** (CERTI, OpenRTI, MÄK, …): subclass
 `RTIConnector` and implement `_do_send` + `_do_request_time_advance`
 (the minimal abstract surface). A live HLA adapter also overrides join,
 declaration, cleanup, and invokes `_emit` from its receive callback. Then call
 `register_rti("name", factory)`.
-See [`docs/hla/rti_interface.md`](docs/hla/rti_interface.md) for the full
-guide and [`examples/hla_pingpong/`](examples/hla_pingpong/) for a
+See [`docs/hla/rti_interface.md`](https://github.com/eventsim/pyjevsim/blob/main/docs/hla/rti_interface.md) for the full
+guide and [`examples/hla_pingpong/`](https://github.com/eventsim/pyjevsim/tree/main/examples/hla_pingpong) for a
 working two-federate example.
 
 ### Low-level stepping (`HLA_TIME` mode)
@@ -412,17 +423,16 @@ while not se.is_terminated():
 
 ### `step(granted_time)`
 
-Runs one RTI-granted simulation step using the same Parallel-DEVS
-four-phase tick that the standalone V_TIME path uses, so HLA federates
-get correct `δ_int / δ_ext / δ_con` semantics:
+Runs one RTI-granted simulation step using the same two-phase Parallel-DEVS
+tick as the standalone V_TIME path:
 
 - Every event whose `req_time <= granted_time` fires inside the call.
 - Multiple cascade rounds at the same simulated instant complete in one
   `step()` (sigma=0 chains do not require multiple grants).
-- During each round, `global_time` reflects the actual event time so
-  models observe correct simulated time inside their transitions.
-- Per IEEE 1516-2010, `global_time` lands at `granted_time` when the
-  call returns, even if the last processed event was earlier.
+- During each round, `global_time` is the event time read by model
+  transitions.
+- After processing, pyjevsim sets `global_time` to `granted_time`, even if the
+  last processed event was earlier.
 - Returns the `output_event_queue` contents drained during this step
   (a `deque` of `(time, message)` tuples) so the federate can republish
   them as RTI interactions.
@@ -451,6 +461,14 @@ se.is_terminated()         # Returns True if terminated
 ```
 
 Signal handlers (SIGTERM, SIGINT) automatically invoke `terminate_simulation()` on all registered SysExecutor instances.
+
+## Support and contributing
+
+Use [GitHub Issues](https://github.com/eventsim/pyjevsim/issues) for bug
+reports, feature requests, and usage questions. See
+[CONTRIBUTING.md](https://github.com/eventsim/pyjevsim/blob/main/CONTRIBUTING.md) for the development setup, test commands,
+and pull-request guidelines. Security reports should follow
+[SECURITY.md](https://github.com/eventsim/pyjevsim/blob/main/SECURITY.md).
 
 ## License   
 Author: Changbeom Choi (@cbchoi)   

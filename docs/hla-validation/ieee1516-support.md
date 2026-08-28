@@ -7,7 +7,7 @@ or a complete implementation of the IEEE 1516 service groups.
 The table describes the concrete Pitch/Portico adapter.  `InProcessRTI` and
 `LoopbackTransport` are deterministic test backends, not IEEE RTIs.
 
-| Service area | Status | Implementation and test boundary |
+| Service area | Status | Implementation and tests |
 |---|---|---|
 | Connect/disconnect | Implemented | Java `hla.rti1516e` ambassador connection; close is idempotent and suppresses disconnect failures |
 | Create federation | Implemented | `FederationExecutionAlreadyExists` is accepted; other creation/FOM exceptions propagate |
@@ -26,7 +26,7 @@ The table describes the concrete Pitch/Portico adapter.  `InProcessRTI` and
 | Message retraction | Not implemented | no connector API |
 | Federation save/restore | Not implemented | use an RTI facility directly; HLA executor snapshots are unsupported |
 | Management Object Model services | Not implemented | no connector API |
-| Formal conformance test suite | Not performed | validation covers the listed interoperability paths only |
+| Formal conformance test suite | Not performed | validation covers the listed service paths only |
 
 ## Binding directions
 
@@ -44,12 +44,11 @@ raises `ValueError`; an `inout` binding is accepted by both operations.
 
 Lifecycle order is checked separately: `publish` and `subscribe` before
 `join` raise `RuntimeError`, a duplicate `join` raises `RuntimeError`, `resign`
-is harmless when not joined, and `close` is idempotent and auto-resigns.
+is a no-op when not joined, and `close` is idempotent and auto-resigns.
 
-The direction and lifecycle behavior is covered by
-[`tests/hla/test_m0_foundation.py`](../../tests/hla/test_m0_foundation.py),
-[`tests/hla/test_m1_data_path.py`](../../tests/hla/test_m1_data_path.py), and
-[`tests/hla/test_rti_interface.py`](../../tests/hla/test_rti_interface.py).
+The HLA unit tests cover binding construction, publish/subscribe direction,
+data routing, and connector lifecycle behavior under
+[`tests/hla/`](../../tests/hla/).
 
 ## Error propagation policy
 
@@ -67,5 +66,5 @@ The direction and lifecycle behavior is covered by
   live equivalence verifier treats a missing trace as an error (status 2).
 
 Capability flags are descriptive metadata, not automatic service negotiation.
-The matrix and backend documentation are authoritative when a finer distinction
-is needed.
+Check this matrix together with the selected backend's documentation when a
+service detail affects an application.

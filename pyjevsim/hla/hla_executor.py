@@ -1,14 +1,8 @@
-"""HLAExecutor — decorates BehaviorExecutor with RTI bridging.
+"""Connect a ``BehaviorExecutor`` to an HLA transport.
 
-Spec: docs/hla/specification.md §3.
-
-The wrapped BehaviorModel stays pure DEVS. HLAExecutor:
-- intercepts output() messages on bound out/inout ports and ships them
-  to the transport;
-- registers namespaced SE-side ports + couplings so inbound RTI events
-  delivered via parent.insert_external_event reach the model;
-- subscribes with the shared _HLARouter so the transport's single
-  callback fans out correctly to multiple executors.
+Bound output ports send through the transport. Received events enter the
+parent executor through generated input ports and couplings. See
+``docs/hla/specification.md`` section 3.
 """
 
 from __future__ import annotations
@@ -27,7 +21,7 @@ class HLAExecutor(BehaviorExecutor):
         self._bindings = dict(bindings)
         self._router = router
 
-        # Validate every binding's port name against the model.
+        # Check binding directions against the model's declared ports.
         in_ports = set(behavior_model.retrieve_input_ports())
         out_ports = set(behavior_model.retrieve_output_ports())
         for port, b in self._bindings.items():
@@ -43,15 +37,9 @@ class HLAExecutor(BehaviorExecutor):
                     f"on model {behavior_model.get_name()!r}"
                 )
 
-        # §3.3 construction-time wiring: namespaced SE port + coupling
-        # + router subscription, for each in/inout binding.
-        #
-        # `coupling_relation` looks dst_obj up in `product_port_map`,
-        # which `register_entity` populates AFTER `create_executor`
-        # returns. Pre-populate it here so wiring works whether the
-        # executor was built via the factory or directly in a test.
-        # `register_entity` will overwrite the entry with the same
-        # value moments later — harmless.
+        # coupling_relation resolves the destination through product_port_map.
+        # Factory construction happens before register_entity fills this map,
+        # so install the entry before creating inbound couplings.
         parent.product_port_map[behavior_model] = self
 
         self._inbound_routes: dict[tuple[str, str], tuple[str, str]] = {}
@@ -91,10 +79,8 @@ class HLAExecutor(BehaviorExecutor):
         now = self.parent.global_time
         ts = timestamp if timestamp is not None else now
         delay = max(0.0, ts - now)
-        # Payload is the list returned by SysMessage.retrieve() on the
-        # sending side (§2.1). insert_external_event wraps its `_msg`
-        # arg as a single SysMessage item, so we inject one item at a
-        # time to preserve the original message shape on the receiver.
+        # insert_external_event wraps one value in a SysMessage. Insert each
+        # payload item separately to preserve the sender's message shape.
         if not payload:
             return
         for item in payload:

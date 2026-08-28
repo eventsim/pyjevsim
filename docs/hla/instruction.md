@@ -1,13 +1,14 @@
-# pyjevsim HLA Subsystem — Developer Guide
+# HLA developer guide
 
-This guide is for two audiences:
+The guide has two paths:
+
 1. **pyjevsim users** who want to turn an existing DEVS model into an
    HLA federate.
 2. **Transport authors** who want to plug pyjevsim into a specific RTI
-   binding (gorti gRPC, kdx-rti ZMQ, native Pitch HLA, ...).
+   binding.
 
-If you want to *implement* the subsystem itself, read
-`docs/hla/specification.md` instead.
+The [HLA design reference](specification.md) describes the runtime data path,
+and the [RTI backend interface](rti_interface.md) covers adapter development.
 
 ## 1. Mental model
 
@@ -19,7 +20,8 @@ Your code:    BehaviorModel  →  output() emits SysMessage on a port
                          Transport.send(...)     msg_deliver  (local couplings)
 ```
 
-The model class never imports anything HLA. Same model runs in:
+The model class does not need to import the HLA package. A compatible model can
+be used in:
 - pure DEVS unit tests (no transport),
 - pyjevsim simulations with V_TIME or R_TIME,
 - HLA federations under HLA_TIME.
@@ -76,16 +78,13 @@ an HLA endpoint with this FOM identifier."
 ### Step 3 — pick a transport
 
 ```python
-# In tests / for a self-contained two-federate demo:
+# For a single-connector local test:
 from pyjevsim.hla import LoopbackTransport
 transport = LoopbackTransport()
 
-# In production:
-# from kdx_rti.transport import KdxRtiTransport
-# transport = KdxRtiTransport(endpoints=...)
-#
-# from gorti.transport import GortiTransport
-# transport = GortiTransport(host=..., port=...)
+# For multiple local federates, create one InProcessFederation and one
+# InProcessRTI per federate. For a live run, select "pitch" or "portico"
+# with create_rti(...); see examples/hla_pingpong.
 ```
 
 ### Step 4 — build the SysExecutor with the HLA factory
@@ -106,7 +105,8 @@ sys_exec.exec_factory = HLAExecutorFactory(
 sys_exec.register_entity(Chatter("alice"))
 ```
 
-That is the entire HLA-specific bring-up. The model class did not change.
+The model class remains unchanged; the executor factory, bindings, transport,
+and federation lifecycle provide the HLA configuration.
 
 ### Step 5 — drive the federate
 
@@ -158,13 +158,15 @@ therefore leave it unset.
 
 - The model's `output / int_trans / ext_trans / con_trans` are called
   on the `SysExecutor`'s simulation thread, exclusively.
-- `Transport.on_receive(cb)` is invoked on a transport-owned thread.
-  pyjevsim ships the event into the simulation via
-  `SysExecutor.insert_external_event`, which is already lock-protected
-  (`pyjevsim/system_executor.py:833`).
-- You **do not** need to add locks in your model.
+- `Transport.on_receive(cb)` registers the receiver. A live backend may invoke
+  that receiver from a backend-owned thread. pyjevsim moves the event into the
+  simulation through the lock-protected `SysExecutor.insert_external_event`
+  method.
+- Model transitions still run on the simulation thread. Do not access model
+  state directly from a custom transport callback; route inbound data through
+  `_emit` and the executor.
 
-## 5. Important rules (the things that bite people)
+## 5. Common pitfalls
 
 1. **Bound `out` ports are RTI-only.** A `SysMessage` emitted on a bound
    `out` port goes to the transport and is **not** also delivered through
@@ -183,56 +185,30 @@ therefore leave it unset.
    interval: Pitch uses its configured lookahead; Portico uses one internal
    RTI sub-step.
 
-## 6. Implementing a `Transport`
+## 6. Implementing a backend
 
 ```python
-from pyjevsim.hla import Transport, HLAInteraction, HLAAttribute
+from pyjevsim.hla import RTIConnector
 
-class MyTransport:
-    def __init__(self):
-        self._cb = None
-
-    def send(self, binding, payload):
-        # Translate (binding, payload) to your wire format and ship it.
-        # binding.kind is "interaction" or "attribute".
-        # binding.fom_id is the FOM-side identifier.
+class MyTransport(RTIConnector):
+    def _do_send(self, binding, wire, timestamp):
+        # Translate the encoded value to the RTI API.
         ...
 
-    def on_receive(self, callback):
-        self._cb = callback
-
-    def request_time_advance(self, target):
-        # Block until your RTI grants. Return the granted time.
+    def _do_request_time_advance(self, target):
+        # Wait for the RTI grant and return its logical time.
         ...
 
-    def close(self):
-        ...
-
-    # Internal: when a message arrives from the RTI, do:
-    #     self._cb(kind, fom_id, payload, timestamp)
+    # A receive callback forwards data with:
+    # self._emit(kind, fom_id, wire, timestamp)
 ```
 
-The four methods above are the entire contract. Anything else (object
-instance handles, region descriptors, save/restore) is your transport's
-internal concern.
+This is the minimum surface for local and test backends. A live adapter also
+implements the lifecycle and declaration hooks it needs, owns object and class
+handles, and calls `_emit` from its receive callback. See
+[RTI backend interface](rti_interface.md) for the complete contract.
 
-## 7. Migrating from kdx-rti's `HLAAdapter`
-
-If you have a federate built on `kdx_rti.adapter.HLAAdapter`:
-
-| Old (`HLAAdapter`)                                | New (`HLAExecutor`)                            |
-|---------------------------------------------------|------------------------------------------------|
-| User model couples to ~30 lifecycle ports         | Lifecycle moves to `Federate.{join,publish,...}` |
-| User model couples to `reflect / interaction`     | Bindings on the receiving model's input ports  |
-| User model emits to `updateAttributeValues`       | Bindings on the sending model's output ports   |
-| `HLAAdapter` runs `Idle / Draining / Ticking`     | Gone — `Federate.run_until` drives `step()`    |
-| `_kdx_rti_wake` private port                      | Gone — `HLAExecutor` calls `insert_external_event` directly |
-| ZMQ I/O configured on adapter                     | Constructed and passed to `HLAExecutorFactory` |
-
-The `HLAAdapter` becomes a `Transport` implementation: keep its three
-ZMQ sockets, drop everything model-related.
-
-## 8. Where to look in the code
+## 7. Where to look in the code
 
 | Concept            | File                                |
 |--------------------|-------------------------------------|
@@ -241,5 +217,5 @@ ZMQ sockets, drop everything model-related.
 | Output interception| `pyjevsim/hla/hla_executor.py`      |
 | Factory            | `pyjevsim/hla/factory.py`           |
 | Lifecycle + loop   | `pyjevsim/hla/federate.py`          |
-| Time grant tick    | `pyjevsim/system_executor.py:684`  (`step`) |
-| External events    | `pyjevsim/system_executor.py:820` (`insert_external_event`) |
+| Time grant tick    | `pyjevsim/system_executor.py` (`step`) |
+| External events    | `pyjevsim/system_executor.py` (`insert_external_event`) |

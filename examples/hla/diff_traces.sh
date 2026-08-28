@@ -3,8 +3,7 @@
 #
 # Run chat_pitch/run_demo.sh and chat_gorti/run_demo.sh first. Each
 # script writes per-federate traces to /tmp/hla-traces/. This script
-# diffs them and exits 0 on identical traces (gorti conformant with
-# Pitch for the chat-federate scenario), non-zero otherwise.
+# compares them and exits 0 when both per-federate logs are identical.
 #
 # Usage:
 #     ./examples/hla/diff_traces.sh
@@ -40,17 +39,17 @@ rc=0
 for who in alice bob; do
     echo "=== ${who}: pitch vs gorti ==="
     if diff "${DIFF_FLAGS[@]}" "${DIR}/${who}.pitch.trace" "${DIR}/${who}.gorti.trace"; then
-        echo "  IDENTICAL — gorti matches Pitch for ${who}"
+        echo "  IDENTICAL"
     else
-        echo "  DIVERGENT — see diff above"
+        echo "  DIFFERENT — see diff above"
         rc=1
     fi
     echo
 done
 
 if [[ "${rc}" -eq 0 ]]; then
-    echo "PASS: gorti traces match Pitch traces for both federates."
+    echo "The saved Pitch and gorti traces are identical for both federates."
 else
-    echo "FAIL: gorti diverges from Pitch on at least one federate."
+    echo "The saved Pitch and gorti traces differ for at least one federate."
 fi
 exit "${rc}"

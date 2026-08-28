@@ -1,10 +1,6 @@
-"""M0 — Foundation: bindings dataclasses + Transport Protocol + LoopbackTransport.
+"""Binding dataclasses, the transport protocol, and loopback behavior.
 
-Spec section: docs/hla/specification.md §1, §2.
-Acceptance IDs: M0.1 .. M0.8.
-
-The whole file skips until ``pyjevsim.hla`` is importable. Once M0 is
-implemented the imports succeed and these tests run.
+See ``docs/hla/specification.md`` sections 1 and 2.
 """
 
 from __future__ import annotations
@@ -146,8 +142,7 @@ class TestLoopbackTransport:
 # --------------------------------------------------------------------- router
 
 
-# Router tests live in this file because the router is part of M0
-# (specification.md §2.3, task T0.5). They depend on LoopbackTransport.
+# Router callback tests use LoopbackTransport; see specification.md section 2.
 
 pytest.importorskip("pyjevsim.hla.transport", reason="router lives here")
 from pyjevsim.hla.transport import _HLARouter   # noqa: E402

@@ -74,7 +74,7 @@ class BehaviorModel(CoreModel):
 
     def set_global_time(self, gtime):
         """
-        Set gloabl time
+        Set global time
         
         Args:
             gtime (float): Global time

@@ -1,55 +1,39 @@
-# pyjevsim HLA Subsystem — Specification
+# HLA design reference
 
-This document is the **contract**. The test suite encodes it. Implementations
-must satisfy it. Where a test contradicts this document, the document is
-authoritative — fix the test, or fix the spec, but do not let them drift.
+The pyjevsim HLA path separates model-port bindings, the executor bridge,
+codecs, and the selected RTI connector. Transport adapters follow the
+behavior described below. For practical setup, see the
+[developer guide](instruction.md). For the backend extension API, see
+[RTI backend interface](rti_interface.md).
 
-## 1. Bindings (M0)
+## 1. Bindings
 
-### 1.1 `HLAInteraction`
-
-```python
-@dataclass(frozen=True)
-class HLAInteraction:
-    fom_id: str                                     # e.g. "Communication.ChatMsg"
-    direction: Literal["in", "out", "inout"] = "out"
-    kind: str = field(default="interaction", init=False)
-```
-
-- `fom_id` is opaque to pyjevsim — only the `Transport` interprets it.
-- `direction="in"` means inbound only (subscribe). `"out"` means outbound
-  only (publish). `"inout"` does both.
-- `publish` rejects an inbound-only binding and `subscribe` rejects an
-  outbound-only binding with `ValueError`; `"inout"` is valid for both.
-
-### 1.2 `HLAAttribute`
+`HLAInteraction` and `HLAAttribute` associate a named model port with a
+Federation Object Model (FOM) identifier.
 
 ```python
-@dataclass(frozen=True)
-class HLAAttribute:
-    fom_id: str                                     # e.g. "Vehicle.position"
-    direction: Literal["in", "out", "inout"] = "out"
-    kind: str = field(default="attribute", init=False)
-    object_class: str | None = None
+HLAInteraction(fom_id: str, direction: Literal["in", "out", "inout"] = "out")
+HLAAttribute(
+    fom_id: str,
+    direction: Literal["in", "out", "inout"] = "out",
+    object_class: str | None = None,
+)
 ```
 
-- `object_class` is optional transport metadata. A custom transport may use it
-  when registering an outbound instance; the built-in live adapters resolve
-  the object class from their FOM map. It may be `None` for inbound reflects.
+- `in` bindings receive subscribed data.
+- `out` bindings publish model output.
+- `inout` bindings support both paths.
+- Any other direction raises `ValueError` during construction.
+- `kind` is fixed by the binding class as `interaction` or `attribute`.
+- `object_class` is optional metadata for custom transports. The built-in
+  live adapters resolve object classes from their FOM maps.
 
-### 1.3 Both classes
+Bindings are immutable and may be used as dictionary keys.
 
-- `frozen=True` — bindings are hashable and used as dict keys. Required.
-- `eq=True` (default) — bindings with identical fields compare equal.
-- `kind` is not accepted as a constructor argument; each binding class fixes
-  its own wire kind.
-- `direction` accepts exactly `"in"`, `"out"`, or `"inout"`; construction
-  with any other value raises `ValueError` before the binding reaches a
-  transport or executor.
+## 2. Transport and connector
 
-## 2. Transport (M0)
-
-### 2.1 Protocol
+The structural `Transport` protocol contains the data, callback, time, and
+cleanup operations used by the executor:
 
 ```python
 class Transport(Protocol):
@@ -59,312 +43,180 @@ class Transport(Protocol):
     def close(self) -> None: ...
 ```
 
-- `send(binding, payload)` is called by `HLAExecutor.output`. Synchronous.
-  `payload` is **always** the result of `SysMessage.retrieve()` — a list
-  of items the model `insert()`-ed, never a single dict. Errors raise;
-  caller decides how to surface.
-- `on_receive(cb)` registers a callback `cb(kind, fom_id, payload, timestamp)`
-  invoked whenever the transport delivers an inbound event. May be called
-  from any thread. **Single-callback contract**: re-registering replaces.
-  Per-executor dispatch is the responsibility of `_HLARouter` (§2.3),
-  not of the transport.
-- `request_time_advance(target)` blocks until the RTI grants. Returns the
-  granted logical time, which may be ≤ target. Only `Federate` calls it.
-- `close()` releases resources. Idempotent.
-
-### 2.2 `LoopbackTransport` (M0, test-only)
-
-In-process transport that delivers every `send(binding, payload)` to its
-own `on_receive` callback after rewriting `direction`:
-- A binding with `direction="out"` is mirrored to a binding with the same
-  `fom_id` and `direction="in"`. The `payload` (list) is forwarded as-is.
-- A binding with `direction="in"` passed to `send` is dropped (loopback
-  only mirrors out→in).
-- Two `LoopbackTransport` instances may be cross-wired so federate A's
-  outputs become federate B's inputs.
-
-`request_time_advance(target)` returns `target` immediately (no flow
-control, no lookahead enforcement). `close()` is a no-op.
-
-### 2.3 `_HLARouter` (M0, internal)
-
-The router is the *single* subscriber on a `Transport`. It demultiplexes
-inbound events to the right `HLAExecutor` based on `(kind, fom_id)`.
+New backends should subclass `RTIConnector`. It adds lifecycle methods,
+direction checks, codec dispatch, a single inbound callback, and idempotent
+cleanup. A minimal in-memory backend implements:
 
 ```python
-class _HLARouter:
-    def __init__(self, transport: Transport):
-        self._transport = transport
-        self._subs: dict[tuple[str, str], list[HLAExecutor]] = {}
-        transport.on_receive(self._dispatch)
-
-    def subscribe(self, kind: str, fom_id: str, executor) -> None: ...
-    def unsubscribe(self, kind: str, fom_id: str, executor) -> None: ...
-    def _dispatch(self, kind, fom_id, payload, timestamp) -> None:
-        for ex in self._subs.get((kind, fom_id), ()):
-            ex._on_rti_event(kind, fom_id, payload, timestamp)
+def _do_send(self, binding, wire, timestamp) -> None: ...
+def _do_request_time_advance(self, target: float) -> float: ...
 ```
 
-- One router per transport. The factory (M2) constructs it.
-- Multiple executors may subscribe to the same `(kind, fom_id)`; all
-  receive the event.
-- `_dispatch` is called from the transport's RX thread; subscribers
-  must be safe to invoke from there. `HLAExecutor._on_rti_event` is
-  safe because it only calls `parent.insert_external_event`, which is
-  lock-protected (`system_executor.py:833`).
+A live backend also implements the applicable join, declaration, resign, and
+disconnect hooks, and calls `_emit(kind, fom_id, wire, timestamp)` from its
+receive callback.
 
-## 3. `HLAExecutor` (M1)
+`send()` accepts only `out` and `inout` bindings. Directly passing an `in`
+binding to `send()` produces no outbound message. `publish()` and
+`subscribe()` require a joined connector and reject incompatible directions.
 
-### 3.1 Class
+### 2.1 Payload and codec
 
-```python
-class HLAExecutor(BehaviorExecutor):
-    def __init__(self, itime, dtime, ename, behavior_model, parent,
-                 transport, bindings, router): ...
+On the outbound path, the payload is the list returned by
+`SysMessage.retrieve()`. The connector encodes it before calling `_do_send`.
+On the inbound path, `_emit` decodes the backend value and calls the registered
+receiver with:
+
+```text
+(kind, fom_id, payload, timestamp)
 ```
 
-- Inherits from `BehaviorExecutor`. Overrides only `output` and
-  `__init__`.
-- `bindings: dict[str, HLAInteraction | HLAAttribute]` keyed by port name.
-- `parent` is the owning `SysExecutor` (per pyjevsim's existing
-  `Executor` contract — `register_entity` passes `self`). Used directly;
-  no separate `sys_executor` arg.
-- `router` is the shared `_HLARouter` (§2.3); the executor calls
-  `router.subscribe(...)` for every in/inout binding during construction.
+`IdentityCodec` passes Python objects through for local backends. Pitch and
+Portico map supported values to HLA datatypes. Their current scalar support is
+listed in the [service matrix](../hla-validation/ieee1516-support.md).
 
-### 3.2 Output interception (the central rule)
+### 2.2 Inbound routing
 
-When `SysExecutor` calls `executor.output(msg_deliver)`:
+`_HLARouter` is the connector's single callback target. It routes an inbound
+event to every `HLAExecutor` subscribed to the matching `(kind, fom_id)` pair.
+One `HLAExecutorFactory` owns one router for its connector.
 
-1. Run the wrapped model's `output(inner)` against a **private**
-   `MessageDeliverer`.
-2. For each `SysMessage` in `inner`:
-   - If its destination port has a binding with `direction in {"out","inout"}`,
-     call `transport.send(binding, sys_msg.retrieve())` and **drop** the
-     message from the outer bag.
-   - Otherwise, forward the message to the outer `msg_deliver` (normal
-     local coupling path).
+### 2.3 Local backends
 
-Bound `out` ports are **exclusively** RTI endpoints — they do not also
-fan out via `port_map`. Documented; tested.
+`LoopbackTransport` reflects outbound data to its own callback and returns
+requested time grants unchanged. `InProcessRTI` broadcasts synchronously to
+other connectors in the same in-process federation and also returns requested
+grants unchanged. These backends do not coordinate federation-wide logical
+time and are intended for tests and local examples.
 
-### 3.3 Construction-time wiring
+## 3. HLAExecutor
 
-For every binding with `direction in {"in", "inout"}`, the constructor
-does four things:
+`HLAExecutor` wraps a `BehaviorModel` without adding HLA calls to the model
+class. Its `bindings` dictionary maps model port names to binding objects.
 
-1. Compute a **namespaced SE-side port name** to avoid collisions
-   between models that share a model-side port name:
+During construction it checks that:
 
-   ```python
-   sys_port = f"_hla_{behavior_model.get_obj_id()}__{model_port}"
-   ```
+- `in` and `inout` bindings refer to declared input ports; and
+- `out` and `inout` bindings refer to declared output ports.
 
-2. Register the SE-side port on `parent`:
+An unknown port raises `ValueError`.
 
-   ```python
-   if sys_port not in parent.retrieve_input_ports():
-       parent.insert_input_port(sys_port)
-   ```
+### 3.1 Outbound data
 
-3. Add a coupling so events injected on the SE-side port reach the
-   model:
+For each message produced by the model:
 
-   ```python
-   parent.coupling_relation(None, sys_port, behavior_model, model_port)
-   ```
+1. If the destination port has an `out` or `inout` binding,
+   `HLAExecutor` sends the retrieved payload through the connector.
+2. Otherwise, it passes the message to the normal local coupling path.
 
-4. Build the inbound route table and subscribe via the router:
+A bound outbound port is RTI-only. Use a separate output port when the same
+logical value must also be delivered through a local coupling.
 
-   ```python
-   self._inbound_routes[(binding.kind, binding.fom_id)] = (sys_port, model_port)
-   router.subscribe(binding.kind, binding.fom_id, self)
-   ```
+### 3.2 Inbound data
 
-Without all four steps, `insert_external_event` (`system_executor.py:832`)
-silently drops the event with a print — the port lookup against
-`external_input_ports` fails. Tested by M1.7 end-to-end.
+For each `in` or `inout` binding, `HLAExecutor` creates a namespaced input on
+the owning `SysExecutor`, couples it to the model port, and subscribes through
+`_HLARouter`.
 
-### 3.4 Inbound injection
+An inbound timestamp is converted to a delay relative to the current
+simulation time. A timestamp in the past is clamped to the current time. Each
+payload item is then inserted through `SysExecutor.insert_external_event`,
+which uses the normal external-event and confluent-transition path.
 
-When the router invokes the executor's callback:
+## 4. HLAExecutorFactory
+
+Users install `HLAExecutorFactory` on a `SysExecutor` before registering
+models:
 
 ```python
-def _on_rti_event(self, kind, fom_id, payload, timestamp):
-    route = self._inbound_routes.get((kind, fom_id))
-    if route is None:
-        return                                          # not subscribed
-    sys_port, _model_port = route
-    now = self.parent.global_time
-    delay = max(0.0, (timestamp if timestamp is not None else now) - now)
-    self.parent.insert_external_event(sys_port, payload, scheduled_time=delay)
-```
-
-- `insert_external_event` is already thread-safe (`system_executor.py:833`
-  takes `self.condition`). No new locking required in `HLAExecutor`.
-- `delay` clamps to `[0, ∞)` — events stamped in the past land at the
-  current global time.
-
-### 3.5 Pass-through methods
-
-`ext_trans`, `int_trans`, `con_trans`, `time_advance`, `set_req_time`,
-`get_req_time` are **not overridden**. The grant ceiling is enforced by
-`SysExecutor.step` itself.
-
-### 3.6 Errors
-
-- Constructor with `bindings={}` is legal (degenerate; behaves like a
-  plain `BehaviorExecutor`).
-- A binding referencing a port not declared on the model raises
-  `ValueError` at construction time.
-- Transport `send` failures propagate to the caller of `output()`.
-  `HLAExecutor` does not retry. Document for transport authors.
-
-## 4. `HLAExecutorFactory` (M2)
-
-### 4.1 Class
-
-```python
-class HLAExecutorFactory(ExecutorFactory):
-    def __init__(self, transport, bindings_by_model: dict[str, dict[str, Binding]]): ...
-    def create_behavior_executor(self, _, ins_t, des_t, en_name, model, parent): ...
-```
-
-- `bindings_by_model[model_name]` lists bindings for that model. Models
-  not in the dict get a plain `BehaviorExecutor`.
-- `parent` is the `SysExecutor`. Stored on the produced `HLAExecutor`.
-
-### 4.2 Wiring
-
-Users opt in by replacing the factory **after** `SysExecutor`
-construction:
-
-```python
-sys_exec = SysExecutor(time_resolution=1, ex_mode=ExecutionType.HLA_TIME)
+sys_exec = SysExecutor(1, ex_mode=ExecutionType.HLA_TIME)
 sys_exec.exec_factory = HLAExecutorFactory(transport, bindings_by_model)
 ```
 
-This keeps the core `SysExecutor` API unchanged. (M2 makes one tiny
-ergonomic addition — see §4.3 — but never breaks the constructor.)
+`bindings_by_model` is keyed by model name. A model with a non-empty entry gets
+an `HLAExecutor`; other models use the ordinary `BehaviorExecutor`.
 
-### 4.3 Optional convenience: `set_executor_factory`
+## 5. Federate lifecycle and grant loop
 
-For discoverability, M2 may add `SysExecutor.set_executor_factory(factory)`
-that simply assigns `self.exec_factory`. Optional; tests do not require it.
-
-## 5. `Federate` runtime (M3)
-
-### 5.1 Class
+`Federate` delegates federation lifecycle and declarations to the connector:
 
 ```python
-class Federate:
-    def __init__(self, sys_executor, transport): ...
-    def join(self, federation_name, federate_name, fom_paths) -> None: ...
-    def publish(self, binding) -> None: ...
-    def subscribe(self, binding) -> None: ...
-    def resign(self) -> None: ...
-    def run_until(self, end_time, lookahead) -> None: ...
+fed.join(federation_name, federate_name, fom_paths)
+fed.publish(binding)
+fed.subscribe(binding)
+fed.run_until(end_time, lookahead)
+fed.resign()
 ```
 
-### 5.2 Lifecycle method semantics
+Publishing or subscribing before `join()` raises `RuntimeError`. The argument
+historically named `lookahead` in `run_until` is the positive increment between
+requested grant targets; it is separate from a live backend's HLA regulating
+lookahead.
 
-Each method is a thin pass-through that the transport implements. The
-`Federate` class:
-- **Validates argument shape** (e.g. `lookahead > 0`).
-- **Maintains state** (joined / not joined). Calling `publish` before
-  `join` raises `RuntimeError`.
-- Does **not** call RTI services itself — it delegates to the transport.
-
-### 5.3 The grant loop
+The loop repeatedly requests the next target and advances the simulator to the
+granted time:
 
 ```python
-def run_until(self, end_time, lookahead):
-    if lookahead <= 0:
-        raise ValueError("lookahead must be > 0")
-    while self._sys.global_time < end_time:
-        target = min(self._sys.global_time + lookahead, end_time)
-        granted = self._tx.request_time_advance(target)
-        self._sys.step(granted)
+while sys_exec.global_time < end_time:
+    target = min(sys_exec.global_time + lookahead, end_time)
+    granted = transport.request_time_advance(target)
+    sys_exec.step(granted)
 ```
 
-- Granted time may be ≤ target. Loop terminates when
-  `global_time ≥ end_time`.
-- `step(granted)` updates `global_time` per
-  `system_executor.py:781` (post-step it equals `granted`).
-- The federate does not pace to wallclock. HLA_TIME is logical only.
+Live backends may block while waiting for an RTI grant. The connector has no
+general deadlock detector, retry policy, or reconnect mechanism.
 
-## 6. Confluent semantics (M4)
+## 6. Logical-time and confluent behavior
 
-### 6.1 Required core patch (M4.0)
+`SysExecutor.step(granted_time)` processes internal and external events whose
+time is at or before the grant. Events at the same simulated instant are
+collected before transitions are applied:
 
-`SysExecutor.step`'s round loop currently consults only
-`min_schedule_item` when computing `next_t` (`system_executor.py:716`).
-External events with timestamps inside the grant window stay queued
-until the next `step()` call advances `global_time` past them — this
-breaks IEEE 1516 TSO delivery.
+- imminent model with input: `con_trans`;
+- imminent model without input: `int_trans`;
+- non-imminent model with input: `ext_trans`.
 
-**Fix** — extend the round-loop peek to also consult
-`input_event_queue`:
+Zero-time cascades at the same instant complete within the call. After the
+call, `global_time` equals the granted time.
 
-```python
-# system_executor.py — inside step(granted_time)
-while self.min_schedule_item or self.input_event_queue:
-    next_internal = self.min_schedule_item.peek_time(default=Infinite)
-    next_external = (self.input_event_queue[0][0]
-                     if self.input_event_queue else Infinite)
-    next_t = min(next_internal, next_external)
-    if next_t > granted_time:
-        break
-    if next_t > self.global_time:
-        self.global_time = next_t
-    self.handle_external_input_event()
-    imminent = self.min_schedule_item.pop_all_at(next_t)
-    if not imminent and not self.input_event_queue:
-        continue
-    ...
-```
+Pitch maps pyjevsim time directly to HLA time and uses TAR/TAG with timestamped
+sends. Portico maps one caller tick to three RTI sub-steps and buffers
+receive-order reflections before exposing the current tick. Its batch
+completeness depends on the configured quiet and settle waits. The detailed
+behavior is in the [validation guide](../hla-validation/README.md#6-hla-time-management).
 
-This is a **core-touching change** (~10 LOC). Implemented as task M4.0
-before any of M4.1–M4.5. The full pyjevsim suite (V_TIME, R_TIME,
-HLA_TIME) must continue to pass after the patch.
+## 7. Threading and error handling
 
-### 6.2 Resulting semantics
+- Model transitions and outbound calls run on the simulation thread.
+- Backend callbacks may run on an RTI-owned thread.
+- Inbound delivery enters `SysExecutor.insert_external_event`, which is
+  protected for concurrent callback use.
+- Binding, port, lifecycle, codec, handle, and synchronous send errors normally
+  propagate to the caller.
+- `close()` is idempotent. Cleanup attempts to resign first; individual live
+  backend cleanup errors may be suppressed so remaining resources can close.
+- No automatic resend, retry, or reconnect is provided.
 
-- An event delivered via `insert_external_event(port, payload, t)` with
-  `t ≤ granted_time` fires at simulated time `t` during the current
-  `step` call.
-- A model receiving such an event while imminent gets `con_trans`, not
-  separate `int_trans` then `ext_trans`.
-- Events with `t > granted_time` stay queued and fire on the next
-  `step()` call whose grant covers their timestamp.
+## 8. Supported scope
 
-## 7. Snapshot composition
+The connector covers a documented subset of IEEE 1516-2010 services. It does
+not provide data distribution management, ownership management, message
+retraction, federation save/restore, or a formal conformance layer. HLA
+executors are not supported by the model snapshot mechanism.
 
-**Deferred to v2.** Adding an `is_snapshottable()` hook to
-`SnapshotExecutor` and `SnapshotManager` is core work that does not
-pay back in v1. Until then:
+See the [service coverage table](../hla-validation/ieee1516-support.md) and
+[known limitations](../hla-validation/README.md#8-limitations-and-future-work)
+before selecting a backend for an application.
 
-- HLA federates **are not snapshot-able** in v1.
-- Wrapping an `HLAExecutor` in a `SnapshotExecutor` has undefined
-  behavior. Don't.
-- Use the RTI's federation save/restore service for federate
-  persistence. (Out of scope here; gorti M11 / future kdx-rti work.)
+## 9. Source map
 
-## 8. Public exports (`pyjevsim.hla.__init__`)
-
-```python
-from .bindings import HLAInteraction, HLAAttribute
-from .transport import Transport, LoopbackTransport
-from .hla_executor import HLAExecutor
-from .factory import HLAExecutorFactory
-from .federate import Federate
-```
-
-## 9. Non-goals (will not be implemented under this plan)
-
-- A new base class for federate models (rejected — would pollute
-  `BehaviorModel` with implementation detail).
-- Decorators like `@publishes("Foo")` (sugar; defer until users ask).
-- A `WAKE_PORT` analogue on `SysExecutor` (unnecessary —
-  `HLAExecutor` calls `insert_external_event` directly).
-- Real-time pacing under HLA_TIME (use `R_TIME` if you want wallclock).
+| Component | Source |
+|---|---|
+| Bindings | `pyjevsim/hla/bindings.py` |
+| Connector, codec, router | `pyjevsim/hla/transport.py` |
+| Model bridge | `pyjevsim/hla/hla_executor.py` |
+| Executor factory | `pyjevsim/hla/factory.py` |
+| Federate loop | `pyjevsim/hla/federate.py` |
+| Pitch backend | `pyjevsim/hla/backends/pitch.py` |
+| Portico backend | `pyjevsim/hla/backends/portico.py` |
+| Simulation grant processing | `pyjevsim/system_executor.py` |

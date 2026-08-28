@@ -22,8 +22,8 @@ Pyjevsim System
 
    pyjevsim_system
 
-Pyjevsim Snapshot Manger
-========================
+Pyjevsim Snapshot Manager
+=========================
 
 .. toctree::
    :maxdepth: 4

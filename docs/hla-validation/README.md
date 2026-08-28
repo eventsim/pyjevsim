@@ -1,23 +1,17 @@
 # HLA validation and reproducibility
 
-This guide is the long-lived entry point for evidence behind pyjevsim's
-HLA/RTI behavior. It keeps the architecture, validation criteria, reference
-results, executable reproduction steps, and implementation boundaries beside
-the source code they describe.
+Use this guide to reproduce the HLA backend checks and interpret their
+results. The checks include offline trajectory comparisons, optional live RTI
+runs, and unit tests for lifecycle, encoding, routing, logical-time services,
+and confluent events.
 
-The record deliberately separates three kinds of evidence:
+The tests cover the IEEE 1516 services listed in
+[IEEE 1516 service coverage](ieee1516-support.md). Formal conformance,
+communication performance, and multi-host operation are not tested. See
+[Related projects](related-work.md) for a comparison with other DEVS and
+DEVS/HLA systems.
 
-1. a hermetic comparison that anyone can run without Java or an RTI;
-2. live interoperability checks that require Pitch pRTI or Portico; and
-3. implementation-level unit tests for bindings, lifecycle, codecs, routing,
-   time grants, and confluent events.
-
-It does **not** claim IEEE 1516 conformance or HLA performance/scalability.
-The implemented subset is listed in [IEEE 1516 service coverage](ieee1516-support.md),
-and the relationship to other DEVS and DEVS/HLA systems is summarized in
-[Related work and contribution boundary](related-work.md).
-
-### Terms
+## Terms
 
 - **DEVS**: Discrete Event System Specification.
 - **HLA**: High Level Architecture for distributed simulation.
@@ -26,13 +20,13 @@ and the relationship to other DEVS and DEVS/HLA systems is summarized in
 - **TSO / RO**: timestamp-order / receive-order delivery.
 - **JPype**: the Python-to-Java bridge used by the live RTI adapters.
 
-### Release comparison
+## Release comparison
 
-| Area | Published pyjevsim baseline (SoftwareX 2025) | Tagged `v2.1.2` | Post-`v2.1.2` development |
+| Area | Published pyjevsim baseline (SoftwareX 2025) | `v2.1.2` | `2.2.0` |
 |---|---|---|---|
-| Main focus | local Python DEVS execution and journaling | pluggable HLA connector, `HLA_TIME`, in-process tests, Pitch backend | Portico backend, AT/SIM equivalence protocol, committed traces, service/limitations record |
-| Live HLA evidence | not part of the published contribution | Pitch 5.5.2 ping-pong, including a multiprocess synchronization-point path | adds Portico 2.1.4 and the two-scenario AT/SIM checks |
-| Immutable identifier | article DOI `10.1016/j.softx.2025.102291` | tag `v2.1.2`, version DOI `10.5281/zenodo.21002029` | the next tagged release and archive are required; these changes are not contained in the v2.1.2 DOI |
+| Main focus | local Python DEVS execution and journaling | pluggable HLA connector, `HLA_TIME`, in-process tests, Pitch backend | Portico backend, AT/SIM comparison workflow, committed traces, and service/limitations documentation |
+| Live HLA checks | not part of the published contribution | Pitch 5.5.2 ping-pong, including a same-host multiprocess synchronization-point run | Pitch 5.5.2 and Portico 2.1.4 AT/SIM checks on one physical host |
+| Identifier | article DOI `10.1016/j.softx.2025.102291` | tag `v2.1.2`, version DOI `10.5281/zenodo.21002029` | tag `v2.2.0`; the version DOI is assigned when Zenodo archives the GitHub release |
 
 The supported Python floor is consistently `>=3.10` in `pyproject.toml`, the
 public README, and the documentation; CI exercises 3.10 and 3.13.
@@ -106,7 +100,7 @@ sequenceDiagram
 
 ## 2. Validation question and model
 
-The validation asks a deliberately narrow question:
+The trajectory comparison answers one question:
 
 > Does the two-federate HLA execution reproduce the committed application-state
 > trajectory of the single-`SysExecutor` reference for the same scenario?
@@ -116,13 +110,13 @@ The subject is the anti-torpedo example under [`examples/hla_atsim`](../../examp
 | Item | Configuration |
 |---|---|
 | Reference | one `SysExecutor`, both platform models in one process |
-| Distributed form | two `HLA_TIME` executors: `ship` and `torpedo` federates |
+| Federated form | two `HLA_TIME` executors: `ship` and `torpedo` federates |
 | Exchanged state | `HLAobjectRoot.Platform` attributes `id`, `kind`, `x`, `y`, `z`, `active` |
 | FOM | [`AntiTorpedo.xml`](../../examples/hla_atsim/fom/AntiTorpedo.xml), IEEE 1516-2010 namespace |
 | Scenarios | `self_propelled_decoy`, `stationary_decoy` |
 | Horizon | 30 logical ticks; time resolution 1 |
 | Time increments | grant increment 1 caller tick; default outbound timestamp offset 1 caller tick; Portico HLA regulating interval 1 internal RTI sub-step |
-| Recorded artifact | sorted rows `(tick, object_name, x, y, z)` |
+| Recorded artifact | CSV columns `(tick, object_name, x, y, z)`; `object_name` stores the stable `sense_id` |
 | Row count | 180 rows per execution and scenario |
 
 Both builds use the same deterministic observation discipline:
@@ -142,7 +136,7 @@ AT/SIM validates object-attribute exchange with an explicit
 bound DEVS uplink port.  The separate ping-pong example and tests exercise the
 normal `HLAExecutor` binding path for both interactions and object attributes:
 
-| Evidence path | Interaction | Object attribute | Binding path |
+| Test or example | Interaction | Object attribute | Binding path |
 |---|---:|---:|---:|
 | in-process and Pitch ping-pong | yes | yes | yes |
 | Portico live smoke test | declaration/lifecycle only | no | binding metadata only |
@@ -157,7 +151,8 @@ tolerance:
 2. format each coordinate with Python's `"%.10g"` conversion;
 3. sort the Python tuples (`tick` is an integer, so the primary order is
    numeric tick rather than lexicographic CSV text); and
-4. require the same row count and exact tuple equality at every position.
+4. write `sense_id` in the CSV column named `object_name`; and
+5. require the same row count and exact tuple equality at every position.
 
 [`verify_equivalence.py`](../../examples/hla_atsim/verify_equivalence.py)
 compares both generated paths with the full committed traces in
@@ -168,14 +163,14 @@ applies the same comparison to a subprocess-generated RTI trace.
 
 ### Timestamp and delivery-order scope
 
-The compared timestamp is the committed pyjevsim tick.  The criterion does not
-assert that raw RTI callback sequences are byte-identical:
+The compared timestamp is the committed pyjevsim tick. The comparison does not
+cover serialized bytes or raw RTI callback order:
 
 - Pitch sends time-stamped updates and maps pyjevsim logical time 1:1 to RTI
   logical time.
 - Portico reports receive-order delivery. Its backend buffers reflections and
   uses a three-sub-step barrier before exposing the tick snapshot. The barrier
-  is designed to prevent next-tick over-read, but completeness of the
+  prevents next-tick over-read, but completeness of the
   current-tick batch depends on configurable `quiet`/`settle` wall-clock waits; a sufficiently
   late reflection can be exposed on the following tick.
 - `InProcessRTI` grants a requested time immediately; the example driver advances
@@ -183,12 +178,12 @@ assert that raw RTI callback sequences are byte-identical:
 
 Consequently, equivalence means equal application-visible state at each committed
 tick after each backend's documented ordering mechanism.  It applies to the Pitch
-TSO path and to the Portico RO-plus-barrier path; it does not claim equality of
-transport-internal arrival order.
+TSO path and to the Portico RO-plus-barrier path. Transport-internal arrival
+order is not compared.
 
 ## 4. Reproduction
 
-### Offline gate (no Java or proprietary software)
+### Offline check (no Java or proprietary software)
 
 From the repository root:
 
@@ -207,9 +202,9 @@ MATCH stationary: 180 rows
 ```
 
 The workflow [`.github/workflows/validation.yml`](../../.github/workflows/validation.yml)
-runs this gate on every push and pull request, in addition to the unit tests.
+runs this check on every push and pull request, in addition to the unit tests.
 
-### Live Portico gate
+### Live Portico check
 
 ```powershell
 python -m pip install -e . -r docs/hla-validation/requirements-live-validation.txt
@@ -224,24 +219,25 @@ python examples/hla_atsim/verify_equivalence_rti.py
 ```
 
 Portico needs Java and JPype but no proprietary component or central RTI
-process. The bundled RID selects `portico.connection = jvm` because this gate
+process. The bundled RID selects `portico.connection = jvm` because this check
 runs two federates in one Python process/JVM. The Portico wrapper selects this
 file when `RTI_RID_FILE` is unset, while preserving any explicit user value.
 Multi-process or multi-host execution requires a different RID appropriate to
-that transport and is outside this gate. Pitch uses the same driver with
+that transport and is outside this check. Pitch uses the same driver with
 `PYJEVSIM_RTI=pitch`, a
 `prti1516e.jar`, and a running CRC.  Full setup is in the
 [`hla_atsim` README](../../examples/hla_atsim/README.md#optional-live-rti-runs).
-The live verifier is strict: absent Java/JAR support or a missing output trace
-returns status 2. A successful result requires `MATCH` for both scenarios.
+The live verification command returns status 2 when Java/JAR support or an
+output trace is missing. A successful result requires `MATCH` for both
+scenarios.
 Each scenario subprocess has a 180-second watchdog by default, configurable
 through `PYJEVSIM_LIVE_TIMEOUT`; this bounds the validation command but does
 not add timeout or deadlock recovery to the underlying RTI connector.
-Record the complete `java -version` output and RTI JAR hash with a submission
-run; the historical record retained only Temurin 11 and the RTI version, not
-their exact build/checksum.
+When recording a run, save the complete `java -version` output and the RTI JAR
+hash. Earlier records retained Temurin 11 and the RTI version but not the exact
+build and checksum.
 
-## 5. Results and provenance
+## 5. Results and environment
 
 ### Reproducible offline result
 
@@ -249,7 +245,7 @@ On 2026-08-18 the offline command was run five consecutive times on CPython
 3.11.15, dill 0.4.1, and PyYAML 6.0.3 on Windows build 26200.  Every run
 matched both scenarios:
 
-| Scenario | Independent invocations | Rows per path | First divergence | Canonical reference SHA-256 |
+| Scenario | Recorded runs | Rows per path | First divergence | Canonical reference SHA-256 |
 |---|---:|---:|---|---|
 | self-propelled decoy | 5 | 180 | none | `0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205` |
 | stationary decoy | 5 | 180 | none | `2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c` |
@@ -258,17 +254,15 @@ The reported SHA-256 is calculated over the UTF-8 CSV header followed by the
 sorted rows, each terminated by `\n`. Full canonical files, machine-readable
 summary data, and representative rows are under [`results/`](results/).
 
-### Recorded live-RTI evidence
+### Recorded live-RTI results
 
-| Backend | Configuration recorded in this repository | Evidence |
+| Backend | Recorded configuration | Result |
 |---|---|---|
 | In-process | no Java; identity grants; explicit lock-step | five current invocations above; also exercised by the test suite |
-| Pitch pRTI | Pitch pRTI Free 5.5.2, Temurin 11.0.31+11, JPype 1.7.1, CPython 3.11.15 | five independent live AT/SIM invocations matched both 180-row scenarios; four independent same-host two-process ping-pong runs completed join/synchronize/data/resign |
-| Portico | Portico 2.1.4, Temurin 11.0.31+11, JPype 1.7.1, CPython 3.14.0 | five independent same-JVM live AT/SIM invocations matched both 180-row scenarios; a post-fix run without an externally supplied RID also matched both scenarios |
+| Pitch pRTI | Pitch pRTI Free 5.5.2, Temurin 11.0.31+11, JPype 1.7.1, CPython 3.11.15 | five recorded live AT/SIM runs matched both 180-row scenarios |
+| Portico | Portico 2.1.4, Temurin 11.0.31+11, JPype 1.7.1, CPython 3.14.0 | five recorded same-JVM live AT/SIM runs matched both 180-row scenarios; a later run without an externally supplied RID also matched both scenarios |
 
-This is functional validation.  No latency, throughput, or scalability result
-is inferred from it. A compact result and scope record, including measured
-callback/batch characterization and its exclusions, is in
+These are functional checks. A concise result and environment record is in
 [`results/live-validation-summary.md`](results/live-validation-summary.md).
 
 ## 6. HLA time management
@@ -297,18 +291,17 @@ Backend-specific behavior:
 | In-process | returns the requested target immediately and performs no federation-wide coordination; the application must drive lock-step if it needs it |
 | Loopback | identity grant and self-delivery for single-federate tests; no lookahead enforcement |
 
-### Deadlock boundary
+### Grant waits and recovery
 
 The transport does not implement a general HLA deadlock detector or recovery
 protocol. A live `timeAdvanceRequest` waits without a generic timeout for the
 RTI grant, so peer failure or incompatible advance requests can block
 indefinitely; all regulating
-federates therefore must join, publish, and request compatible advances.  The
+federates therefore must join, publish, and request compatible advances. The
 Pitch ping-pong multiprocess example uses a `ready` synchronization point to
 avoid starting before both federates have joined.  Backend connection, FOM,
-and grant failures otherwise propagate to the application.  This boundary is
-intentional and is listed as a limitation rather than presented as a solved
-property.
+and grant failures otherwise propagate to the application. This behavior is
+listed as a limitation.
 
 ## 7. Reuse and extension
 
@@ -338,16 +331,15 @@ extension contract is in [`rti_interface.md`](../hla/rti_interface.md).
   CPython 3.14.0 + JPype 1.7.1 + Temurin 11.0.31 run terminated in native code;
   this is an observed toolchain combination, not a general Python-version
   restriction on pyjevsim.
-- The repository validates behavior, not communication latency, throughput,
-  or multi-host scalability.
+- Validation covers application-visible functional equivalence on one
+  physical host. Communication performance and multi-host operation are not
+  included.
 - Pitch's built-in codec currently supports `HLAinteger32BE`,
   `HLAinteger64BE`, `HLAfloat64BE`, and `HLAunicodeString` only.
 - Portico does not expose native timestamp-ordered reflections in the tested
-  configuration. Its barrier is designed to prevent next-tick over-read, but
+  configuration. Its barrier prevents next-tick over-read, but
   batch completeness depends on a wall-clock quiet/settle timing assumption.
-- Live AT/SIM uses two federates in two threads of one Python process; it is not
-  a multi-host scalability experiment. The Pitch ping-pong example separately
-  covers a multiprocess federation.
+- Live AT/SIM uses two federates in two threads of one Python process.
 - AT/SIM uses an explicit between-step attribute pump; bound interaction and
   attribute ports are covered by the ping-pong tests instead.
 - Data distribution management, ownership management, message retraction,
@@ -366,26 +358,19 @@ extension contract is in [`rti_interface.md`](../hla/rti_interface.md).
   cannot prevent callers from bypassing APIs or constructing custom binding
   objects with a different contract.
 
-Future work includes a repeatable multi-process latency/throughput benchmark,
-larger federations, more FOM datatypes, explicit grant timeouts/cancellation,
+Future work includes more FOM datatypes, explicit grant timeouts/cancellation,
 and additional independently implemented RTIs.
 
-## 9. Archival identifiers
+## 9. Release and citation
 
 - Repository: <https://github.com/eventsim/pyjevsim>
 - License: [MIT](../../LICENSE)
-- Released software tag: `v2.1.2`
-- Version DOI for the core `v2.1.2` release:
-  <https://doi.org/10.5281/zenodo.21002029>
+- Software version: `2.2.0`; release tag: `v2.2.0`
 - Concept DOI: <https://doi.org/10.5281/zenodo.21002028>
+- Previous `v2.1.2` archive: <https://doi.org/10.5281/zenodo.21002029>
 - Original SoftwareX publication: <https://doi.org/10.1016/j.softx.2025.102291>
 
-The AT/SIM and Portico validation additions post-date the `v2.1.2` tag and are
-not contained in its version DOI. They must be captured by the next immutable
-tag and archive without moving the existing tag. Until that release is made,
-the offline and live reproductions described above remain evidence for the
-current working tree, not for an immutable archived revision.
-
-Publication-specific provenance is kept separately in
-[Publication review traceability](publication-review-traceability.md); it is
-not part of the runtime contract or validation criterion.
+The `v2.1.2` archive predates the AT/SIM and Portico additions. After Zenodo
+processes the `v2.2.0` GitHub release, verify the new version DOI in the Zenodo
+record and add it to the GitHub release notes and external publication files.
+Do not rewrite the tagged source or an existing archive.

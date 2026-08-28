@@ -1,8 +1,9 @@
-"""HLA in-process run: two federates (surfaceship + torpedo) in lockstep.
+"""Run the AT/SIM ship and torpedo models over the in-process HLA bus.
 
 No Java / pRTI required. Two SysExecutors join one InProcessFederation and
 exchange Platform positions with lookahead = 1 tick via an explicit
-tick-boundary pipeline. Produces a CSV identical to the standalone run.
+tick-boundary pipeline. ``verify_equivalence.py`` compares its application
+state rows with the stored reference.
 
 Run:  python examples/hla_atsim/run_hla_inprocess.py
 """
@@ -43,8 +44,8 @@ def build_fed(fed_name, model, ctx, federation):
     ctx.set_executor(se)
 
     tx = InProcessRTI(federation=federation)
-    # Empty bindings -> every model gets a plain BehaviorExecutor (pure DEVS);
-    # position exchange is pumped explicitly at the tick boundary.
+    # Model ports remain local; the driver exchanges positions at tick
+    # boundaries.
     se.exec_factory = HLAExecutorFactory(tx, {})
 
     se.insert_input_port("start")
@@ -58,8 +59,7 @@ def build_fed(fed_name, model, ctx, federation):
     fed.publish(PLATFORM_OUT)
     fed.subscribe(PLATFORM_IN)
 
-    # Reuse the factory's router; add a synchronous proxy sink that upserts
-    # reflected peer/decoy positions into ctx.remote.
+    # Add a synchronous receiver for reflected peer and decoy positions.
     se.exec_factory._router.subscribe("attribute", PLATFORM_FOM, ProxySink(ctx))
     return se, tx, fed
 

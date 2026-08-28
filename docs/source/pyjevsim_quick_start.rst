@@ -4,26 +4,25 @@ Pyjevsim Quick Start
 1. Atomic Model in pyjevsim
 ---------------------------
 
-This document describes how to create a basic DEVS-based Behavior Model using the `pyjevsim` framework.
-The example model, PEG (Process Event Generator), receives an external event, processes it for 1 second, 
-and outputs a message.
+This quick start builds a DEVS ``BehaviorModel`` with pyjevsim. The example,
+PEG (Process Event Generator), starts after an external event and emits one
+message per simulated second.
 
 Atomic Model Overview
 ~~~~~~~~~~~~~~~~~~~~~
 
-The PEG model has the following characteristics:
+PEG has one input port, one output port, and two states:
 
 - **Input Port**: ``"start"``
 - **Output Port**: ``"process"``
 - **States**: ``"Wait"``, ``"Generate"``
 
-To define your own behavior model, you need to inherit from either ``AtomicModel`` or ``BehaviorModel`` 
-provided by `pyjevsim`.
+User-defined models inherit from ``AtomicModel`` or ``BehaviorModel``.
 
 Defining State and Port
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-To define the states and ports in your model:
+Declare states and ports in the constructor:
 
 - Use ``init_state(state_name)`` to set the initial state.
 - Use ``insert_state(state_name, deadline)`` to add states. The deadline indicates how long the model stays in that state.
@@ -35,15 +34,17 @@ All names must be strings (``str``).
 Main Functions of the DEVS Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-DEVS models operate based on four core methods:
+DEVS models implement three transition/output methods:
 
 1. ``ext_trans(self, port, msg)``: Handles external input events and transitions state.
 2. ``int_trans(self)``: Handles internal state transitions when a state's deadline is reached.
 3. ``output(self, msg_deliver)``: Creates output messages and adds them to the ``msg_deliver`` bag via ``msg_deliver.insert_message(msg)``.
-4. ``time_advance(self)``: Returns the time duration until the next internal transition.
 
-The table below summarizes key methods used when constructing an AtomicModel based on DEVS formalism,
-including descriptions, parameters, and example usages.
+The executor reads the current state's duration from the value registered by
+``insert_state(name, duration)``. It does not call a model-defined
+``time_advance()`` method.
+
+The methods used by the example are listed below.
 
 .. list-table:: BehaviorModel / AtomicModel API Summary
    :widths: 25 35 40
@@ -75,14 +76,11 @@ including descriptions, parameters, and example usages.
    * - ``output(self, msg_deliver)``
      - Builds output messages and adds them to ``msg_deliver`` via ``insert_message(msg)`` (v2.0 two-phase tick reads the bag, not the return value)
      - - ``msg_deliver`` (``MessageDeliverer``): the bag to deposit outputs into
-   * - ``time_advance(self)``
-     - Returns the time advance for the current state
-     - (no parameters)
-     
+
 Example PEG Model
 ~~~~~~~~~~~~~~~~~
 
-Below is the complete implementation of the PEG model:
+The complete PEG model is:
 
 .. code-block:: python
 
@@ -91,49 +89,35 @@ Below is the complete implementation of the PEG model:
     from pyjevsim.system_message import SysMessage
 
     class PEG(AtomicModel):
-        """Process Event Generator (PEG) class for generating events in a simulation."""
+        """Emit numbered process messages after a start event."""
 
         def __init__(self, name):
-            """
-            Args:
-                name (str): The name of Model
-            """
+            """Create a PEG named *name*."""
             AtomicModel.__init__(self, name)
-            self.init_state("Wait")                 # Initialize initial state
-            self.insert_state("Wait", Infinite)     # Add "Wait" state
-            self.insert_state("Generate", 1)        # Add "Generate" state
+            self.init_state("Wait")
+            self.insert_state("Wait", Infinite)
+            self.insert_state("Generate", 1)
 
-            self.insert_input_port("start")         # Add input port "start"
-            self.insert_output_port("process")      # Add output port "process"
+            self.insert_input_port("start")
+            self.insert_output_port("process")
 
-            self.msg_no = 0                         # Initialize message number
+            self.msg_no = 0
 
         def ext_trans(self, port, msg):
-            """Handles external transitions based on the input port."""
             if port == "start":
                 print(f"[Gen][IN]: started")
-                self._cur_state = "Generate"  # Transition state to "Generate"
+                self._cur_state = "Generate"
 
         def output(self, msg_deliver):
-            """Generates the output message when in the "Generate" state."""
             msg = SysMessage(self.get_name(), "process")
-            msg.insert(f"{self.msg_no}")  # Insert message number
+            msg.insert(f"{self.msg_no}")
             print(f"[Gen][OUT]: {self.msg_no}")
-            msg_deliver.insert_message(msg)  # add to the bag for v2.0 two-phase tick
+            msg_deliver.insert_message(msg)
 
         def int_trans(self):
-            """Handles internal transitions based on the current state."""
             if self._cur_state == "Generate":
-                self._cur_state = "Generate"  # Remain in "Generate" state
-                self.msg_no += 1  # Increment message number
-
-        def time_advance(self):
-            if self._cur_state == "Wait":
-                return Infinite
-            elif self._cur_state == "Generate":
-                return 1
-            else:
-                return -1
+                self._cur_state = "Generate"
+                self.msg_no += 1
 
 State Transition Flow
 ~~~~~~~~~~~~~~~~~~~~~
@@ -142,8 +126,6 @@ State Transition Flow
 2. When it receives a ``"start"`` message, it transitions to the ``"Generate"`` state.
 3. In the ``"Generate"`` state, it outputs a message every 1 second.
 4. It stays in the ``"Generate"`` state, incrementing the message number with each output.
-
-This example serves as a foundation for building more complex simulation behavior models.
 
 Debugging Uncaught Output Messages
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -156,20 +138,18 @@ model graph, pass ``track_uncaught=True`` to the executor:
 
    se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, track_uncaught=True)
 
-The simulator's ``DefaultMessageCatcher`` (accessible as ``se.dmc``)
-will then receive every uncoupled emit on its ``"uncaught"`` input
-port, so you can attach probes or count what is leaking. The flag
-costs roughly 10-15 % throughput on dense graphs with many dangling
-outputs, so leave it off in production runs.
+The simulator's ``DefaultMessageCatcher``, available as ``se.dmc``, then
+receives each uncoupled message on its ``"uncaught"`` input port. Each captured
+message invokes the catcher's external transition and reschedules it, so this
+mode adds work for every uncoupled output. Enable it only when that information
+is needed.
 
 Output Messages Are Shared by Reference
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When a model's output port has multiple downstream subscribers, every
 subscriber receives the **same** ``SysMessage`` object. ``pyjevsim`` does
-not deep-copy outputs during propagation. This matches the prevailing
-Python-DEVS convention — ``xdevs.py`` and ``PythonPDEVS`` propagate by
-reference the same way.
+not deep-copy outputs during propagation.
 
 The practical rule for modelers:
 
@@ -177,19 +157,19 @@ The practical rule for modelers:
 - If your model needs to mutate a payload, copy it on the receiver side
   first, e.g. ``payload = list(msg.retrieve())``.
 
-The empirical multi-subscriber test under ``benchmark/aliasing_test.py``
-demonstrates this behaviour for every engine in the comparison set.
+``benchmark/aliasing_test.py`` records the behavior for the engine versions
+available when the test is run.
 
 2. Structural Model in pyjevsim
 -------------------------------
 
-This section explains how to build a **Structural Model** using `pyjevsim`. A Structural Model allows you to combine
-multiple Behavior Models and define message flows between them.
+A **Structural Model** groups behavior models and defines the message paths
+between their ports.
 
 Structural Overview
 ~~~~~~~~~~~~~~~~~~~
 
-The example Structural Model (`STM`) includes two behavior models:
+The example ``STM`` contains two behavior models:
 
 - ``PEG`` (Process Event Generator): generates messages every 1 second after receiving a "start" signal.
 - ``MsgRecv``: receives and processes messages from the PEG model.
@@ -214,7 +194,7 @@ The message flow between the models is defined using coupling relations:
 3. These messages are routed to `MsgRecv` via its `"recv"` input port.
 
 
-The following table summarizes key methods used in `StructuralModel` for constructing and connecting sub-models.
+The following ``StructuralModel`` methods register and connect sub-models.
 
 .. list-table:: StructuralModel API Summary
    :widths: 30 35 35
@@ -237,11 +217,15 @@ The following table summarizes key methods used in `StructuralModel` for constru
 Code Example
 ~~~~~~~~~~~~
 
+This condensed example uses the model files in the repository's ``tests``
+package. The package-qualified imports work when the command is run from the
+repository root.
+
 .. code-block:: python
 
     from pyjevsim.structural_model import StructuralModel
-    from .model_peg import PEG
-    from .model_msg_recv import MsgRecv
+    from tests.model_peg import PEG
+    from tests.model_msg_recv import MsgRecv
 
     class STM(StructuralModel):
         def __init__(self, name):
@@ -268,9 +252,6 @@ Explanation
 - ``insert_input_port()``, ``insert_output_port()`` define STM's interaction with the external system.
 - ``register_entity()`` adds sub-models to the STM structure.
 - ``coupling_relation()`` connects ports between models or between STM and its sub-models.
-
-This basic structural model can be extended with more sub-models, hierarchical composition, or dynamic scheduling
-for complex simulations.
 
 3. Simulation Engine(SystemExecutor) in pyjevsim
 ------------------------------------------------
@@ -324,9 +305,9 @@ Simulation Flow Example
     from pyjevsim.definition import *
     from pyjevsim.system_executor import SysExecutor
 
-    from .model_msg_recv import MsgRecv
-    from .model_peg import PEG
-    from .model_stm import STM
+    from tests.model_msg_recv import MsgRecv
+    from tests.model_peg import PEG
+    from tests.model_stm import STM
 
     se = SysExecutor(1, ex_mode=ExecutionType.V_TIME)
 
@@ -351,7 +332,11 @@ Simulation Flow Example
     for _ in range(5):
         se.simulate(1)
 
-This engine orchestrates all time progression, message passing, and model coordination in the simulation system.
+The repository checks this hierarchy with:
+
+.. code-block:: console
+
+   $ python -m pytest -q tests/test_hierarchical.py
 
 4. Two-Phase Tick and Confluent Transitions
 -------------------------------------------
@@ -367,9 +352,8 @@ Starting in 2.0, ``SysExecutor`` runs each simulated instant as a
    transition: ``int_trans`` (imminent only), ``ext_trans`` (receiver
    only), or ``con_trans`` (both at once).
 
-This matches Parallel-DEVS semantics and fixes ordering bugs that arose
-when a model was simultaneously imminent *and* receiving an external
-event (the **confluent** case).
+When a model is both imminent and receiving an external event at the same
+instant, the second phase invokes ``con_trans`` once.
 
 Overriding ``con_trans``
 ~~~~~~~~~~~~~~~~~~~~~~~~

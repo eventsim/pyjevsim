@@ -1,6 +1,6 @@
 """Binding dataclasses linking pyjevsim ports to HLA FOM identifiers.
 
-Spec: docs/hla/specification.md §1.
+See ``docs/hla/specification.md`` section 1.
 """
 
 from __future__ import annotations

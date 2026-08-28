@@ -1,9 +1,9 @@
-"""One ping-pong federate per OS process — a true multi-process HLA demo.
+"""One ping-pong federate per OS process.
 
 Run each federate in its own process (own JVM, own LRC), joined to the same
-Pitch pRTI federation. The RTI mediates all data exchange and time
-management, so the two federates are genuinely distributed (and may be on
-different hosts — point each at the CRC with ``PYJEVSIM_CRC``).
+Pitch pRTI federation. The RTI mediates data exchange and time management.
+``PYJEVSIM_CRC`` can point to a non-local CRC, but the repository's recorded
+validation is limited to processes on one host.
 
 Two terminals:
 

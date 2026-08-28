@@ -1,14 +1,14 @@
-"""Minimal flat-FEL DEVS engine used as a performance floor.
+"""Small flat-FEL DEVS engine used by the benchmark suite.
 
-Just enough machinery to run DEVStone:
+It implements the operations needed by the bundled DEVStone cases:
 
   - Atomic models with ext_trans, int_trans, output, and a sigma deadline.
   - Atom-to-atom coupling only (we treat the graph as already flattened).
   - A single future-event list keyed by (time, insertion_order).
   - Confluent transitions handled deltint-then-deltext to match xdevs.
 
-Deliberately avoids any abstraction (no Coupled, no Coordinator hierarchy)
-so its overhead approximates "writing the simulator inline".
+It has no coupled-model or coordinator hierarchy and is not a general-purpose
+simulation engine.
 """
 
 import heapq

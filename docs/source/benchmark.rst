@@ -4,11 +4,9 @@ DEVStone Benchmark
 Introduction
 ------------
 
-The **DEVStone benchmark** is a synthetic workload used in the DEVS community
-to characterise simulator performance independently of any application
-domain. ``pyjevsim`` ships a flat implementation of the three classical
-DEVStone topologies under ``benchmark/`` so that scheduler overhead can be
-measured directly and tracked across releases.
+DEVStone is a synthetic DEVS workload. The implementation under
+``benchmark/`` supplies three topologies for measuring executor and routing
+costs without application-specific model logic.
 
 Variants
 --------
@@ -18,25 +16,23 @@ where each *level* contains ``width`` ``DEVStoneAtomic`` instances. The
 ``depth`` parameter controls the number of stacked levels.
 
 - **LI (Low Interconnect)** — one atomic per level participates in the
-  forward chain. Stresses event propagation through a long but narrow graph.
+  forward chain.
 - **HI (High Interconnect)** — every atomic in a level receives the level's
-  input *and* feeds the next atomic in the chain. Amplifies fan-in and
-  fan-out per level.
-- **HO (High Output)** — same as HI plus an extra ``outx`` port on each
-  atomic that goes directly to the sink, multiplying the output traffic
-  observed at the top of the graph.
+  input and feeds the next atomic in the chain.
+- **HO (High Output)** — the HI topology plus an ``outx`` port from each
+  atomic to the sink.
 
 Layout
 ------
 
-::
+.. code-block:: text
 
     benchmark/
     ├── devstone/
     │   ├── atomic.py     # DEVStoneAtomic / DEVStoneGenerator / DEVStoneSink
     │   └── topology.py   # build_devstone(variant, depth, width, ...)
     ├── run_devstone.py   # CLI runner
-    └── results/          # CSV outputs from sweeps
+    └── results/          # historical summaries; generated CSVs when requested
 
 Usage
 -----
@@ -66,10 +62,8 @@ Reported columns:
 Tuning the workload
 -------------------
 
-By default the atomic ``int_delay`` is zero so the benchmark measures pure
-simulator overhead. Pass ``--dhrystones N`` to perform ``N`` units of
-synthetic CPU work inside every ``ext_trans`` and shift the measurement
-toward user-code cost:
+By default, ``int_delay`` is zero. Pass ``--dhrystones N`` to perform ``N``
+units of synthetic CPU work inside each ``ext_trans``:
 
 .. code-block:: console
 
@@ -104,9 +98,11 @@ performance baseline can be tracked. Engines covered today:
 - **pyjevsim** — this package.
 - **xdevs.py** 3.0+ — install with ``pip install xdevs``. Adapter wraps
   the canonical DEVStone shipped under ``xdevs.examples.devstone``.
-- **reference** — a ~150 LOC hand-rolled flat-FEL DEVS engine living under
-  ``benchmark/engines/reference/`` that acts as a "no-framework-overhead"
-  performance floor.
+- **PythonPDEVS** — optional adapter for a compatible checkout of the
+  PythonPDEVS minimal kernel; see ``benchmark/engines/pypdevs/`` for its
+  availability check.
+- **reference** — a small flat-FEL DEVS engine under
+  ``benchmark/engines/reference/``.
 
 List which engines are present on the current system:
 
@@ -129,5 +125,6 @@ Restrict to specific engines or a single configuration:
    $ python -m benchmark.run_compare --engines pyjevsim xdevs \
        --variant HI --depth 5 --width 4
 
-The captured baseline numbers and methodology notes live in
-``benchmark/results/BASELINE.md``.
+``benchmark/results/BASELINE.md`` contains one historical capture and its
+limitations. Retain the generated CSV and environment details for any new
+comparison.

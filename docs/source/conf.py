@@ -1,19 +1,13 @@
 import os
-import re
 import sys
-from pathlib import Path
 
-from sphinx.application import Sphinx
-
-import os
-import sys
-sys.path.insert(0, os.path.abspath('../..'))  
+sys.path.insert(0, os.path.abspath('../..'))
 
 project = 'pyjevsim'
 author = 'Changbeom Choi'
 copyright = '2024-2026, Changbeom Choi'
-version = '2.1.2'
-release = '2.1.2'
+version = '2.2.0'
+release = '2.2.0'
 
 extensions = [
     'sphinx.ext.autodoc',      

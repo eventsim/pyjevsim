@@ -3,7 +3,7 @@
 Runs a tiny "Generator → Sink" topology against every available engine while
 sweeping the inter-event period. The total work (count of transitions) is
 held constant at `--count`; only the simulated-time gap between events
-changes. This isolates the cost of the V_TIME tick-stepping loop.
+changes. The sweep shows how each adapter behaves as the simulated gap grows.
 
 Examples
 --------

@@ -1,10 +1,4 @@
-"""Shared fixtures for the HLA subsystem test suite.
-
-These fixtures are deliberately minimal — they exist so the milestone
-test files can stay focused on their own acceptance criteria. Anything
-broader (multi-federate harness, gateway double, etc.) belongs in the
-test file that needs it, not here.
-"""
+"""Models and fixtures shared by the HLA tests."""
 
 from __future__ import annotations
 

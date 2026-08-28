@@ -1,30 +1,25 @@
-# Related work and contribution boundary
+# Related projects
 
 pyjevsim builds on established work in DEVS execution, distributed DEVS, and
-DEVS/HLA integration. The project contribution documented here is deliberately
-narrow: an existing Python DEVS model keeps its ordinary port API while
-declarative bindings and a small `RTIConnector` boundary select among multiple
-RTIs at runtime; the same core tick is used in standalone and HLA-driven modes.
+DEVS/HLA integration. Its HLA layer connects named `BehaviorModel` ports to a
+selected RTI through external bindings and FOM configuration. RTI calls stay
+outside the model class, and standalone and HLA-driven execution share the same
+simulation tick.
 
-## Positioning
+## Comparison
 
 | System/approach | Primary emphasis | Relationship to pyjevsim HLA |
 |---|---|---|
-| PythonPDEVS | Classic/Parallel DEVS with parallel and distributed simulation in Python | A Python-native distributed DEVS engine. pyjevsim instead adds an IEEE 1516 RTI boundary to its existing model/executor API. |
-| xDEVS | A common DEVS API across Java, C++, and Python, with sequential, parallel, and distributed architectures | Broader cross-language DEVS interoperability. pyjevsim's narrower contribution is runtime-pluggable HLA transports plus model-port bindings. |
-| DEVS/HLA and G-DEVS/HLA work | Mapping DEVS-family models and time semantics onto HLA federations | Establishes the conceptual basis for combining DEVS and HLA. pyjevsim contributes a compact Python implementation, codec/transport separation, and preserved application model code. |
-| DEVSim++ ME / KHLA Adaptor | C++ DEVS model engineering, verification/validation tools, and an HLA adaptor | A mature toolchain-oriented integration. pyjevsim targets a smaller, Python-facing extension surface and ships offline plus two live backend paths. |
-| HLA Development Kit | RTI-independent Java APIs and annotations for common HLA federate services | A prior general-purpose RTI abstraction. pyjevsim does not claim first RTI independence; its narrower scope is a Python DEVS port-binding/executor integration. |
-| pyjevsim 2025 | Python DEVS execution with model/simulation journaling | The HLA extension retains that API and adds federated execution; it does not replace or re-evaluate the original journaling contribution. |
+| PythonPDEVS | Classic/Parallel DEVS with parallel and distributed simulation in Python | Distributed scheduling is native to its Python kernel; pyjevsim instead connects its existing executor to an IEEE 1516 RTI. |
+| xDEVS | A common DEVS API across Java, C++, and Python, with sequential, parallel, and distributed architectures | Its scope is a multi-language DEVS API and execution family; pyjevsim uses external port bindings and selectable HLA connectors. |
+| DEVS/HLA and G-DEVS/HLA work | Mapping DEVS-family models and time semantics onto HLA federations | The conceptual mapping predates this project; pyjevsim supplies a concrete Python binding, codec, and connector layer. |
+| DEVSim++ ME / KHLA Adaptor | C++ DEVS model engineering, verification/validation tools, and an HLA adaptor | A C++ model-engineering stack with an HLA adaptor, in contrast to pyjevsim's Python model API. |
+| HLA Development Kit | RTI-independent Java APIs and annotations for common HLA federate services | Java annotation and service abstractions; pyjevsim selects connectors in executor configuration and binds named model ports. |
+| pyjevsim 2025 | Python DEVS execution with model/simulation journaling | Baseline model API retained by the HLA extension; the original journaling contribution is not re-evaluated here. |
 
-The table is a scope comparison, not a feature-completeness ranking.  In
-particular, pyjevsim does not claim to replace distributed-DEVS algorithms,
-model-engineering environments, or complete HLA federation-development tools.
-It also does not claim to be the first distributed DEVS engine, DEVS/HLA
-bridge, or RTI abstraction. The scoped contribution is the combination of
-external per-port descriptors, an executor layer that keeps RTI calls out of
-ordinary `BehaviorModel` implementations, and a runtime-selectable
-connector/capability/codec boundary in Python.
+pyjevsim focuses on connecting existing `BehaviorModel` ports to selectable
+HLA backends. It is not a replacement for a distributed-DEVS scheduler, a
+model-engineering environment, or a complete federation-development toolkit.
 
 ## References
 

@@ -5,7 +5,8 @@ Copyright (c) 2021-2024 Hanbat National University
 License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
-This module contains an object, SnapshotManager, that manages snapshots of the association between BehaivorModel and Model. 
+This module contains SnapshotManager, which manages snapshots associated with
+BehaviorModel instances.
 """
 
 from dill import dump
@@ -42,7 +43,7 @@ class SnapshotManager:
         """Associate the model you want to take a snapshot of with the model's SnapshotCondition.
 
         Args:
-            _name (str): BehaivorModel name
+            _name (str): BehaviorModel name
             _snapshot_condition (SnapshotCondition): Concrete SnapshotCondition
         """
         self.snapshot_condition_map[_name] = _snapshot_condition
@@ -117,4 +118,4 @@ class SnapshotManager:
             with open(f"{path}/{key}.simx", "wb") as f:
                 dump(value[0].get_core_model().model_snapshot(), f)
                 
-        return    
+        return

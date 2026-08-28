@@ -1,4 +1,4 @@
-"""RTI backend registry — select an RTI by name.
+"""Register and create RTI backends by name.
 
 Lets applications choose an RTI without importing the backend class:
 
@@ -7,14 +7,13 @@ Lets applications choose an RTI without importing the backend class:
     transport = create_rti("loopback")
     # transport = create_rti("pitch", fom="Chat.xml", host="localhost")
 
-Third-party / optional backends register themselves at import time:
+Optional backends register when their modules are imported:
 
     from pyjevsim.hla import register_rti
     register_rti("pitch", lambda **kw: PitchTransport(**kw))
 
-Backends are kept out of the core import path so that an optional
-dependency (e.g. JPype for Pitch, a ZMQ surrogate, ...) is only required
-when that backend is actually requested.
+Their runtime dependencies remain optional until an application selects the
+backend.
 """
 
 from __future__ import annotations

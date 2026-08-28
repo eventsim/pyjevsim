@@ -1,37 +1,48 @@
+Anti-Torpedo Simulation Example
+===============================
 
-Anti-Torpedo Simulator
-======================
+This synthetic example models a surface ship, a torpedo, detection and control
+components, and two decoy types. It demonstrates coupled DEVS models,
+scenario-driven configuration, plotting, and snapshot/restore in pyjevsim.
 
-Introduction
-------------
+Scenario behavior
+-----------------
 
-The **Anti-Torpedo Simulator** is designed to enhance surface ship survivability against torpedo threats. It allows testing of tactical decoy strategies and supports evaluation and acquisition of advanced decoy systems.
+- The surface ship and torpedo move from positions and headings defined by a
+  YAML scenario.
+- Detector models report nearby objects to their command-and-control models.
+- The ship deploys decoys and changes heading when the torpedo reaches the
+  configured engagement range.
+- The torpedo selects the closest detected ship or decoy as its target.
+- Decoy launch parameters and lifetime are read from the scenario.
 
-For instance, users can compare survivability outcomes by integrating new self-propelled decoy systems against traditional stationary decoy systems, using existing ship and torpedo simulation models.
+Run
+---
 
-Scenario Explanation
---------------------
+From the repository root:
 
-- **Surface Ship Movement:** Moves according to scenario-defined heading parameters.
-- **Detection Model:** Executes detection algorithms based on positional data of surrounding objects and transmits detection results to the ship's Command and Control (C2) system.
-- **Command and Control System:** Calculates distances to detected torpedoes, deploys decoys upon reaching torpedo engagement range, and initiates evasive maneuvers using predefined evasion headings.
-- **Decoy Deployment:** Launch parameters (elevation, azimuth, launch speed) are scenario-defined.
-- **Decoy Lifecycle:** Continuously updates positional data throughout its predefined lifespan.
-- **Torpedo Movement:** Navigates according to the scenario heading; its detection model transmits target locations to the torpedo's C2 system.
-- **Torpedo Targeting:** The torpedo’s C2 system directs the torpedo toward the closest detected target (ship or decoy).
+.. code-block:: console
 
-Save and Restore Functionality
-------------------------------
+   $ python -m pip install -e . -r examples/atsim/requirements.txt
+   $ python examples/atsim/simulator.py
 
-The simulator includes a save-and-restore feature enabling repeated experimentation from specific decoy deployment points. This allows comparison and analysis of multiple decoy systems under consistent simulation conditions.
+An optional numeric argument sets the pause between plotted frames. The
+``simulator_snapshot.py`` and ``simulator_restore.py`` scripts demonstrate
+snapshot creation and restore.
 
-Important Notes
----------------
+Scope
+-----
 
-The simulation model contains simplified versions of equations of motion, detection algorithms, and Command and Control functionalities. Sensitive information has been deliberately excluded to focus solely on fundamental capabilities.
+The example uses simplified equations, algorithms, and synthetic parameters to
+show pyjevsim features. It is not intended for operational analysis.
 
 References
 ----------
 
-- Seo, Kyung-Min, et al. "Measurement of effectiveness for an anti-torpedo combat system using a discrete event systems specification-based underwater warfare simulator." *The Journal of Defense Modeling and Simulation*, vol. 8, no. 3, 2011, pp. 157–171.
-- Kim, Tag Gon, et al. "DEVSim++ toolset for defense modeling and simulation and interoperation." *The Journal of Defense Modeling and Simulation*, vol. 8, no. 3, 2011, pp. 129–142.
+- K.-M. Seo et al., “Measurement of effectiveness for an anti-torpedo combat
+  system using a discrete event systems specification-based underwater
+  warfare simulator,” *The Journal of Defense Modeling and Simulation*, 8(3),
+  157–171, 2011.
+- T. G. Kim et al., “DEVSim++ toolset for defense modeling and simulation and
+  interoperation,” *The Journal of Defense Modeling and Simulation*, 8(3),
+  129–142, 2011.

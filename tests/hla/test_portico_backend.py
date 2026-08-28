@@ -1,6 +1,6 @@
 """Portico backend tests.
 
-The hermetic cases (registration, the IEEE 1516-2010 ``HLAunicodeString``
+The offline cases (registration, the IEEE 1516-2010 ``HLAunicodeString``
 codec, the three-sub-step time axis) need neither Java nor an RTI. The live
 case needs a Portico distribution and is skipped without one.
 
@@ -57,7 +57,7 @@ requires_live = pytest.mark.skipif(
 
 
 def test_portico_backend_is_registered():
-    """Always runs: the backend self-registers even without JPype."""
+    """Backend registration does not require JPype."""
     from pyjevsim.hla import available_rtis
     assert "portico" in available_rtis()
 
@@ -70,7 +70,7 @@ def test_portico_import_does_not_require_jpype():
 
 
 def test_portico_advertises_receive_order():
-    """Portico does not deliver reflections TSO; callers must be told."""
+    """The tested Portico adapter reports receive-order reflections."""
     assert PorticoTransport.capabilities.name == "portico"
     assert PorticoTransport.capabilities.time_management is True
     assert PorticoTransport.capabilities.timestamp_ordered is False
@@ -152,7 +152,7 @@ def test_time_advance_settles_before_the_release_sub_step(monkeypatch):
 
 
 def test_reflections_are_invisible_until_the_inbox_is_released():
-    """Nothing reaches the models until the transport says so."""
+    """Buffered reflections are delivered when the inbox is released."""
     seen = []
     tx = _NoJVM()
     tx.on_receive(lambda *a: seen.append(a))
@@ -180,7 +180,7 @@ def test_settle_returns_once_the_inbound_stream_is_idle():
 
 @requires_live
 def test_live_join_publish_subscribe_resign():
-    """End-to-end against a real Portico LRC: no CRC process is needed."""
+    """Join, declare an interaction, advance time, and resign from Portico."""
     from pyjevsim.hla import create_rti
     from pyjevsim.hla.bindings import HLAInteraction
 

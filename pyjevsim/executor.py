@@ -9,15 +9,10 @@ This module contains Executor, the parent class of all Executor Types.
 """
 
 class Executor:
-    """Base class for executors.
+    """Base state shared by model executors.
 
-    Note: ``__lt__`` is no longer defined. Ordering used to be settled
-    by ``(request_time, obj_id)`` on the executor object itself, which
-    forced two ``get_obj_id()`` method dispatches per heap comparison.
-    All priority-queue ordering now lives in ``ScheduleQueue``, which
-    stores ``(req_time, obj_id, entry_id, executor)`` tuples — Python
-    settles the order on the first three immutable fields without ever
-    comparing executor objects directly.
+    Scheduling order is managed by ``ScheduleQueue`` rather than comparison
+    methods on executor instances.
     """
 
     def __init__(self, itime, dtime, ename, model, parent):

@@ -32,10 +32,7 @@ class BehaviorExecutor(Executor):
         self.behavior_model = behavior_model #Behavior Model
         self._cancel_reschedule_f = False #cancel reschedule flag
 
-        # Hot-path attribute snapshots. obj_id and destruct_t never change
-        # over the executor's lifetime, so we read them once here instead
-        # of dispatching through method chains every time the scheduler
-        # needs an id.
+        # Object identity and destruction time do not change after creation.
         self._cached_destruct_time = self._destruct_t
         self._obj_id = behavior_model.get_obj_id()
 
@@ -73,9 +70,7 @@ class BehaviorExecutor(Executor):
         return self._cached_destruct_time
 
     def get_obj_id(self):
-        """Returns the object ID. Snapshot of the model's id, taken at
-        construction time to skip the `BehaviorModel` -> `SystemObject`
-        method dispatch on the hot path."""
+        """Return the object ID captured when the executor was created."""
         return self._obj_id
 
     # State management
@@ -91,13 +86,8 @@ class BehaviorExecutor(Executor):
     def ext_trans(self, port, msg):
         """Handles external transition based on port and message.
 
-        The cancel-reschedule flag is read *after* the model's
-        ``ext_trans`` runs because the model raises it from inside that
-        call via ``cancel_rescheduling()``. Reading it beforehand only
-        ever saw the previous cycle's value (which ``get_req_time``
-        already cleared), so ``cancel_rescheduling`` was effectively a
-        no-op — e.g. atsim's TrackingManuever kept getting its deadline
-        reset by every incoming ``target`` and never fired ``output``.
+        Read the cancellation flag after the model transition because
+        ``cancel_rescheduling`` may set it during this call.
         """
         self.behavior_model.ext_trans(port, msg)
 
@@ -139,16 +129,14 @@ class BehaviorExecutor(Executor):
     def set_req_time(self, global_time):
         """Set the executor's next request time.
 
-        This is the single hottest method on the simulator's inner loop —
-        called once per affected model per tick. The body is inlined to
-        avoid the `set_global_time` -> `time_advance` -> dict-lookup
-        method-dispatch chain that the previous version went through.
+        State lookup is kept inline because this method runs for each affected
+        model after a transition.
         """
         bm = self.behavior_model
         self.global_time = global_time
         bm.global_time = global_time
 
-        # Inlined `time_advance`: read state and look up its deadline.
+        # Read the current state's time advance directly.
         ta = bm._states.get(bm._cur_state, -1)
 
         if ta == Infinite:
@@ -166,4 +154,3 @@ class BehaviorExecutor(Executor):
             self.behavior_model.reset_cancel_flag()
         self._next_event_t = self.request_time
         return self.request_time
-    

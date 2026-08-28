@@ -1,8 +1,8 @@
-"""Equivalence gate for the committed canonical AT/SIM trajectories.
+"""Compare AT/SIM application-state trajectories with stored references.
 
 Runs the standalone and HLA-inprocess builds and requires both to equal the
 committed canonical rows (tick, object, x, y, z).  It prints the first
-divergence on mismatch and exits non-zero so CI can gate on it.
+divergence on mismatch and exits with a nonzero status.
 
 Run:  python examples/hla_atsim/verify_equivalence.py
 """
@@ -70,7 +70,7 @@ def check(tag, path):
 
 def main():
     ok = True
-    for tag in ("self_propelled", "stationary"):   # self_propelled first = regression guard
+    for tag in ("self_propelled", "stationary"):   # fixed reporting order
         if not check(tag, SCENARIOS[tag]):
             ok = False
     sys.exit(0 if ok else 1)

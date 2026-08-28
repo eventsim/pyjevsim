@@ -1,10 +1,7 @@
-"""M3 — Federate runtime + HLA_TIME grant loop.
+"""Federate runtime and the HLA_TIME grant loop.
 
-Spec section: docs/hla/specification.md §5.
-Acceptance IDs: M3.1 .. M3.9.
-
-These tests use a stub transport instead of LoopbackTransport so we can
-observe and steer time-advance grants directly.
+The tests use a stub transport to observe and control time-advance grants.
+See ``docs/hla/specification.md`` section 5.
 """
 
 from __future__ import annotations

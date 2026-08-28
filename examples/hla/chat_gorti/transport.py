@@ -1,4 +1,4 @@
-"""GortiTransport — pyjevsim.hla.Transport backed by gorti's pysdk.
+"""pyjevsim transport for the gorti chat example.
 
 Wraps `rti1516e.Rti1516eAmbassador` (Layer 2, callback-shaped). Each
 inbound `receiveInteraction` / `reflectAttributeValues` callback is
@@ -10,8 +10,8 @@ Time advance uses `nextMessageRequest`. The ambassador delivers a
 condition variable until the grant arrives, drain any inbound events
 queued during the wait, and return the granted time to the federate.
 
-This transport is intentionally minimal — interactions only, no
-object instances. Extend for production use.
+The example implements interactions and time advance, but not object-instance
+management.
 """
 
 from __future__ import annotations
@@ -56,9 +56,8 @@ class _ChatAmbassador(Rti1516eAmbassador):
         timestamp: float | None,
     ) -> None:
         if self.cb is not None:
-            # We surface attribute updates with fom_id = "<object_handle>"
-            # for the example; a richer transport would resolve the
-            # object class via discoverObjectInstance bookkeeping.
+            # This example uses the object handle as fom_id. An adapter with
+            # discovery support can resolve the corresponding object class.
             self.cb("attribute", str(object_handle), [dict(values)], timestamp)
 
     def timeAdvanceGrant(self, time: float) -> None:  # noqa: N802
@@ -103,8 +102,8 @@ class GortiTransport:
                 raise ValueError(
                     f"outbound HLAAttribute {binding!r} requires object_class"
                 )
-            # The example doesn't track object handles; production code
-            # would map a port → handle via registerObjectInstance.
+            # Attribute updates are unavailable because the example does not
+            # register or track object instance handles.
             raise NotImplementedError(
                 "object instance management not implemented in this example"
             )

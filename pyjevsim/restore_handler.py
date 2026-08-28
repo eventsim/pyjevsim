@@ -97,7 +97,7 @@ class RestoreHandler():
             shotmodel (bytes): Binary data of the model snapshot
         
         Returns:
-            object(BehaivorModel): The loaded model
+            object(BehaviorModel): The loaded model
         
         Raises:
             Exception: If the model type is not ModelType.BEHAVIORAL
@@ -113,4 +113,3 @@ class RestoreHandler():
             model.set_name(name)
             
         return model
-    

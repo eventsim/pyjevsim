@@ -107,7 +107,7 @@ cp "${LOG_DIR}/bob.trace"   /tmp/hla-traces/bob.gorti.trace   2>/dev/null || tru
 echo
 echo "-- traces -------------------------------------------------------"
 echo "  per-federate:  ${LOG_DIR}/{alice,bob}.trace"
-echo "  conformance:   /tmp/hla-traces/{alice,bob}.gorti.trace"
+echo "  saved copy:    /tmp/hla-traces/{alice,bob}.gorti.trace"
 echo "  if chat_pitch/run_demo.sh has also run, compare:"
 echo "    examples/hla/diff_traces.sh"
 echo

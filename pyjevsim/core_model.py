@@ -10,10 +10,7 @@ This module contains CoreModel, the parent class of all Model Types.
 from .system_object import SystemObject
 
 class CoreModel(SystemObject):
-    """
-    All forms of Models in Pyjevsim have a CoreModel as their foundation. 
-    CoreModel class serves as a base model with basic functionalities for input and output ports.
-    """
+    """Base class containing a model's name, type, and external ports."""
     def __init__(self, _name, _type):
         """
         Args:

@@ -1,13 +1,11 @@
-# pyjevsim — RTI-agnostic Interface
+# RTI backend interface
 
-This document describes the adapter interface and how to add a backend. The
-repository validates Pitch pRTI and Portico; CERTI, OpenRTI, MÄK, and custom
-surrogates are potential adapters, not shipped implementations.
+The adapter interface below is the extension point for new RTI backends. The
+repository includes tested Pitch pRTI and Portico adapters. CERTI, OpenRTI,
+MÄK, and custom surrogates are not shipped implementations.
 
-It extends the M0 contract in [`specification.md`](specification.md) §2. Where
-this document and the spec disagree on the *interface surface*, this document
-is authoritative; the spec remains authoritative on executor/federate
-semantics.
+The [HLA design reference](specification.md) describes how this interface fits
+the executor and federate runtime.
 
 ## 1. Layering
 
@@ -24,7 +22,7 @@ semantics.
  SysExecutor.step(granted)  ◄── Federate.run_until ──► RTIConnector.request_time_advance(target)
 ```
 
-Four collaborating pieces, each independently replaceable:
+The backend boundary has four parts:
 
 | Piece | Type | Replace to… |
 |-------|------|-------------|
@@ -113,7 +111,8 @@ class MyRTI(RTIConnector):
 register_rti("myrti", lambda **kw: MyRTI(**kw))
 ```
 
-Use it without changing any model or executor code:
+Select the backend while keeping a compatible model class unchanged. The
+executor factory, bindings, and lifecycle calls remain part of the setup:
 
 ```python
 from pyjevsim import SysExecutor, ExecutionType
@@ -140,7 +139,7 @@ class Codec(Protocol):
 ```
 
 The default `IdentityCodec` passes objects through (in-process / loopback).
-A real RTI supplies a codec that maps to FOM datatypes — e.g. an HLA 1516e
+A live RTI adapter supplies a codec that maps to FOM datatypes, such as an HLA 1516e
 codec built on the `EncoderFactory` (`HLAfixedRecord`, `HLAinteger32BE`, …).
 Because the codec is injected (`MyRTI(codec=...)`), one FOM codec can be
 reused across RTIs, and one RTI can carry different FOMs.
@@ -173,9 +172,9 @@ it returns identity grants and relies on the application to drive lock-step.
 - **Inbound** arrives on the backend's RX thread; `_emit` →
   `insert_external_event` is lock-protected, so no extra locking is needed in
   the model. Carry the **logical timestamp** through `_emit` so inbound events
-  land at the right simulated instant — pyjevsim's confluent/TSO tick
-  (`SysExecutor.step` / `_run_instant`) then delivers `con_trans` correctly
-  when an inbound event coincides with an imminent model.
+  enter the intended simulated instant. The `SysExecutor.step` /
+  `_run_instant` path invokes `con_trans` when an inbound event coincides
+  with an imminent model.
 - **Time advance** is logical-only. `Federate.run_until` enforces a positive
   request increment (its second argument is historically named `lookahead`)
   and loops `request_time_advance(target)` → `step(granted)` until
@@ -195,17 +194,11 @@ Backends register themselves on import so their dependencies stay optional:
 | CERTI | not shipped; possible Python binding or surrogate extension | CERTI libs |
 | OpenRTI / MÄK | not shipped; possible JPype/JNI or surrogate extension | vendor libs |
 
-Because `backends/pitch.py` programs against the *standard* `hla.rti1516e`
-Java API discovered through `RtiFactoryFactory`, a second 1516e RTI is
-mostly a classpath change. `backends/portico.py` is the worked example: it
-inherits everything and overrides four seams — `_encode_value` /
-`_decode_value` (an interoperable `HLAunicodeString` path) and `_rti_time` /
-`_rti_lookahead` (Portico delivers the tested reflections in receive order).
-The three-sub-step barrier is designed to prevent next-tick over-read, but
-current-batch completeness depends on configurable `quiet`/`settle` timing. Those seams
-exist for this purpose; add more of them rather than forking the transport.
-
-See [`instruction.md`](instruction.md) §7 for the kdx-rti migration notes and
-the Pitch-specific surrogate vs. in-process JPype trade-off discussed in the
-project history.
-```
+`backends/pitch.py` uses the `hla.rti1516e` Java API discovered through
+`RtiFactoryFactory`. `backends/portico.py` subclasses that implementation and
+overrides four extension hooks: `_encode_value` and `_decode_value` for its
+standard-layout `HLAunicodeString` path, and `_rti_time` and `_rti_lookahead`
+for its internal time mapping. Portico returns the tested reflections in
+receive order, so the adapter uses a three-sub-step barrier. The barrier
+prevents next-tick over-read; current-batch completeness still depends on the
+configured `quiet` and `settle` waits.

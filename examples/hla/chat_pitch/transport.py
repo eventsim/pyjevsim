@@ -1,21 +1,19 @@
-"""PitchTransport — pyjevsim.hla.Transport wrapping the kdx-rti gateway.
+"""pyjevsim transport for the kdx-rti Pitch gateway example.
 
 Talks to a `kdx_rti.GatewayClient`, which in turn talks to a Java HLA
 gateway process that holds an `RTIambassador` connected to a Pitch CRC.
 
-This is a *pedagogical* transport — the chat-federate path is covered;
-DDM, ownership, sync points, save/restore are not. For production use,
-either extend this transport or pull in a more complete one from the
-kdx-rti repo.
+The example covers the chat interaction path. It does not implement DDM,
+ownership, synchronization points, or save and restore.
 
-Wire flow per kdx-rti's frozen protocol:
+Wire flow used by the example:
 - control channel (DEALER): connect / createFederation / joinFederation /
   publishInteractionClass / subscribeInteractionClass / tick / tickGranted
   / resignFederation / disconnect
 - data channel out (PUSH): updateAttributeValues / sendInteraction
-- data channel in (SUB): reflect / interaction / discover (when time
-  management is off; under the nominal D1-amended flow these arrive
-  inlined in tickGranted.bufferedMessages)
+- data channel in (SUB): reflect / interaction / discover when time
+  management is off; with time management, these arrive in
+  tickGranted.bufferedMessages
 
 Time advance is the tick/tickGranted handshake; we drain
 bufferedMessages and dispatch them to the registered callback before
@@ -28,7 +26,7 @@ import logging
 import queue
 from typing import Any, Callable
 
-# kdx-rti is an optional runtime dependency — installed via:
+# kdx-rti is an optional runtime dependency. Install the base packages with:
 #   pip install pyjevsim pyzmq    # base
 #   then clone kdx-rti and `pip install -e .` in its python/ dir
 # The import is at module top-level so a missing kdx-rti fails loudly
@@ -64,11 +62,8 @@ class PitchTransport:
         )
         self._client.start()
 
-        # Pump SUB messages on a small thread so they reach the callback
-        # outside the request_time_advance critical path. (Under the
-        # typical D1 chat profile bufferedMessages arrive inside
-        # tickGranted, so this thread is mostly idle, but keeping it
-        # ensures correctness when time management is off.)
+        # Receive SUB messages outside request_time_advance. With time
+        # management enabled, messages normally arrive in tickGranted.
         import threading
         self._stop = threading.Event()
         self._sub_pump = threading.Thread(
@@ -103,8 +98,8 @@ class PitchTransport:
                 payload={
                     "objectClass": binding.object_class,
                     "attributes": params,
-                    # Real wire requires an objectInstanceHandle; the example
-                    # leaves that to a higher-level caller in production.
+                    # Object updates also require an objectInstanceHandle,
+                    # which this chat example does not manage.
                 },
             )
             self._client.send_data(env)
@@ -179,8 +174,7 @@ class PitchTransport:
         """Send a control envelope and wait for the matching response."""
         env = Envelope(type=type_, payload=payload)
         self._client.send_control(env)
-        # Drain until we either see the success envelope (correlation id
-        # match) or an error.
+        # Wait for the response with this request's correlation ID.
         while True:
             inbound = self._next_control(timeout_s=self._timeout_s)
             if inbound.id == env.id:
@@ -189,7 +183,7 @@ class PitchTransport:
                         f"gateway error on {type_}: {inbound.payload!r}"
                     )
                 return inbound
-            # Unrelated inbound (e.g. an async announce) — dispatch it.
+            # Dispatch unrelated asynchronous control messages.
             self._dispatch_control(inbound)
 
     def _next_control(self, *, timeout_s: float) -> Envelope:
@@ -201,10 +195,8 @@ class PitchTransport:
             ) from e
 
     def _dispatch_control(self, env: Envelope) -> None:
-        # Any control envelope that's not a direct response can carry an
-        # async data event (e.g. announceSynchronizationPoint). For the
-        # chat example we only forward inbound interactions/reflects via
-        # bufferedMessages on tickGranted, so this is mostly a sink.
+        # The chat example receives interactions and reflections through
+        # tickGranted.bufferedMessages; other control events are logged.
         log.debug("unrouted control envelope: type=%s id=%s",
                   env.type, env.id)
 

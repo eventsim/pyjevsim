@@ -1,17 +1,9 @@
-"""InProcessRTI — a multi-federate, in-process stand-in for an RTI.
+"""In-process bus for examples and protocol-level tests.
 
-Unlike :class:`~pyjevsim.hla.transport.LoopbackTransport` (which mirrors a
-single connector's output straight back to itself), ``InProcessRTI`` attaches
-multiple connectors to a shared :class:`InProcessFederation` bus. A ``send``
-from one connector is delivered to *every other* attached connector, exactly
-like a real federation — so two separate ``SysExecutor`` federates (e.g. ping
-and pong) can exchange interactions and object-attribute updates in one
-process, with no Java/RTI required.
-
-Subscription filtering is still done per-connector by the ``_HLARouter``, so
-each federate only sees the ``(kind, fom_id)`` pairs it subscribed to.
-
-Registered under the name ``"inprocess"``.
+Each ``InProcessRTI`` connector joins an ``InProcessFederation``. Values sent
+by one connector are delivered to the other attached connectors, while each
+connector's router applies subscription filtering. The bus does not provide
+federation-wide HLA time management or network transport.
 """
 
 from __future__ import annotations
@@ -23,7 +15,7 @@ from ..transport import RTICapabilities, RTIConnector
 
 
 class InProcessFederation:
-    """Shared bus standing in for a federation execution.
+    """Bus shared by in-process connectors.
 
     Connectors attach on ``join`` and detach on ``resign``/``close``. The
     bus broadcasts each send to every *other* attached connector.
@@ -47,8 +39,7 @@ class InProcessFederation:
 
     def broadcast(self, sender, kind: str, fom_id: str, wire: Any,
                   timestamp: "float | None") -> None:
-        # Snapshot so a callback that resigns mid-dispatch can't mutate the
-        # list under iteration.
+        # Copy the member list because a callback may resign during dispatch.
         for m in tuple(self._members):
             if m is not sender:
                 m._emit(kind, fom_id, wire, timestamp)
@@ -76,15 +67,11 @@ class InProcessRTI(RTIConnector):
     def federation(self) -> InProcessFederation:
         return self._fed
 
-    # --- RTI-specific hooks -------------------------------------------------
-
     def _do_send(self, binding, wire: Any, timestamp: "float | None") -> None:
         self._fed.broadcast(self, binding.kind, binding.fom_id, wire, timestamp)
 
     def _do_request_time_advance(self, target: float) -> float:
-        # No global time coordination in-process: identity grant. Callers
-        # that need lock-step semantics drive each federate's `step()`
-        # explicitly (see examples/hla_pingpong).
+        # This bus has no global time coordination; callers coordinate steps.
         return target
 
     def _do_join(self, federation: str, federate_name: str, fom_paths) -> None:

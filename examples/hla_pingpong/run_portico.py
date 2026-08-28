@@ -13,8 +13,8 @@ Env:
   PYJEVSIM_JVM   path to jvm.dll / libjvm.so (optional but recommended)
   RTI_HOME       Portico distribution root
   RTI_RID_FILE   Portico configuration. By default this same-process example
-                 uses the repository's ``portico-jvm.rid``. Set a custom RID
-                 for multi-process or multi-host execution.
+                 uses the repository's ``portico-jvm.rid``. Other process
+                 topologies require an appropriate custom RID.
 
 Run:  python examples/hla_pingpong/run_portico.py
 """

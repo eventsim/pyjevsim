@@ -1,13 +1,8 @@
-"""M4 — Confluent / bag-delivery semantics for inbound RTI events.
+"""Confluent delivery of inbound RTI events.
 
-Spec section: docs/hla/specification.md §6.
-Acceptance IDs: M4.1 .. M4.5.
-
-These tests exercise the interaction between transport-injected events
-and SysExecutor.step rounds. The implementation work for M4 is
-*usually* zero new code — the tests verify that the existing step loop
-does the right thing once HLAExecutor is in place. A failing test here
-is a real bug, not a missing feature.
+The tests inject transport events into an ``HLA_TIME`` executor and check
+bag delivery, transition selection, and zero-time rounds in
+``SysExecutor.step``. See ``docs/hla/specification.md`` section 6.
 """
 
 from __future__ import annotations

@@ -1,10 +1,8 @@
-"""Federate — lifecycle helper + HLA_TIME grant loop.
+"""Federation lifecycle and logical-time helper.
 
-Spec: docs/hla/specification.md §5.
-
-Federate is a thin wrapper that delegates lifecycle calls (join, publish,
-subscribe, resign) to the transport and drives the request_time_advance
-↔ step loop.
+``Federate`` delegates join, declaration, and resign calls to a transport.
+``run_until`` advances the executor as RTI time grants arrive. See
+``docs/hla/specification.md`` section 5.
 """
 
 from __future__ import annotations

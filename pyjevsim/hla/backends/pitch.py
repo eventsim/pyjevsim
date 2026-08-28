@@ -1,11 +1,12 @@
-"""PitchTransport — IEEE 1516-2010 backend for Pitch pRTI via JPype.
+"""IEEE 1516-2010 adapter for Pitch pRTI through JPype.
 
-Drives a pyjevsim federate against a real Pitch pRTI (``prti1516e.jar``) by
+Drives a pyjevsim federate against a live Pitch pRTI (``prti1516e.jar``) by
 loading the RTI's Java API in-process with JPype. Implements the
-:class:`~pyjevsim.hla.transport.RTIConnector` contract so the same DEVS models
-that run on ``loopback`` / ``inprocess`` run unchanged against Pitch.
+:class:`~pyjevsim.hla.transport.RTIConnector` contract. Model classes need not
+contain RTI API calls, but compatible ports and payloads, external bindings,
+FOM mapping, and launch configuration are required.
 
-Registered (lazily) under the name ``"pitch"``::
+The adapter is registered lazily as ``"pitch"``::
 
     from pyjevsim.hla import create_rti
     tx = create_rti("pitch",
@@ -16,7 +17,7 @@ Registered (lazily) under the name ``"pitch"``::
                     jvm_path=r"C:\\Program Files\\...\\jvm.dll",   # optional
                     classpath=[r"C:\\Program Files\\prti1516e\\lib\\prti1516e.jar"])
 
-Requirements (NOT needed to import this module — only to *use* it):
+Runtime requirements:
   * ``pip install jpype1`` matching your Python and Java versions
     (JPype >= 1.6 needs Java 11+; for Java 8 pin ``jpype1<=1.5``).
   * Pitch pRTI installed; its ``prti1516e.jar`` on the classpath.
@@ -35,11 +36,9 @@ with the RTI's ``EncoderFactory``::
                             "fields": {"hits": "int32"}},
     }
 
-This module is a reference implementation: it targets the prti1516e API
-surface but, because a live RTI + matching JVM are required, it is exercised
-by the guarded tests in ``tests/hla/test_pitch_backend.py`` (skipped when the
-toolchain is absent), while the protocol-level ping-pong logic is verified
-deterministically against ``InProcessRTI``.
+The optional tests in ``tests/hla/test_pitch_backend.py`` exercise the Java
+codec and live federation when their JVM and RTI environment variables are
+set. Protocol-level tests use ``InProcessRTI`` and require no Java runtime.
 """
 
 from __future__ import annotations
@@ -113,8 +112,8 @@ class PitchTransport(RTIConnector):
         self._classpath = list(classpath or [])
         self._lookahead = float(lookahead)
         # CRC endpoint ("host" or "host:port"); None => the RTI default
-        # (localhost). Pointing this at another host is all that turns a
-        # local federation into a multi-host one.
+        # (localhost). A remote endpoint still requires the corresponding
+        # RTI, routing, firewall, and deployment configuration.
         self._crc = crc
 
         # Java handles, resolved after connect/join.
@@ -128,8 +127,8 @@ class PitchTransport(RTIConnector):
         self._reg_enabled = threading.Event()
         self._con_enabled = threading.Event()
 
-        # Federation synchronization points (used to bring multi-process
-        # federations up to a common start barrier). label -> Event.
+        # Synchronization-point labels map to their announcement and
+        # federation-synchronized events.
         self._sync_lock = threading.Lock()
         self._sync_announced: dict[str, "threading.Event"] = {}
         self._sync_done: dict[str, "threading.Event"] = {}
@@ -163,8 +162,7 @@ class PitchTransport(RTIConnector):
         self._fed_amb = self._build_federate_ambassador()
 
         CallbackModel = jpype.JClass("hla.rti1516e.CallbackModel")
-        # HLA_IMMEDIATE delivers callbacks on RTI-owned threads; our _emit ->
-        # insert_external_event is lock-protected, so that is safe.
+        # HLA_IMMEDIATE invokes the ambassador on RTI callback threads.
         if self._crc:
             # Local settings designator points the LRC at a (possibly
             # remote) CRC, e.g. "crcAddress=192.168.1.10:8989".
@@ -176,12 +174,9 @@ class PitchTransport(RTIConnector):
             self._rtiamb.connect(self._fed_amb, CallbackModel.HLA_IMMEDIATE)
 
     def _build_federate_ambassador(self):
-        # JPype cannot subclass a concrete Java class (NullFederateAmbassador),
-        # so we implement the FederateAmbassador *interface* with a JProxy.
-        # Only the callbacks we care about are defined; __getattr__ supplies a
-        # no-op for every other interface method the RTI may invoke. Method
-        # name (not signature) selects the handler, so a single `*rest`
-        # definition covers all overloads of an callback.
+        # JPype cannot subclass NullFederateAmbassador, so a JProxy implements
+        # the FederateAmbassador interface. A no-op handles unused callbacks,
+        # and ``*rest`` accepts the API overloads selected by method name.
         jpype = self._jpype
         outer = self
 
@@ -239,14 +234,14 @@ class PitchTransport(RTIConnector):
         try:
             self._rtiamb.createFederationExecution(federation, URLArr(modules))
         except AlreadyExists:
-            pass  # another federate created it first — fine
+            pass  # another federate created the federation
         # Any other exception (bad FOM, parse error, ...) propagates.
 
         self._rtiamb.joinFederationExecution(
             federate_name, self._federate_type, federation, URLArr(modules)
         )
 
-        # Time management: regulating + constrained with our lookahead.
+        # Enable regulating and constrained time management.
         # Do not report a successful join until both enable callbacks arrive.
         try:
             self._reg_enabled.clear()
@@ -281,7 +276,7 @@ class PitchTransport(RTIConnector):
         else:
             oc, attrs = self._object_handles(binding.fom_id, spec)
             self._rtiamb.publishObjectClassAttributes(oc, attrs)
-            # Register our instance up front so updates have a target.
+            # Register the local object instance used for updates.
             self._obj_instances[binding.fom_id] = \
                 self._rtiamb.registerObjectInstance(oc)
 
@@ -305,7 +300,7 @@ class PitchTransport(RTIConnector):
         try:
             self._rtiamb.destroyFederationExecution(self._federation)
         except jpype.JException:
-            pass  # other federates still joined — fine
+            pass  # other federates may still be joined
 
     def _do_close(self) -> None:
         if self._rtiamb is not None:
@@ -313,8 +308,8 @@ class PitchTransport(RTIConnector):
                 self._rtiamb.disconnect()
             except Exception:
                 pass
-        # We deliberately do NOT shutdown the JVM: other transports in the
-        # same process may still need it, and JPype cannot restart a JVM.
+        # Keep the JVM running because other transports in the same process
+        # may still need it and JPype cannot restart a JVM.
 
     # ------------------------------------------------------------- time axis
 

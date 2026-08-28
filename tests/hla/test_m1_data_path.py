@@ -1,7 +1,6 @@
-"""M1 — HLAExecutor data path: output interception + inbound injection.
+"""HLAExecutor output interception and inbound event injection.
 
-Spec section: docs/hla/specification.md §3.
-Acceptance IDs: M1.1 .. M1.11.
+See ``docs/hla/specification.md`` section 3.
 """
 
 from __future__ import annotations
@@ -175,12 +174,10 @@ class TestOutputInterception:
 
 
 class TestInboundInjection:
-    """Inbound delivery via the §3.3 wiring (namespaced SE port + coupling).
+    """Inbound delivery through a namespaced executor port and coupling.
 
-    The constructor must register the SE-side port and add a coupling so
-    `insert_external_event` actually queues the event. M1.7 verifies the
-    end-to-end queueing; M1.8 verifies non-subscribed events are dropped
-    silently; M1.9 verifies the past-timestamp clamp.
+    The cases cover subscribed-event queueing, ignored non-subscribed events,
+    and clamping timestamps that precede the executor's current time.
     """
 
     def test_M1_7_subscribed_event_is_queued_on_namespaced_port(self):

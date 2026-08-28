@@ -1,4 +1,4 @@
-"""Ping-pong federate models + HLA bindings (RTI-agnostic).
+"""Ping-pong models and their HLA port bindings.
 
 Two paddles rally a ball:
 
@@ -6,14 +6,13 @@ Two paddles rally a ball:
     ``max_volleys`` is reached.
   * ``Pong`` returns every ``Ping`` it receives.
 
-Three FOM endpoints exercise the two HLA data paths:
+The example uses three FOM endpoints:
 
   * ``PingPong.Ping`` / ``PingPong.Pong`` — **interactions** (the rally).
   * ``PingPaddle.hits`` — an **object attribute** Ping publishes and Pong
     reflects (object synchronization).
 
-The models import nothing RTI-specific beyond the binding dataclasses; the
-exact same classes run on ``inprocess``, ``loopback`` or ``pitch``.
+RTI configuration remains outside the model classes.
 """
 
 from __future__ import annotations

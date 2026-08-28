@@ -1,8 +1,8 @@
-# hla_atsim — HLA co-simulation of the anti-torpedo example
+# HLA AT/SIM example
 
-A self-contained HLA/RTI split of `examples/atsim` into **two federates**
-(surfaceship + torpedo) whose canonical application-state rows reproduce a
-committed single-executor reference at every observed tick.
+This example splits `examples/atsim` into surface-ship and torpedo federates.
+It compares their application-state rows with a committed single-executor
+reference at every recorded tick.
 
 ## What's here
 
@@ -12,8 +12,8 @@ committed single-executor reference at every observed tick.
 | `run_hla_inprocess.py` | two federates over the in-process RTI bus (writes `hla_<tag>.csv`) — **no Java needed** |
 | `run_hla_pitch.py` | optional live 1516e run (guarded; writes `hla_<rti>_<tag>.csv`; `PYJEVSIM_RTI` selects the backend) |
 | `run_hla_portico.py` | the same driver against the open-source Portico RTI (writes `hla_portico_<tag>.csv`) |
-| `verify_equivalence.py` | strict gate: checks both headless builds against committed canonical rows for every scenario |
-| `verify_equivalence_rti.py` | strict live-RTI gate (`PYJEVSIM_RTI=pitch\|portico`); missing toolchain/trace is an error |
+| `verify_equivalence.py` | compares both headless runs with the committed reference rows |
+| `verify_equivalence_rti.py` | compares a selected live RTI (`PYJEVSIM_RTI=pitch\|portico`) with the references; missing toolchain or output is an error |
 | `plot_trajectories.py` | headless matplotlib — renders `figures/atsim_<tag>.png` (top-down, 3-D, range) from the CSV |
 | `make_animation.py` | headless matplotlib — renders `figures/atsim_<tag>.gif` engagement animation |
 | `fom/AntiTorpedo.xml` | IEEE 1516-2010 FOM, one `Platform` object class |
@@ -33,7 +33,7 @@ python examples/hla_atsim/verify_equivalence.py
 # -> MATCH stationary: 180 rows
 ```
 
-The gate verifies **both** scenarios and exits 0 only if both are
+The command checks **both** scenarios and exits 0 only if both are
 exactly equal to the full committed references in
 [`docs/hla-validation/results`](../../docs/hla-validation/results/).
 Select a scenario for the individual run scripts via CLI arg or the
@@ -78,7 +78,7 @@ MATCH self_propelled: 180 rows
 MATCH stationary:      180 rows
 ```
 
-To reproduce the offline two-scenario gate:
+To run the offline two-scenario check:
 
 ```bash
 python examples/hla_atsim/verify_equivalence.py  # both scenarios, no Java
@@ -99,10 +99,10 @@ scenario) and the animations with
 |-----------------------|-------------------|
 | ![self-propelled engagement animation](figures/atsim_self_propelled.gif) | ![stationary engagement animation](figures/atsim_stationary.gif) |
 
-The surfaceship (blue) flees while its `Launcher` deploys decoys (green); watch
-the torpedo (red) get seduced onto a self-propelled decoy — but run down the
-ship when the decoys are stationary. Same GIFs for the standalone and the
-two-federate HLA co-simulation.
+The surface ship is blue, the decoys are green, and the torpedo is red. The
+self-propelled scenario redirects the torpedo to a decoy; in the stationary
+scenario the torpedo continues along the ship's track. The GIFs are rendered
+from the shared reference trajectories.
 
 ### Static views
 
@@ -115,22 +115,20 @@ two-federate HLA co-simulation.
 The surfaceship (blue) flees west while its `Launcher` deploys four decoys
 (green); the torpedo (red) starts deep (`z = -9`) and rises as it homes in.
 
-- **Self-propelled decoys — seduction succeeds.** One decoy crosses into the
-  torpedo's path; the range plot shows the torpedo→decoy distance collapsing to
-  `0` around tick 13 while the torpedo→ship distance grows past `70` — the ship
-  escapes.
-- **Stationary decoys — seduction fails (here).** The decoys jump to fixed
-  offsets away from the torpedo's approach; the torpedo→ship distance instead
-  closes to ~`6` and holds — the torpedo runs down the ship's track.
+- **Self-propelled decoys.** One decoy crosses the torpedo's path. The
+  torpedo-to-decoy distance reaches `0` around tick 13 while the
+  torpedo-to-ship distance grows past `70`.
+- **Stationary decoys.** The decoys move to fixed offsets from the torpedo's
+  approach. The torpedo-to-ship distance approaches about `6` and then holds.
 
-Both outcomes are reproduced identically by the two-federate HLA co-simulation.
-(In the top-down/3-D plots, hollow marker = start, filled = end.)
+The two-federate comparison produces the same reference rows for both
+scenarios. In the top-down and 3-D plots, hollow markers show starting
+positions and filled markers show final positions.
 
-## Why standalone == HLA, deterministically
+## Deterministic comparison design
 
-The only cross-platform coupling in atsim is *sensing* (each Detector read
-every other object's position). Two design rules make the split exact and
-reproducible, applied identically to both builds:
+The cross-platform coupling in this example is position sensing. Two design
+rules make the standalone and two-federate runs comparable:
 
 1. **1-tick position snapshot.** Detectors (and the CommandControl /
    TorpedoControl references) read a frozen snapshot taken at the tick
@@ -139,16 +137,14 @@ reproducible, applied identically to both builds:
    local objects + peer/decoy positions reflected over the RTI with a
    one-caller-tick exchange offset. See `utils/sensing.py`.
 
-2. **Once-per-tick physics + tick-boundary decision commit.** The atsim
+2. **Once-per-tick physics and delayed decision commit.** The AT/SIM
    models mutate shared physics objects inside `output()`; under DEVS
    cascades the order and count of `output()` calls at one instant is
-   nondeterministic (`ScheduleQueue.pop()` set-iteration is object-id based).
-   We remove every intra-tick race: each Manuever/decoy integrates exactly
-   once per tick, and cross-model decisions that touch a peer's physics
-   object (heading evasion, pursuit target) are staged as `pending_*` and
-   committed at the next tick boundary. Motion in tick `t` therefore depends
-   only on the tick number and the frozen inputs — identical in one executor
-   or two. See `utils/ticking.py`.
+   not a stable interface for cross-model decisions. Each maneuver and decoy
+   integrates once per tick. Decisions that affect a peer's physics object,
+   such as evasion heading or pursuit target, are staged as `pending_*` and
+   applied at the next tick boundary. Motion during tick `t` therefore uses the
+   same frozen inputs in both runs. See `utils/ticking.py`.
 
 Position exchange is pumped explicitly between `step()` calls
 (`publish_local` → `ProxySink`), not through a bound DEVS "uplink" model, so
@@ -156,8 +152,8 @@ it reads settled end-of-tick positions and stays outside the tick.
 
 ## Optional live-RTI runs
 
-`run_hla_pitch.py` bridges to a real 1516e RTI. It is **not** part of the
-default gate and self-skips unless `jpype`, a JVM and the RTI jar are all
+`run_hla_pitch.py` bridges to a live 1516e RTI. It is not part of the default
+comparison and skips unless `jpype`, a JVM, and the RTI jar are all
 present:
 
 ```powershell
@@ -188,21 +184,22 @@ python examples/hla_atsim/verify_equivalence_rti.py   # compares both scenarios
 ```
 
 If `RTI_RID_FILE` is unset, `run_hla_portico.py` selects the same bundled
-RID automatically. Its `portico.connection = jvm` setting is intentionally
-limited to the two federates sharing this example's single Python process and
-JVM. Multi-process or multi-host Portico execution requires an explicit RID
-for the intended network transport; the bundled setting is not wire or
-multi-host evidence. The driver also fails if either expected peer reflection
-is absent at the first time grant, preventing isolated one-member federations
-from producing a partial trace that appears successful. The strict verifier
-also terminates a scenario subprocess after 180 seconds by default; set
+RID automatically. Its `portico.connection = jvm` setting is for two
+federates sharing one Python process and JVM. Other process topologies require
+an appropriate custom RID and are not covered by this example. The driver
+also fails if either
+expected peer reflection is absent at the first time grant, preventing isolated
+one-member federations from producing a partial trace that appears successful.
+The live verifier terminates a scenario subprocess after 180 seconds by
+default; set
 `PYJEVSIM_LIVE_TIMEOUT` to an appropriate positive number for a slower RTI.
 
-The changelog records five consecutive checks against **Portico 2.1.4**
+The [live validation summary](../../docs/hla-validation/results/live-validation-summary.md)
+records five consecutive checks against **Portico 2.1.4**
 (Temurin 11, JPype 1.7.1), with 180 matching canonical rows per scenario; raw
 logs from those historical runs were not retained. Portico delivers the tested
-reflections in receive order. The adapter's three-sub-step barrier is designed
-to prevent next-tick data from appearing early, but current-tick completeness
+reflections in receive order. The adapter's three-sub-step barrier prevents
+next-tick data from appearing early, but current-tick completeness
 still depends on configurable `quiet`/`settle` waits; a sufficiently late reflection
 can be deferred to the next tick. See
-[`portico.py`](../../pyjevsim/hla/backends/portico.py) for that boundary.
+[`portico.py`](../../pyjevsim/hla/backends/portico.py) for the implementation.

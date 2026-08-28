@@ -1,15 +1,17 @@
 HLA / RTI Integration
 =====================
 
-pyjevsim runs ordinary DEVS models as HLA (IEEE 1516-2010) federates. The
-model code stays pure DEVS; what changes is the *factory* that wraps each
-model and the *transport* (RTI backend) it talks to. The same model runs
-unchanged in a standalone simulation, on the in-process test bus, or
-against a live RTI such as Pitch pRTI or Portico.
+pyjevsim wraps port-compatible DEVS models as HLA (IEEE 1516-2010) federates.
+Model classes need not contain RTI API calls; the surrounding *factory*, port
+bindings, FOM mapping, launch configuration, and *transport* (RTI backend)
+provide the federation integration. A compatible model class can therefore be
+used with the in-process test bus or a supported live RTI such as Pitch pRTI
+or Portico.
 
 The repository's `HLA validation and reproducibility guide
 <https://github.com/eventsim/pyjevsim/tree/main/docs/hla-validation>`_
-defines the tested claim, committed traces, service coverage, and limitations.
+defines the comparison procedure and provides reference traces, service
+coverage, and limitations.
 
 Architecture
 ------------
@@ -27,12 +29,13 @@ Architecture
         v
    SysExecutor.step(granted)  <-- Federate.run_until --> request_time_advance
 
-Four replaceable pieces live in ``pyjevsim.hla``:
+The backend interface contains four parts:
 
 ``RTIConnector``
    Base class for RTI backends. Two methods are the minimum abstract surface;
    a live adapter also supplies lifecycle, declaration, and receive hooks.
-   Common plumbing is inherited.
+   Direction checks, codec dispatch, callback registration, and lifecycle
+   state handling are inherited.
 ``Codec`` / ``IdentityCodec``
    FOM (de)serialization, decoupled from the wire transport.
 ``RTICapabilities``
@@ -60,17 +63,18 @@ Built-in backends
      - none
    * - ``pitch``
      - Pitch pRTI (IEEE 1516-2010), live federation
-     - ``pip install pyjevsim[hla-pitch]`` + Java >= 11 + a running CRC
+     - ``python -m pip install "pyjevsim[hla-java]"`` + Java >= 11 + a running CRC
    * - ``portico``
      - Portico (open source, IEEE 1516-2010), live federation
-     - ``pip install pyjevsim[hla-pitch]`` + Java >= 11 + ``portico.jar``
+     - ``python -m pip install "pyjevsim[hla-java]"`` + Java >= 11 + ``portico.jar``
 
-Both live backends drive the standard ``hla.rti1516e`` Java API discovered
-through ``RtiFactoryFactory``, so selecting an RTI is a matter of putting its
-jar on the classpath. :class:`~pyjevsim.hla.backends.portico.PorticoTransport`
-subclasses the Pitch one and adapts the ``HLAunicodeString`` codec and
-receive-order reflections. Its tick barrier has a documented
-``quiet``/``settle`` timing assumption; see the validation record above.
+Both live backends use the ``hla.rti1516e`` Java API discovered through
+``RtiFactoryFactory``. The backend name, RTI jar, JVM, FOM map, and launch
+settings select the concrete RTI.
+:class:`~pyjevsim.hla.backends.portico.PorticoTransport` subclasses the Pitch
+adapter and handles Portico's ``HLAunicodeString`` representation and
+receive-order reflections. Its tick barrier depends on documented
+``quiet``/``settle`` waits; see the validation guide.
 
 Turning a model into a federate
 -------------------------------
@@ -88,7 +92,7 @@ Turning a model into a federate
        "in_msg":  HLAInteraction("Comm.ChatMsg", direction="in"),
    }
 
-   # 2. Pick a transport by name (models are backend-agnostic).
+   # 2. Pick a transport by name; selection stays outside the model class.
    transport = create_rti("inprocess")          # or "pitch", ...
 
    # 3. Wire the HLA factory and register the model.
@@ -158,20 +162,19 @@ or against the open-source Portico RTI (``portico`` backend, no CRC)::
 Anti-torpedo co-simulation (hla_atsim)
 --------------------------------------
 
-``examples/hla_atsim/`` is a larger, verification-driven example: it splits
+``examples/hla_atsim/`` splits
 the ``examples/atsim`` anti-torpedo scenario into **two federates**
 (surfaceship + torpedo). In the standalone ``atsim`` the platforms sense one
 another through a shared global registry; the HLA version replaces that with
 **HLA object attributes** — each federate publishes its own hull and decoy
-positions and reflects the peer's into a per-federate one-tick position
-snapshot that the detectors read from (bidirectional sensing requires
-a one-caller-tick exchange discipline. The driver grant increment and default
-outbound timestamp offset are 1 caller tick; Portico's internal regulating
-lookahead is one RTI sub-step, or one third of a caller tick).
+positions and reflects peer positions into a per-federate snapshot that the
+detectors read on the following caller tick. The driver grant increment and
+default outbound timestamp offset are one caller tick. Portico's internal
+regulating lookahead is one RTI sub-step, or one third of a caller tick.
 
 The example ships two decoy scenarios, ``self_propelled`` (default) and
 ``stationary`` (select with ``PYJEVSIM_SCENARIO`` or a CLI argument), and a
-gate that verifies the federated run against a single-executor reference
+comparison that checks the federated run against a single-executor reference
 with exact equality of sorted, ``%.10g``-formatted application-state rows for
 both scenarios::
 
@@ -179,13 +182,12 @@ both scenarios::
    # -> MATCH self_propelled: 180 rows
    # -> MATCH stationary: 180 rows
 
-The same trajectories are produced by the single-process reference
-(``run_standalone_headless.py``), the two-federate in-process bus
-(``run_hla_inprocess.py``), two federates over a live Pitch pRTI
-(``run_hla_pitch.py``) and two federates over a live Portico RTI
-(``run_hla_portico.py``) have produced the same canonical rows in the recorded
-checks. This functional result concerns application-visible tick state, not
-raw callback order or performance. ``verify_equivalence_rti.py`` compares a
+Recorded checks found the same reference rows for the single-process run
+(``run_standalone_headless.py``), the two-federate in-process run
+(``run_hla_inprocess.py``), Pitch pRTI (``run_hla_pitch.py``), and Portico
+(``run_hla_portico.py``). This comparison is limited to application-visible
+state at each recorded tick.
+``verify_equivalence_rti.py`` compares a
 selected live RTI against the committed reference and fails when the external
 toolchain does not produce a trace::
 
@@ -199,39 +201,35 @@ toolchain does not produce a trace::
    :width: 70%
    :align: center
 
-   Self-propelled decoy engagement (top-down x-y, 30 ticks): the surfaceship
-   (blue) flees while its launcher deploys decoys (green); one seduces the
-   torpedo (red), which locks onto the decoy and stops short of the ship.
+   Self-propelled decoy scenario (top-down x-y, 30 ticks). The ship is blue,
+   decoys are green, and the torpedo is red.
 
 .. figure:: ../../examples/hla_atsim/figures/atsim_stationary.png
    :width: 70%
    :align: center
 
-   Stationary decoy engagement: the decoys hold fixed offsets away from the
-   torpedo's approach, so the torpedo is not seduced and runs down the ship's
-   track. Both figures are rendered by ``plot_trajectories.py`` and are
-   identical for the standalone and the two-federate HLA runs.
+   Stationary decoy scenario. The decoys hold their drop positions while the
+   torpedo continues toward the ship's track. ``plot_trajectories.py`` renders
+   both figures from the reference rows.
 
 ``plot_trajectories.py`` also renders a 3-D (x, y, z-depth) view and a
-range-vs-tick plot per scenario. The range plot makes the decoy effectiveness
-quantitative — the torpedo's 3-D distance to the ship and to each decoy over
-time:
+range-vs-tick plot showing the torpedo's 3-D distance to the ship and each
+decoy:
 
 .. figure:: ../../examples/hla_atsim/figures/atsim_self_propelled_range.png
    :width: 70%
    :align: center
 
-   Self-propelled decoys: the torpedo→decoy distance collapses to zero around
-   tick 13 (seduction) while the torpedo→ship distance grows past 70 — the ship
-   escapes.
+   Self-propelled decoys: the torpedo-to-decoy distance reaches zero around
+   tick 13 while the torpedo-to-ship distance grows past 70.
 
 .. figure:: ../../examples/hla_atsim/figures/atsim_stationary_range.png
    :width: 70%
    :align: center
 
-   Stationary decoys: no decoy holds the torpedo; its distance to the ship
-   instead closes to ~6 and holds. The full figure set (top-down, 3-D, range
-   for both scenarios) is under ``examples/hla_atsim/figures/``.
+   Stationary decoys: the torpedo-to-ship distance approaches about 6 and then
+   remains there. The complete figure set is under
+   ``examples/hla_atsim/figures/``.
 
 Low-level stepping
 ------------------
@@ -246,12 +244,12 @@ backend, drive ``HLA_TIME`` mode directly:
    se.init_sim()
    while not se.is_terminated():
        next_t = se.get_next_event_time()          # compute Time Advance Request
-       granted = ...                              # wait for the RTI grant
+       granted = rti.request_time_advance(next_t) # wait for the RTI grant
        output_events = se.step(granted)           # process events <= granted
        # ... publish output_events to the RTI ...
 
 ``step(granted_time)`` runs the same two-phase Parallel-DEVS tick as the
-V_TIME path (correct ``int`` / ``ext`` / ``con`` transitions, multi-round
-sigma=0 cascades in one call) and returns the output events drained
+V_TIME path (``int`` / ``ext`` / ``con`` selection and multi-round sigma=0
+cascades in one call) and returns the output events drained
 during the grant. This is the core path used by the ``pitch`` backend and its
 ``portico`` subclass.

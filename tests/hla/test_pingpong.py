@@ -1,16 +1,15 @@
-"""Ping-pong over two federates — RTI-agnostic logic verification.
+"""Ping-pong behavior over two in-process federates.
 
 Runs the *example* models (examples/hla_pingpong) as two separate
-SysExecutor federates joined to one in-process federation, covering the four
-deliverables without needing Java / pRTI:
+SysExecutor federates joined to one in-process federation. The cases cover:
 
   1. federates named ping / pong
   2. federation join / resign
   3. interaction send (the rally, both directions)
   4. object attribute synchronization (Ping.hits reflected by Pong)
 
-The same models run against real Pitch pRTI via the ``pitch`` backend
-(see tests/hla/test_pitch_backend.py, skipped when the toolchain is absent).
+Optional Pitch integration is covered in ``test_pitch_backend.py`` when its
+external toolchain is configured.
 """
 
 from __future__ import annotations
@@ -20,7 +19,7 @@ import sys
 
 import pytest
 
-# Import the example models (the authoritative ping-pong implementation).
+# Import the models used by the runnable ping-pong examples.
 _EXAMPLE_DIR = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "..", "..", "examples", "hla_pingpong")
 )

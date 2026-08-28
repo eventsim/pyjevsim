@@ -51,10 +51,9 @@ class RunResult:
 
 
 def expected_atomic_count(variant: str, depth: int, width: int) -> int:
-    """Return the canonical atomic count for a DEVStone configuration.
+    """Return the expected atomic count for a DEVStone configuration.
 
-    Useful for sanity-checking adapters that build the graph independently.
-    Formulas follow the canonical recursive shape: a depth-1 model is a single
+    The formulas follow the recursive shape: a depth-1 model is a single
     atomic; each additional level adds (width - 1) atomics for LI/HI/HO and
     more for HOmod.
     """

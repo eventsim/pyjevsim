@@ -6,8 +6,8 @@ Model
 
    tests_model
 
-Simultion
-=========
+Simulation
+==========
 
 .. toctree::
    :maxdepth: 4

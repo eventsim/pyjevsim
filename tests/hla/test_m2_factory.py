@@ -1,7 +1,6 @@
-"""M2 — HLAExecutorFactory + SysExecutor integration.
+"""HLAExecutorFactory integration with SysExecutor.
 
-Spec section: docs/hla/specification.md §4.
-Acceptance IDs: M2.1 .. M2.6.
+See ``docs/hla/specification.md`` section 4.
 """
 
 from __future__ import annotations
