@@ -13,7 +13,7 @@ simulation environment with built-in journaling. It supports snapshot
 and restore of individual models or the full simulation engine,
 virtual-time and real-time execution, and HLA (IEEE 1516-2010) federate
 integration with pluggable RTI backends. Version 2.2.0 includes adapters for
-Pitch pRTI and the open-source Portico RTI.
+Pitch pRTI, the open-source Portico RTI, and the native-Python GORTI client.
 Compatible with Python 3.10+.
 
 Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
@@ -23,6 +23,9 @@ Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
 - **Portico backend.** The live HLA adapter now supports Portico 2.1.4 in
   addition to Pitch pRTI. Portico-specific handling covers its
   `HLAunicodeString` representation and receive-order reflection behavior.
+- **GORTI backend.** A native-Python adapter supports interactions, object
+  attributes, and regulating/constrained logical time through GORTI's
+  `rti1516e` SDK, without Java or JPype.
 - **AT/SIM reference data.** The two-federate AT/SIM example includes two
   30-tick scenarios, complete 180-row reference trajectories, and commands
   for offline and optional live-RTI comparison.
@@ -105,6 +108,13 @@ The `loopback` and `inprocess` backends need nothing beyond the core package:
 
 ```
 python -m pip install "pyjevsim[hla-java]"
+```
+
+GORTI's Python SDK is not currently published on PyPI. Install it from a
+GORTI source checkout before selecting the `gorti` backend:
+
+```powershell
+python -m pip install -e C:\path\to\gorti\pysdk
 ```
 
 ## Quick Start
@@ -357,9 +367,9 @@ from pyjevsim.hla import (
     create_rti, available_rtis, HLAExecutorFactory, HLAInteraction, Federate,
 )
 
-print(available_rtis())     # ['inprocess', 'loopback', 'pitch', 'portico']
+print(available_rtis())     # ['gorti', 'inprocess', 'loopback', 'pitch', 'portico']
 
-transport = create_rti("inprocess")   # or "pitch" / "portico" for a live RTI
+transport = create_rti("inprocess")   # or "pitch" / "portico" / "gorti"
 sys_exec = SysExecutor(1, ex_mode=ExecutionType.HLA_TIME)
 sys_exec.exec_factory = HLAExecutorFactory(
     transport, {"chatter": {"out": HLAInteraction("Comm.Msg", direction="out")}}
@@ -376,7 +386,7 @@ fed.resign()
 The `run_until` argument historically named `lookahead` is the grant-request
 increment. The backend owns the distinct HLA regulating interval and time-unit
 mapping: Pitch uses its configured interval; Portico uses one internal RTI
-sub-step.
+sub-step; GORTI maps pyjevsim logical time directly to RTI logical time.
 
 Built-in backends:
 
@@ -386,12 +396,17 @@ Built-in backends:
 | `inprocess` | multi-federate in-process bus (tests/demos) | none |
 | `pitch` | **Pitch pRTI** IEEE 1516-2010, live federation | `python -m pip install "pyjevsim[hla-java]"` + Java ≥ 11 + a running CRC |
 | `portico` | **Portico** (open source) IEEE 1516-2010, live federation | `python -m pip install "pyjevsim[hla-java]"` + Java ≥ 11 + `portico.jar` (no CRC) |
+| `gorti` | **GORTI** native-Python IEEE 1516-2010 client | source-install the SDK with `python -m pip install -e C:\path\to\gorti\pysdk` + a reachable `rtid` |
 
-Both live backends program against the standard `hla.rti1516e` Java API; the
+The Java-backed live backends program against the standard `hla.rti1516e`
+API; the
 `portico` backend subclasses the `pitch` implementation and adapts its
 `HLAunicodeString` codec and receive-order delivery of time-stamped
 reflections. See
 [`pyjevsim/hla/backends/portico.py`](https://github.com/eventsim/pyjevsim/blob/main/pyjevsim/hla/backends/portico.py).
+The `gorti` backend uses GORTI's `rti1516e` Python SDK directly and supports
+interactions, object attributes, and regulating/constrained logical time
+without a JVM.
 
 **Adding your own RTI** (CERTI, OpenRTI, MÄK, …): subclass
 `RTIConnector` and implement `_do_send` + `_do_request_time_advance`
@@ -445,7 +460,7 @@ for the RTI.
 
 ### Federate ambassador
 
-pyjevsim ships ready-made Pitch pRTI and Portico backends (above) and an
+pyjevsim ships ready-made Pitch pRTI, Portico, and GORTI backends (above) and an
 `RTIConnector` interface for adding others. If instead you want to embed
 the simulator into an existing federate ambassador, wire `step` /
 `get_next_event_time` / `insert_external_event` /

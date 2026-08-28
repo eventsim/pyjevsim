@@ -18,14 +18,14 @@ DEVS/HLA systems.
 - **RTI**: Run-Time Infrastructure implementing HLA federation services.
 - **FOM**: Federation Object Model defining exchanged classes and data.
 - **TSO / RO**: timestamp-order / receive-order delivery.
-- **JPype**: the Python-to-Java bridge used by the live RTI adapters.
+- **JPype**: the Python-to-Java bridge used by the Pitch and Portico adapters.
 
 ## Release comparison
 
 | Area | Published pyjevsim baseline (SoftwareX 2025) | `v2.1.2` | `2.2.0` |
 |---|---|---|---|
-| Main focus | local Python DEVS execution and journaling | pluggable HLA connector, `HLA_TIME`, in-process tests, Pitch backend | Portico backend, AT/SIM comparison workflow, committed traces, and service/limitations documentation |
-| Live HLA checks | not part of the published contribution | Pitch 5.5.2 ping-pong, including a same-host multiprocess synchronization-point run | Pitch 5.5.2 and Portico 2.1.4 AT/SIM checks on one physical host |
+| Main focus | local Python DEVS execution and journaling | pluggable HLA connector, `HLA_TIME`, in-process tests, Pitch backend | Portico and GORTI backends, AT/SIM comparison workflow, committed traces, and service/limitations documentation |
+| Live HLA checks | not part of the published contribution | Pitch 5.5.2 ping-pong, including a same-host multiprocess synchronization-point run | Pitch 5.5.2, Portico 2.1.4, and GORTI AT/SIM checks on one physical host |
 | Identifier | article DOI `10.1016/j.softx.2025.102291` | tag `v2.1.2`, version DOI `10.5281/zenodo.21002029` | tag `v2.2.0`; the version DOI is assigned when Zenodo archives the GitHub release |
 
 The supported Python floor is consistently `>=3.10` in `pyproject.toml`, the
@@ -49,6 +49,7 @@ flowchart LR
     T1["InProcessRTI"]
     T2["PitchTransport"]
     T3["PorticoTransport"]
+    T4["GortiTransport"]
     X["IEEE 1516 RTI"]
     F["Federate / HLA_TIME"]
     S["SysExecutor.step(granted)"]
@@ -61,8 +62,10 @@ flowchart LR
     R -->|implementation| T1
     R -->|implementation| T2
     R -->|implementation| T3
+    R -->|implementation| T4
     T2 --> X
     T3 --> X
+    T4 --> X
     F --> R
     F --> S
     S --> E
@@ -115,7 +118,7 @@ The subject is the anti-torpedo example under [`examples/hla_atsim`](../../examp
 | FOM | [`AntiTorpedo.xml`](../../examples/hla_atsim/fom/AntiTorpedo.xml), IEEE 1516-2010 namespace |
 | Scenarios | `self_propelled_decoy`, `stationary_decoy` |
 | Horizon | 30 logical ticks; time resolution 1 |
-| Time increments | grant increment 1 caller tick; default outbound timestamp offset 1 caller tick; Portico HLA regulating interval 1 internal RTI sub-step |
+| Time increments | grant increment 1 caller tick; default outbound timestamp offset 1 caller tick; Pitch/GORTI map caller time 1:1; Portico HLA regulating interval 1 internal RTI sub-step |
 | Recorded artifact | CSV columns `(tick, object_name, x, y, z)`; `object_name` stores the stable `sense_id` |
 | Row count | 180 rows per execution and scenario |
 
@@ -140,7 +143,9 @@ normal `HLAExecutor` binding path for both interactions and object attributes:
 |---|---:|---:|---:|
 | in-process and Pitch ping-pong | yes | yes | yes |
 | Portico live smoke test | declaration/lifecycle only | no | binding metadata only |
+| GORTI live ping-pong smoke | yes | yes | yes |
 | Portico and in-process AT/SIM trajectory comparison | no | yes | explicit between-step pump |
+| GORTI AT/SIM trajectory comparison | no | yes | explicit between-step pump |
 
 ## 3. Behavioral-equivalence criterion
 
@@ -168,6 +173,8 @@ cover serialized bytes or raw RTI callback order:
 
 - Pitch sends time-stamped updates and maps pyjevsim logical time 1:1 to RTI
   logical time.
+- GORTI sends time-stamped updates through its native Python SDK and also maps
+  pyjevsim logical time 1:1 to RTI logical time.
 - Portico reports receive-order delivery. Its backend buffers reflections and
   uses a three-sub-step barrier before exposing the tick snapshot. The barrier
   prevents next-tick over-read, but completeness of the
@@ -177,9 +184,9 @@ cover serialized bytes or raw RTI callback order:
   both federates in explicit lock-step.
 
 Consequently, equivalence means equal application-visible state at each committed
-tick after each backend's documented ordering mechanism.  It applies to the Pitch
-TSO path and to the Portico RO-plus-barrier path. Transport-internal arrival
-order is not compared.
+tick after each backend's documented ordering mechanism. It applies to the
+Pitch and GORTI TSO paths and to the Portico RO-plus-barrier path.
+Transport-internal arrival order is not compared.
 
 ## 4. Reproduction
 
@@ -237,6 +244,27 @@ When recording a run, save the complete `java -version` output and the RTI JAR
 hash. Earlier records retained Temurin 11 and the RTI version but not the exact
 build and checksum.
 
+### Live GORTI check
+
+GORTI's Python SDK is currently installed from its source checkout rather than
+from a pyjevsim optional extra:
+
+```powershell
+python -m pip install -e . -r docs/hla-validation/requirements-validation.txt
+python -m pip install -e C:\path\to\gorti\pysdk
+$env:GORTI_RTID = "C:\path\to\rtid.exe"
+$env:PYJEVSIM_RTI = "gorti"
+python examples/hla_atsim/verify_equivalence_rti.py
+```
+
+With `GORTI_RTID` set, the runner starts one local `rtid`, puts its save,
+state, and event files in a temporary working directory, closes both SDK
+transports, and removes that directory on normal exit. To use an already
+running service instead, omit `GORTI_RTID` and set `GORTI_URL` (default
+`grpc://127.0.0.1:8442`). The command returns status 2 if the SDK, service
+binary, or generated trace is unavailable. Each scenario remains subject to
+the `PYJEVSIM_LIVE_TIMEOUT` subprocess watchdog described above.
+
 ## 5. Results and environment
 
 ### Reproducible offline result
@@ -261,9 +289,14 @@ summary data, and representative rows are under [`results/`](results/).
 | In-process | no Java; identity grants; explicit lock-step | five current invocations above; also exercised by the test suite |
 | Pitch pRTI | Pitch pRTI Free 5.5.2, Temurin 11.0.31+11, JPype 1.7.1, CPython 3.11.15 | five recorded live AT/SIM runs matched both 180-row scenarios |
 | Portico | Portico 2.1.4, Temurin 11.0.31+11, JPype 1.7.1, CPython 3.14.0 | five recorded same-JVM live AT/SIM runs matched both 180-row scenarios; a later run without an externally supplied RID also matched both scenarios |
+| GORTI | clean GORTI commit `475b23b`; source-installed SDK 0.9.0; clean-tree `rtid`; CPython 3.11.15; grpcio 1.82.1; protobuf 7.35.1 | five recorded live AT/SIM runs matched both 180-row scenarios |
 
 These are functional checks. A concise result and environment record is in
 [`results/live-validation-summary.md`](results/live-validation-summary.md).
+That record includes the clean GORTI archive and binary SHA-256 values. The
+GORTI source/runtime qualification is reproducible from commit `475b23b`, but
+the tested pyjevsim connector itself is a pre-release, uncommitted candidate;
+the record therefore gives its exact source-tree hash separately.
 
 ## 6. HLA time management
 
@@ -273,7 +306,8 @@ named `lookahead` is the requested grant increment. In the examples, that
 increment and the default outbound timestamp offset are each one caller tick.
 Pitch uses a one-unit HLA regulating interval on its 1:1 time axis; Portico
 maps each caller tick to three RTI sub-steps and uses one sub-step (one third
-of a caller tick) as its regulating interval. A step processes every
+of a caller tick) as its regulating interval. GORTI also maps caller time 1:1
+and uses a one-unit regulating lookahead in the AT/SIM runner. A step processes every
 internal and external event at or before the grant, including all zero-time
 cascade rounds.  After processing, `global_time` equals the granted time.
 
@@ -288,15 +322,18 @@ Backend-specific behavior:
 |---|---|
 | Pitch | enables time regulation and time constrained mode; sends at an explicit timestamp or current logical time plus transport lookahead; implements TAR/TAG (not NER) and maps pyjevsim time 1:1 to RTI time |
 | Portico | maps caller tick `t` to RTI sub-steps `3t`, `3t+1`, and `3t+2`; uses a one-sub-step regulating interval, buffers RO reflections, and releases the current buffer after a bounded quiet/settle wait |
+| GORTI | enables time regulation and time constrained mode; sends TSO data at an explicit timestamp or current logical time plus transport lookahead; implements TAR/TAG and maps pyjevsim time 1:1 to RTI time; `GORTI_TIME_ADVANCE_TIMEOUT` optionally bounds the SDK grant wait |
 | In-process | returns the requested target immediately and performs no federation-wide coordination; the application must drive lock-step if it needs it |
 | Loopback | identity grant and self-delivery for single-federate tests; no lookahead enforcement |
 
 ### Grant waits and recovery
 
 The transport does not implement a general HLA deadlock detector or recovery
-protocol. A live `timeAdvanceRequest` waits without a generic timeout for the
-RTI grant, so peer failure or incompatible advance requests can block
-indefinitely; all regulating
+protocol. Pitch and Portico wait without a generic connector-level timeout for
+a live `timeAdvanceRequest`; GORTI optionally bounds its SDK grant wait with
+`GORTI_TIME_ADVANCE_TIMEOUT` (30 seconds in the AT/SIM runner). Without such a
+bound, peer failure or incompatible advance requests can block indefinitely;
+all regulating
 federates therefore must join, publish, and request compatible advances. The
 Pitch ping-pong multiprocess example uses a `ready` synchronization point to
 avoid starting before both federates have joined.  Backend connection, FOM,
@@ -327,6 +364,8 @@ extension contract is in [`rti_interface.md`](../hla/rti_interface.md).
 
 - The live Pitch and Portico backends require Java and JPype.  JPype cannot
   restart a JVM in the same process after shutdown.
+- The GORTI backend requires a separately built `rtid` service and a
+  source-installed GORTI Python SDK; neither is bundled with pyjevsim.
 - The recorded Windows Pitch 5.5.2 reproduction uses CPython 3.11.15. A single
   CPython 3.14.0 + JPype 1.7.1 + Temurin 11.0.31 run terminated in native code;
   this is an observed toolchain combination, not a general Python-version
@@ -334,7 +373,7 @@ extension contract is in [`rti_interface.md`](../hla/rti_interface.md).
 - Validation covers application-visible functional equivalence on one
   physical host. Communication performance and multi-host operation are not
   included.
-- Pitch's built-in codec currently supports `HLAinteger32BE`,
+- The Pitch and GORTI live codecs currently support `HLAinteger32BE`,
   `HLAinteger64BE`, `HLAfloat64BE`, and `HLAunicodeString` only.
 - Portico does not expose native timestamp-ordered reflections in the tested
   configuration. Its barrier prevents next-tick over-read, but
@@ -345,8 +384,8 @@ extension contract is in [`rti_interface.md`](../hla/rti_interface.md).
 - Data distribution management, ownership management, message retraction,
   and federation save/restore are not implemented by the connector API.
 - HLA executors are not supported by pyjevsim's model snapshot mechanism.
-- Live RTI tests remain opt-in because their Java distributions and, for
-  Pitch, the CRC are external dependencies.
+- Live RTI tests remain opt-in because the Java distributions, Pitch CRC, and
+  GORTI SDK/service binary are external dependencies.
 - The built-in live codec maps only the first record in a `SysMessage` payload
   list; applications should send one FOM record per bound output message.
 - Capability flags are descriptive and are not a substitute for checking the
@@ -358,8 +397,9 @@ extension contract is in [`rti_interface.md`](../hla/rti_interface.md).
   cannot prevent callers from bypassing APIs or constructing custom binding
   objects with a different contract.
 
-Future work includes more FOM datatypes, explicit grant timeouts/cancellation,
-and additional independently implemented RTIs.
+Future work includes more FOM datatypes, consistent grant
+timeouts/cancellation across backends, and additional independently
+implemented RTIs.
 
 ## 9. Release and citation
 

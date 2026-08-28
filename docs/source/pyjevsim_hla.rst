@@ -6,7 +6,7 @@ Model classes need not contain RTI API calls; the surrounding *factory*, port
 bindings, FOM mapping, launch configuration, and *transport* (RTI backend)
 provide the federation integration. A compatible model class can therefore be
 used with the in-process test bus or a supported live RTI such as Pitch pRTI
-or Portico.
+Portico, or GORTI.
 
 The repository's `HLA validation and reproducibility guide
 <https://github.com/eventsim/pyjevsim/tree/main/docs/hla-validation>`_
@@ -67,14 +67,20 @@ Built-in backends
    * - ``portico``
      - Portico (open source, IEEE 1516-2010), live federation
      - ``python -m pip install "pyjevsim[hla-java]"`` + Java >= 11 + ``portico.jar``
+   * - ``gorti``
+     - GORTI native-Python IEEE 1516-2010 client
+     - ``python -m pip install -e C:\path\to\gorti\pysdk`` + a reachable ``rtid``
 
-Both live backends use the ``hla.rti1516e`` Java API discovered through
-``RtiFactoryFactory``. The backend name, RTI jar, JVM, FOM map, and launch
-settings select the concrete RTI.
+The Pitch and Portico backends use the ``hla.rti1516e`` Java API discovered
+through ``RtiFactoryFactory``. The backend name, RTI jar, JVM, FOM map, and
+launch settings select the concrete Java RTI.
 :class:`~pyjevsim.hla.backends.portico.PorticoTransport` subclasses the Pitch
 adapter and handles Portico's ``HLAunicodeString`` representation and
 receive-order reflections. Its tick barrier depends on documented
 ``quiet``/``settle`` waits; see the validation guide.
+The ``gorti`` backend uses GORTI's native ``rti1516e`` Python SDK, without
+Java or JPype. The SDK is not published on PyPI, so install it from its source
+checkout with ``python -m pip install -e C:\path\to\gorti\pysdk``.
 
 Turning a model into a federate
 -------------------------------
@@ -93,7 +99,7 @@ Turning a model into a federate
    }
 
    # 2. Pick a transport by name; selection stays outside the model class.
-   transport = create_rti("inprocess")          # or "pitch", ...
+   transport = create_rti("inprocess")          # or "pitch", "portico", "gorti"
 
    # 3. Wire the HLA factory and register the model.
    sys_exec = SysExecutor(1, ex_mode=ExecutionType.HLA_TIME)
@@ -171,6 +177,7 @@ positions and reflects peer positions into a per-federate snapshot that the
 detectors read on the following caller tick. The driver grant increment and
 default outbound timestamp offset are one caller tick. Portico's internal
 regulating lookahead is one RTI sub-step, or one third of a caller tick.
+Pitch and GORTI map caller time 1:1 to RTI logical time.
 
 The example ships two decoy scenarios, ``self_propelled`` (default) and
 ``stationary`` (select with ``PYJEVSIM_SCENARIO`` or a CLI argument), and a
@@ -185,8 +192,8 @@ both scenarios::
 Recorded checks found the same reference rows for the single-process run
 (``run_standalone_headless.py``), the two-federate in-process run
 (``run_hla_inprocess.py``), Pitch pRTI (``run_hla_pitch.py``), and Portico
-(``run_hla_portico.py``). This comparison is limited to application-visible
-state at each recorded tick.
+(``run_hla_portico.py``), and GORTI (``run_hla_gorti.py``). This comparison is
+limited to application-visible state at each recorded tick.
 ``verify_equivalence_rti.py`` compares a
 selected live RTI against the committed reference and fails when the external
 toolchain does not produce a trace::
@@ -196,6 +203,16 @@ toolchain does not produce a trace::
    python examples/hla_atsim/verify_equivalence_rti.py
    # -> MATCH self_propelled: 180 canonical rows (portico vs committed reference)
    # -> MATCH stationary: 180 canonical rows (portico vs committed reference)
+
+For GORTI, source-install its SDK and either set ``GORTI_URL`` for an existing
+service or point ``GORTI_RTID`` at a local service binary::
+
+   python -m pip install -e C:\path\to\gorti\pysdk
+   set GORTI_RTID=C:\path\to\rtid.exe
+   set PYJEVSIM_RTI=gorti
+   python examples/hla_atsim/verify_equivalence_rti.py
+   # -> MATCH self_propelled: 180 canonical rows (gorti vs reference)
+   # -> MATCH stationary: 180 canonical rows (gorti vs reference)
 
 .. figure:: ../../examples/hla_atsim/figures/atsim_self_propelled.png
    :width: 70%
@@ -251,5 +268,5 @@ backend, drive ``HLA_TIME`` mode directly:
 ``step(granted_time)`` runs the same two-phase Parallel-DEVS tick as the
 V_TIME path (``int`` / ``ext`` / ``con`` selection and multi-round sigma=0
 cascades in one call) and returns the output events drained
-during the grant. This is the core path used by the ``pitch`` backend and its
-``portico`` subclass.
+during the grant. This is the core path used by the ``pitch`` backend, its
+``portico`` subclass, and the native ``gorti`` backend.

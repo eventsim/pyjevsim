@@ -150,9 +150,9 @@ bindings_vehicle = {
 ```
 
 `object_class` is optional transport metadata. A custom transport may use it
-to decide which object class to register. The built-in Pitch/Portico adapters
-instead resolve the class from their explicit FOM map; inbound bindings can
-therefore leave it unset.
+to decide which object class to register. The built-in Pitch, Portico, and
+GORTI adapters instead resolve the class from their explicit FOM map; inbound
+bindings can therefore leave it unset.
 
 ## 4. Threading model
 

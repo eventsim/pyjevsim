@@ -1,8 +1,8 @@
 # RTI backend interface
 
 The adapter interface below is the extension point for new RTI backends. The
-repository includes tested Pitch pRTI and Portico adapters. CERTI, OpenRTI,
-MÄK, and custom surrogates are not shipped implementations.
+repository includes tested Pitch pRTI, Portico, and GORTI adapters. CERTI,
+OpenRTI, MÄK, and custom surrogates are not shipped implementations.
 
 The [HLA design reference](specification.md) describes how this interface fits
 the executor and federate runtime.

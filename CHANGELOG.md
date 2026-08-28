@@ -12,11 +12,16 @@ The changes below are planned for version 2.2.0.
 ### Added
 - Open-source Portico 2.1.4 backend for the IEEE 1516-2010 Java API, including
   a standard-layout `HLAunicodeString` codec and receive-order tick buffering.
+- Native-Python GORTI backend for interaction, object-attribute, and
+  regulating/constrained logical-time paths using GORTI's source-installed
+  `rti1516e` SDK.
 - Two-federate AT/SIM example with self-propelled and stationary decoy
   scenarios, committed 180-row references, and offline and live comparison
   commands.
 - Portico versions of the ping-pong and AT/SIM examples, plus a same-JVM RID
   used by the bundled Portico runs.
+- GORTI AT/SIM runner and live-verifier selection, including optional managed
+  `rtid` startup and isolated temporary save/state directories.
 - HLA architecture, service coverage, time-management notes, limitations,
   related work, expected traces, and reproduction instructions under
   `docs/hla-validation/`.
