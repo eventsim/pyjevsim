@@ -21,6 +21,7 @@ repository-code: "https://github.com/eventsim/pyjevsim"
 url: "https://pyjevsim.readthedocs.io/"
 license: MIT
 version: 2.2.0
+date-released: "2026-08-29"
 keywords:
   - DEVS
   - discrete-event simulation

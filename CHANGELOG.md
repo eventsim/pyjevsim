@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-The changes below are planned for version 2.2.0.
+## [2.2.0] — 2026-08-29
 
 ### Added
 - Open-source Portico 2.1.4 backend for the IEEE 1516-2010 Java API, including
@@ -35,6 +35,8 @@ The changes below are planned for version 2.2.0.
   guards, with regression tests.
 
 ### Changed
+- Build metadata now requires setuptools 77 or newer and declares the MIT
+  license file using PEP 639 fields.
 - `PitchTransport` now provides `_encode_value`, `_decode_value`, `_rti_time`,
   and `_rti_lookahead` extension hooks used by the Portico adapter.
 - The live AT/SIM verifier fails when the expected peer reflection is missing,
@@ -230,7 +232,8 @@ The changes below are planned for version 2.2.0.
   `SysExecutor` with V_TIME and R_TIME execution modes, port-based
   coupling, and `dill`-backed serialization.
 
-[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.1.2...HEAD
+[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.2.0...HEAD
+[2.2.0]: https://github.com/eventsim/pyjevsim/compare/v2.1.2...v2.2.0
 [2.1.2]: https://github.com/eventsim/pyjevsim/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/eventsim/pyjevsim/compare/v2.1.0...v2.1.1
 [2.1.0]: https://github.com/eventsim/pyjevsim/compare/v2.0.1...v2.1.0

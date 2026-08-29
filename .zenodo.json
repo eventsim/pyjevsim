@@ -2,6 +2,7 @@
   "title": "pyjevsim: a Python DEVS modelling and simulation framework with HLA federate support",
   "description": "pyjevsim is a Python framework for Discrete Event System Specification (DEVS) modeling and simulation. It provides journaling, virtual- and real-time execution, and HLA federate integration through pluggable RTI backends. Version 2.2.0 adds a Portico backend, AT/SIM reference traces and application-state comparison commands for Pitch and Portico, and an experimental GORTI adapter that requires a source-installed SDK and separately built service. GORTI observations are scoped functional checks, not complete HLA Object Management or formal IEEE 1516 conformance.",
   "version": "2.2.0",
+  "publication_date": "2026-08-29",
   "upload_type": "software",
   "language": "eng",
   "license": "MIT",
@@ -27,11 +28,6 @@
     {
       "identifier": "https://github.com/eventsim/pyjevsim",
       "relation": "isSupplementTo",
-      "scheme": "url"
-    },
-    {
-      "identifier": "https://pypi.org/project/pyjevsim/",
-      "relation": "isIdenticalTo",
       "scheme": "url"
     },
     {

@@ -23,9 +23,7 @@ python -m pytest -q
 python docs/hla-validation/results/verify_results.py
 python examples/hla_atsim/verify_equivalence.py
 python -m compileall -q pyjevsim examples
-sphinx-build -W -b html docs/source docs/build/html
-python -m build --outdir dist/2.2.0
-python -m twine check dist/2.2.0/pyjevsim-2.2.0*
+sphinx-build -W -b html docs/source <temporary-directory>/docs-html
 ```
 
 Build and documentation commands require the packages in
@@ -33,19 +31,47 @@ Build and documentation commands require the packages in
 release checks and should be recorded separately with the RTI, Java, Python,
 and source versions used.
 
-Use a new, empty version-specific output directory so artifacts from another
-release cannot be uploaded accidentally. Before tagging, install the new wheel
-in a fresh environment and verify its metadata. Run the command for the local
-platform:
+After the validation commit is pushed and CI is green, export that exact clean
+commit into a new directory outside the repository. Build there so stale
+artifacts and source-tree imports cannot affect the result:
 
-```bash
-python -m venv .release-venv
-# POSIX
-.release-venv/bin/python -m pip install --no-deps dist/2.2.0/pyjevsim-2.2.0-py3-none-any.whl
-.release-venv/bin/python -c "from importlib.metadata import version; import pyjevsim; print(version('pyjevsim'))"
-# Windows
-.release-venv\Scripts\python -m pip install --no-deps dist/2.2.0/pyjevsim-2.2.0-py3-none-any.whl
-.release-venv\Scripts\python -c "from importlib.metadata import version; import pyjevsim; print(version('pyjevsim'))"
+```powershell
+$releaseCommit = (git rev-parse HEAD).Trim()
+if (git status --porcelain) { throw "dirty worktree" }
+if ($releaseCommit -ne (git rev-parse origin/main).Trim()) {
+    throw "HEAD and origin/main differ"
+}
+
+$releaseRoot = Join-Path $env:TEMP ("pyjevsim-2.2.0-" + [guid]::NewGuid())
+$sourceDir = Join-Path $releaseRoot "source"
+$distDir = Join-Path $releaseRoot "dist"
+New-Item -ItemType Directory -Path $sourceDir, $distDir | Out-Null
+git archive --format=tar --output=(Join-Path $releaseRoot "source.tar") $releaseCommit
+tar -xf (Join-Path $releaseRoot "source.tar") -C $sourceDir
+python -m build --outdir $distDir $sourceDir
+python -m twine check --strict (Join-Path $distDir "pyjevsim-2.2.0*")
+```
+
+Require exactly one wheel and one source distribution. Inspect both archives
+to confirm that `pyjevsim/hla/backends/gorti.py` is present and that the
+external GORTI SDK is not bundled.
+
+Before tagging, install the wheel and source distribution, with dependencies,
+in separate fresh environments under `$releaseRoot`. Run `pip check`, then use
+Python's isolated mode to prevent the source checkout from shadowing the
+installed package:
+
+```powershell
+python -m venv (Join-Path $releaseRoot "wheel-venv")
+python -m venv (Join-Path $releaseRoot "sdist-venv")
+$wheelPy = Join-Path $releaseRoot "wheel-venv\Scripts\python.exe"
+$sdistPy = Join-Path $releaseRoot "sdist-venv\Scripts\python.exe"
+& $wheelPy -m pip install --no-cache-dir (Join-Path $distDir "pyjevsim-2.2.0-py3-none-any.whl")
+& $wheelPy -m pip check
+& $wheelPy -I -c "from importlib.metadata import version; import pyjevsim; from pyjevsim.hla import available_rtis; assert version('pyjevsim') == '2.2.0'; assert 'gorti' in available_rtis(); print(version('pyjevsim'))"
+& $sdistPy -m pip install --no-cache-dir (Join-Path $distDir "pyjevsim-2.2.0.tar.gz")
+& $sdistPy -m pip check
+& $sdistPy -I -c "from importlib.metadata import version; import pyjevsim; from pyjevsim.hla import available_rtis; assert version('pyjevsim') == '2.2.0'; assert 'gorti' in available_rtis(); print(version('pyjevsim'))"
 ```
 
 ## 3. Publish the source release
