@@ -46,6 +46,11 @@ source, configuration, toolchain, return codes, and output hashes for all
 three clean release-candidate campaigns. Its retained
 [55-file evidence bundle](assets/pyjevsim-v2.2.0-live-acceptance-evidence.zip)
 contains the verifier logs and scenario outputs selected for publication.
+The manifest and both public ZIPs are retained by the immutable
+[`validation/v2.2.0-live-acceptance`](https://github.com/eventsim/pyjevsim/tree/validation/v2.2.0-live-acceptance)
+tag. The tracked GORTI SDK is independently retained by its immutable
+[`validation/pyjevsim-v2.2.0-gorti-sdk-132741a`](https://github.com/cbchoi/gorti/tree/validation/pyjevsim-v2.2.0-gorti-sdk-132741a)
+tree tag.
 
 For the GORTI qualification, `git archive 475b23b` produced a clean source
 tree. The protocol bindings were generated from its `proto` tree with

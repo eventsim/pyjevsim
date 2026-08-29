@@ -16,18 +16,31 @@
       "name": "pyjevsim-70a27d9.tar"
     },
     "release_target": "v2.2.0",
-    "archive_ready": false,
-    "note": "All live runs used this clean git archive. The final release commit may add only this evidence and release metadata; all bound executable/configuration/reference artifacts must remain byte-identical. Set archive_ready only after the immutable tag and public evidence/archive identifiers are verified."
+    "archive_ready": true,
+    "archive_ref": {
+      "repository": "https://github.com/eventsim/pyjevsim",
+      "ref": "refs/tags/validation/v2.2.0-live-acceptance",
+      "tag_object": "60540a0d9fcb6dacc5495e0bc4a2a003236041c5",
+      "commit": "249a035170426e2242c4a556a4c30a2efabb7a54",
+      "verified_at_utc": "2026-08-29T02:16:00Z"
+    },
+    "note": "All live runs used this clean git archive. The immutable validation tag retains the canonical manifest and public evidence/runtime-source archives; the final release commits add only evidence, documentation, release metadata, and ignore-rule cleanup. All bound executable, configuration, and reference artifacts remain byte-identical."
   },
   "external_sources": {
     "gorti": {
       "validated_source_commit": "475b23b7ea0e6714825c2d3cdbd5ec5c2f21bf6f",
       "validated_full_tree": "109b1cd3b8f1307248ebd96b4f62cd22d7596da8",
-      "remote_ref": null,
+      "remote_ref": {
+        "repository": "https://github.com/cbchoi/gorti",
+        "ref": "refs/tags/validation/pyjevsim-v2.2.0-gorti-sdk-132741a",
+        "tag_object": "0511074a6088e4c96f080ae0e2ea6ed3732b3fd6",
+        "peeled_tree": "132741a4fb6d1be5b50decd35f680f31959c49e1",
+        "verified_at_utc": "2026-08-29T02:16:00Z"
+      },
       "tracked_sdk": {
         "source_path": "pysdk/rti1516e",
         "tree": "132741a4fb6d1be5b50decd35f680f31959c49e1",
-        "planned_tree_ref": "refs/tags/validation/pyjevsim-v2.2.0-gorti-sdk-132741a"
+        "remote_tree_ref": "refs/tags/validation/pyjevsim-v2.2.0-gorti-sdk-132741a"
       },
       "generated_sdk": {
         "path": "pysdk/rti1516e/_generated",
