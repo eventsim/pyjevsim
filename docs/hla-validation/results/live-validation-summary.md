@@ -23,6 +23,11 @@ The comparison requires exact equality of the sorted rows
 | Portico | 2.1.4; `portico.connection=jvm`; Temurin 11.0.31+11; JPype 1.7.1; CPython 3.14.0 | 5 | both 30-tick scenarios matched all 180 reference rows in every run |
 | GORTI (experimental pre-release) | commit `475b23b`; native Python SDK 0.9.0; grpcio 1.82.1; protobuf 7.35.1; CPython 3.11.15 | 5 sequential federation executions/scenario | both 30-tick scenarios matched all 180 reference rows in every execution |
 
+The GORTI observation covers the selected interaction, object
+registration/discovery, attribute update/reflection, and logical-time paths.
+It is not evidence of release-grade GORTI support, complete HLA Object
+Management, ownership/DDM, or formal conformance.
+
 The reference SHA-256 values are
 `0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205`
 for `self_propelled` and
@@ -44,9 +49,11 @@ built there. The resulting binary SHA-256 was
 `afabcd83ce88d4955df24a6046a6a5e83d81f2724bbcbf612b9be9dc2d3c7bcc4`.
 The pyjevsim GORTI connector exercised by this qualification was still a
 pre-release, uncommitted artifact with SHA-256
-`5640ccb14b0367e6b4d6ec1407102f32e9d98634874fea81b72ade806b9d79e5`;
-the GORTI result must therefore be repeated from the eventual tagged
-pyjevsim release before archive-ready evidence is declared.
+`5640ccb14b0367e6b4d6ec1407102f32e9d98634874fea81b72ade806b9d79e5`.
+That file is byte-identical to `gorti.py` in commit `bdb4cf1`, but the run
+preceded a committed/tagged acceptance campaign and did not retain every raw
+run artifact. It therefore remains historical pre-release evidence rather
+than archive-ready evidence.
 
 ## Toolchain files
 
@@ -66,4 +73,5 @@ pyjevsim release before archive-ready evidence is declared.
 The tests compare application-visible state on one physical host. They do not
 test packet-level behavior, communication
 performance, operation across physical hosts, interoperability with an
-independently developed federate, or formal IEEE 1516 conformance.
+independently developed federate, complete HLA Object Management, or formal
+IEEE 1516 conformance.

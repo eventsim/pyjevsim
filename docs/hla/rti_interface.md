@@ -1,8 +1,9 @@
 # RTI backend interface
 
 The adapter interface below is the extension point for new RTI backends. The
-repository includes tested Pitch pRTI, Portico, and GORTI adapters. CERTI,
-OpenRTI, MÄK, and custom surrogates are not shipped implementations.
+repository includes tested Pitch pRTI and Portico adapters plus an
+experimental GORTI adapter. CERTI, OpenRTI, MÄK, and custom surrogates are not
+shipped implementations.
 
 The [HLA design reference](specification.md) describes how this interface fits
 the executor and federate runtime.
@@ -191,6 +192,7 @@ Backends register themselves on import so their dependencies stay optional:
 | `loopback` | shipped test backend (`transport.py`) | none |
 | Pitch pRTI 1516e | shipped JPype backend | `jpype1` + `prti1516e.jar` + CRC |
 | Portico 1516e | shipped JPype backend; subclasses Pitch (`backends/portico.py`) | `jpype1` + `portico.jar` (no CRC) |
+| GORTI 1516e | shipped experimental native-Python adapter for selected service paths | source-installed GORTI SDK + separately built `rtid` |
 | CERTI | not shipped; possible Python binding or surrogate extension | CERTI libs |
 | OpenRTI / MÄK | not shipped; possible JPype/JNI or surrogate extension | vendor libs |
 
@@ -202,3 +204,8 @@ for its internal time mapping. Portico returns the tested reflections in
 receive order, so the adapter uses a three-sub-step barrier. The barrier
 prevents next-tick over-read; current-batch completeness still depends on the
 configured `quiet` and `settle` waits.
+
+`backends/gorti.py` uses GORTI's native `rti1516e` SDK. Its recorded checks
+cover interaction exchange, object registration/discovery, attribute
+update/reflection, and regulating/constrained logical time; they do not cover
+complete Object Management or formal conformance.

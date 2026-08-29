@@ -12,7 +12,7 @@ reference at every recorded tick.
 | `run_hla_inprocess.py` | two federates over the in-process RTI bus (writes `hla_<tag>.csv`) — **no Java needed** |
 | `run_hla_pitch.py` | optional live 1516e run (guarded; writes `hla_<rti>_<tag>.csv`; `PYJEVSIM_RTI` selects the backend) |
 | `run_hla_portico.py` | the same driver against the open-source Portico RTI (writes `hla_portico_<tag>.csv`) |
-| `run_hla_gorti.py` | native-Python GORTI run (writes `hla_gorti_<tag>.csv`; can manage a local `rtid`) |
+| `run_hla_gorti.py` | experimental native-Python GORTI run (writes `hla_gorti_<tag>.csv`; can manage a local `rtid`) |
 | `verify_equivalence.py` | compares both headless runs with the committed reference rows |
 | `verify_equivalence_rti.py` | compares a selected live RTI (`PYJEVSIM_RTI=pitch\|portico\|gorti`) with the references; missing toolchain or output is an error |
 | `plot_trajectories.py` | headless matplotlib — renders `figures/atsim_<tag>.png` (top-down, 3-D, range) from the CSV |
@@ -68,7 +68,7 @@ two-federate HLA co-simulation on the in-process bus and three live RTIs:
 | `run_hla_inprocess.py` | two federates, `InProcessRTI` | no |
 | `run_hla_pitch.py` | two federates, **live Pitch pRTI 1516e** | yes (JPype + running CRC) |
 | `run_hla_portico.py` | two federates, **live Portico 2.1.4** (open source) | yes (JPype + `portico.jar`, no CRC) |
-| `run_hla_gorti.py` | two federates, **live GORTI** through its Python SDK | no (running `rtid`, or set `GORTI_RTID`) |
+| `run_hla_gorti.py` | two federates, **experimental live GORTI** through its Python SDK | no (running `rtid`, or set `GORTI_RTID`) |
 
 Behavioral equivalence means exact equality of the 180 sorted rows
 `(tick, sense_id, "%.10g" % x, "%.10g" % y, "%.10g" % z)`. It does not
@@ -196,9 +196,10 @@ The live verifier terminates a scenario subprocess after 180 seconds by
 default; set
 `PYJEVSIM_LIVE_TIMEOUT` to an appropriate positive number for a slower RTI.
 
-The native **GORTI** backend does not use Java. Install the AT/SIM validation
-dependencies and the GORTI Python SDK from its source checkout, then either
-point the runner at an existing service or let it own a local `rtid` process:
+The experimental native **GORTI** backend does not use Java. Install the
+AT/SIM validation dependencies and the GORTI Python SDK from its source
+checkout, then either point the runner at an existing service or let it own a
+local `rtid` process:
 
 ```powershell
 python -m pip install -e . -r docs/hla-validation/requirements-validation.txt
@@ -223,9 +224,12 @@ The [live validation summary](../../docs/hla-validation/results/live-validation-
 records five consecutive checks against **Portico 2.1.4**
 (Temurin 11, JPype 1.7.1) and five against a clean build of **GORTI** commit
 `475b23b` (native SDK 0.9.0, CPython 3.11.15). Every run matched all 180
-canonical rows in both scenarios. The GORTI connector was still an uncommitted
-pre-release artifact during that qualification, so the tagged release must be
-checked again before its evidence is archive-ready. Raw logs from the
+canonical rows in both scenarios. At that historical qualification the GORTI
+connector was still an uncommitted pre-release artifact; the recorded file is
+byte-identical to the connector later committed as `bdb4cf1`, but a clean
+release-candidate run is still required for archive-ready evidence. The check
+covers registration/discovery and attribute update/reflection, not complete
+Object Management or formal conformance. Raw logs from the
 historical Portico runs were not retained. Portico delivers the tested
 reflections in receive order. The adapter's three-sub-step barrier prevents
 next-tick data from appearing early, but current-tick completeness

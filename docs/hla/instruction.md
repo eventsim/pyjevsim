@@ -83,8 +83,8 @@ from pyjevsim.hla import LoopbackTransport
 transport = LoopbackTransport()
 
 # For multiple local federates, create one InProcessFederation and one
-# InProcessRTI per federate. For a live run, select "pitch" or "portico"
-# with create_rti(...); see examples/hla_pingpong.
+# InProcessRTI per federate. For a live run, select "pitch" or "portico",
+# or the experimental source-installed "gorti" adapter, with create_rti(...).
 ```
 
 ### Step 4 — build the SysExecutor with the HLA factory
@@ -150,9 +150,11 @@ bindings_vehicle = {
 ```
 
 `object_class` is optional transport metadata. A custom transport may use it
-to decide which object class to register. The built-in Pitch, Portico, and
-GORTI adapters instead resolve the class from their explicit FOM map; inbound
-bindings can therefore leave it unset.
+to decide which object class to register. The built-in Pitch and Portico
+adapters and the experimental GORTI adapter instead resolve the class from
+their explicit FOM map; inbound bindings can therefore leave it unset. The
+GORTI path does not expose complete Object Management or a public
+multi-instance API.
 
 ## 4. Threading model
 

@@ -6,7 +6,7 @@ simulation environment with built-in journaling. It supports snapshot and
 restore of individual models or the full simulation engine, virtual-time
 and real-time execution, and HLA (IEEE 1516-2010) federate integration
 with pluggable RTI backends. Version 2.2.0 includes adapters for Pitch pRTI
-and the open-source Portico RTI.
+and the open-source Portico RTI, plus an experimental GORTI adapter.
 
   - GitHub: `eventsim/pyjevsim <https://github.com/eventsim/pyjevsim>`_
   - PyPI: `pyjevsim <https://pypi.org/project/pyjevsim/>`_
@@ -16,6 +16,10 @@ Changes in 2.2
 
 - **Portico backend.** The live HLA adapter now supports Portico 2.1.4 in
   addition to Pitch pRTI.
+- **Experimental GORTI backend.** Selected interaction, object-attribute, and
+  logical-time paths use a source-installed GORTI SDK and separately built
+  ``rtid``. The recorded checks are not release-grade GORTI support, complete
+  HLA Object Management, or formal IEEE 1516 conformance.
 - **AT/SIM reference data.** The two-federate AT/SIM example provides two
   30-tick scenarios, complete 180-row reference trajectories, and offline and
   optional live-RTI comparison commands.

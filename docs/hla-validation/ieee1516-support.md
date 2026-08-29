@@ -8,6 +8,9 @@ The table describes the concrete Pitch, Portico, and GORTI adapters.
 `InProcessRTI` and `LoopbackTransport` are deterministic test backends, not
 IEEE RTIs.
 
+The GORTI entries describe the experimental, source-installed adapter shipped
+in v2.2.0. They are scoped functional observations, not release-grade support.
+
 | Service area | Status | Implementation and tests |
 |---|---|---|
 | Connect/disconnect | Implemented | Pitch/Portico use Java `hla.rti1516e`; GORTI uses its native Python `Rti1516eAmbassador`; close is idempotent |
@@ -15,7 +18,7 @@ IEEE RTIs.
 | Join federation | Implemented | joins with a federate name/type and FOM modules |
 | Resign/destroy federation | Implemented with best-effort cleanup | Pitch/Portico use `DELETE_OBJECTS_THEN_DIVEST`; GORTI uses `CANCEL_THEN_DELETE_THEN_DIVEST`; expected cleanup failures are suppressed |
 | Publish/subscribe interactions | Implemented | handle resolution, declaration, TSO send, receive callback; exercised by ping-pong tests |
-| Publish/subscribe object attributes | Implemented | instance registration, attribute update, discovery/reflection; exercised by ping-pong and AT/SIM |
+| Publish/subscribe object attributes | Implemented for the scoped binding path | instance registration, attribute update, discovery/reflection; exercised by ping-pong and AT/SIM; not complete Object Management |
 | Object-instance lifecycle | Partial | one registered instance per outbound attribute binding/FOM id; no public multi-instance or explicit delete-object API |
 | Time regulation/constrained | Implemented for live adapters | Pitch/Portico require both activation callbacks; GORTI invokes the corresponding native SDK services; Pitch/GORTI use configured lookahead, Portico one RTI sub-step |
 | Time advance request/grant | TAR/TAG implemented | blocking `timeAdvanceRequest`/grant callback; GORTI exposes a configurable grant timeout; no NER or cancellation |

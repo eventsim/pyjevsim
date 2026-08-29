@@ -5,8 +5,8 @@ pyjevsim wraps port-compatible DEVS models as HLA (IEEE 1516-2010) federates.
 Model classes need not contain RTI API calls; the surrounding *factory*, port
 bindings, FOM mapping, launch configuration, and *transport* (RTI backend)
 provide the federation integration. A compatible model class can therefore be
-used with the in-process test bus or a supported live RTI such as Pitch pRTI
-Portico, or GORTI.
+used with the in-process test bus or a supported live RTI such as Pitch pRTI,
+Portico, or the experimental GORTI adapter.
 
 The repository's `HLA validation and reproducibility guide
 <https://github.com/eventsim/pyjevsim/tree/main/docs/hla-validation>`_
@@ -68,7 +68,7 @@ Built-in backends
      - Portico (open source, IEEE 1516-2010), live federation
      - ``python -m pip install "pyjevsim[hla-java]"`` + Java >= 11 + ``portico.jar``
    * - ``gorti``
-     - GORTI native-Python IEEE 1516-2010 client
+     - experimental GORTI native-Python IEEE 1516-2010 client
      - ``python -m pip install -e C:\path\to\gorti\pysdk`` + a reachable ``rtid``
 
 The Pitch and Portico backends use the ``hla.rti1516e`` Java API discovered
@@ -81,6 +81,10 @@ receive-order reflections. Its tick barrier depends on documented
 The ``gorti`` backend uses GORTI's native ``rti1516e`` Python SDK, without
 Java or JPype. The SDK is not published on PyPI, so install it from its source
 checkout with ``python -m pip install -e C:\path\to\gorti\pysdk``.
+Recorded checks cover interaction exchange, object registration/discovery,
+attribute update/reflection, and regulating/constrained logical time. They do
+not establish release-grade GORTI support, complete HLA Object Management, or
+formal IEEE 1516 conformance.
 
 Turning a model into a federate
 -------------------------------
@@ -192,8 +196,9 @@ both scenarios::
 Recorded checks found the same reference rows for the single-process run
 (``run_standalone_headless.py``), the two-federate in-process run
 (``run_hla_inprocess.py``), Pitch pRTI (``run_hla_pitch.py``), and Portico
-(``run_hla_portico.py``), and GORTI (``run_hla_gorti.py``). This comparison is
-limited to application-visible state at each recorded tick.
+(``run_hla_portico.py``), and a pre-release functional qualification of GORTI
+(``run_hla_gorti.py``). This comparison is limited to application-visible
+state at each recorded tick.
 ``verify_equivalence_rti.py`` compares a
 selected live RTI against the committed reference and fails when the external
 toolchain does not produce a trace::
@@ -269,4 +274,4 @@ backend, drive ``HLA_TIME`` mode directly:
 V_TIME path (``int`` / ``ext`` / ``con`` selection and multi-round sigma=0
 cascades in one call) and returns the output events drained
 during the grant. This is the core path used by the ``pitch`` backend, its
-``portico`` subclass, and the native ``gorti`` backend.
+``portico`` subclass, and the experimental native ``gorti`` backend.

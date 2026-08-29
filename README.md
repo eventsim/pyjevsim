@@ -13,7 +13,8 @@ simulation environment with built-in journaling. It supports snapshot
 and restore of individual models or the full simulation engine,
 virtual-time and real-time execution, and HLA (IEEE 1516-2010) federate
 integration with pluggable RTI backends. Version 2.2.0 includes adapters for
-Pitch pRTI, the open-source Portico RTI, and the native-Python GORTI client.
+Pitch pRTI and the open-source Portico RTI, plus an experimental native-Python
+GORTI adapter.
 Compatible with Python 3.10+.
 
 Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
@@ -23,9 +24,10 @@ Full documentation: <https://pyjevsim.readthedocs.io/en/latest/>
 - **Portico backend.** The live HLA adapter now supports Portico 2.1.4 in
   addition to Pitch pRTI. Portico-specific handling covers its
   `HLAunicodeString` representation and receive-order reflection behavior.
-- **GORTI backend.** A native-Python adapter supports interactions, object
-  attributes, and regulating/constrained logical time through GORTI's
-  `rti1516e` SDK, without Java or JPype.
+- **Experimental GORTI backend.** A native-Python adapter supports selected
+  interaction, object-attribute, and regulating/constrained logical-time paths
+  through GORTI's source-installed `rti1516e` SDK and a separately built
+  `rtid`, without Java or JPype.
 - **AT/SIM reference data.** The two-federate AT/SIM example includes two
   30-tick scenarios, complete 180-row reference trajectories, and commands
   for offline and optional live-RTI comparison.
@@ -110,7 +112,8 @@ The `loopback` and `inprocess` backends need nothing beyond the core package:
 python -m pip install "pyjevsim[hla-java]"
 ```
 
-GORTI's Python SDK is not currently published on PyPI. Install it from a
+The experimental GORTI backend is not installed by a pyjevsim extra because
+GORTI's Python SDK is not currently published on PyPI. Install the SDK from a
 GORTI source checkout before selecting the `gorti` backend:
 
 ```powershell
@@ -396,7 +399,7 @@ Built-in backends:
 | `inprocess` | multi-federate in-process bus (tests/demos) | none |
 | `pitch` | **Pitch pRTI** IEEE 1516-2010, live federation | `python -m pip install "pyjevsim[hla-java]"` + Java ≥ 11 + a running CRC |
 | `portico` | **Portico** (open source) IEEE 1516-2010, live federation | `python -m pip install "pyjevsim[hla-java]"` + Java ≥ 11 + `portico.jar` (no CRC) |
-| `gorti` | **GORTI** native-Python IEEE 1516-2010 client | source-install the SDK with `python -m pip install -e C:\path\to\gorti\pysdk` + a reachable `rtid` |
+| `gorti` | experimental **GORTI** native-Python client for selected interaction, object-attribute, and logical-time paths | source-install the SDK with `python -m pip install -e C:\path\to\gorti\pysdk` + a reachable `rtid` |
 
 The Java-backed live backends program against the standard `hla.rti1516e`
 API; the
@@ -407,6 +410,12 @@ reflections. See
 The `gorti` backend uses GORTI's `rti1516e` Python SDK directly and supports
 interactions, object attributes, and regulating/constrained logical time
 without a JVM.
+
+Recorded GORTI functional checks cover interaction exchange, object instance
+registration/discovery, attribute update/reflection, and logical-time grants.
+They do not establish release-grade GORTI support, a public multi-instance or
+explicit delete-object API, complete HLA Object Management, or formal IEEE
+1516 conformance.
 
 **Adding your own RTI** (CERTI, OpenRTI, MÄK, …): subclass
 `RTIConnector` and implement `_do_send` + `_do_request_time_advance`
@@ -460,7 +469,8 @@ for the RTI.
 
 ### Federate ambassador
 
-pyjevsim ships ready-made Pitch pRTI, Portico, and GORTI backends (above) and an
+pyjevsim ships ready-made Pitch pRTI and Portico backends, the experimental
+GORTI adapter described above, and an
 `RTIConnector` interface for adding others. If instead you want to embed
 the simulator into an existing federate ambassador, wire `step` /
 `get_next_event_time` / `insert_external_event` /
