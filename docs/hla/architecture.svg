@@ -1,0 +1,165 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1240" height="1000" viewBox="0 0 1240 1000" font-family="Segoe UI, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#334155"/>
+    </marker>
+    <marker id="arrB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#0e7490"/>
+    </marker>
+  </defs>
+
+  <rect width="1240" height="1000" fill="#ffffff"/>
+  <text x="620" y="34" text-anchor="middle" font-size="21" font-weight="700" fill="#0f172a">pyjevsim HLA subsystem — implemented architecture (main @ 7932222)</text>
+  <text x="620" y="54" text-anchor="middle" font-size="12.5" fill="#64748b">outbound: ① output() → ② send/encode → ③ _do_send &#160;&#160;•&#160;&#160; inbound: ④ RTI callback → ⑤ _emit/decode → ⑥ insert_external_event &#160;&#160;•&#160;&#160; time: ⑦ TAR/grant</text>
+
+  <!-- L1 MODEL LAYER -->
+  <rect x="40" y="70" width="1160" height="92" rx="10" fill="#eef2ff" stroke="#6366f1" stroke-width="1.4"/>
+  <text x="58" y="92" font-size="13.5" font-weight="700" fill="#3730a3">MODEL LAYER — pure DEVS, unchanged by the update</text>
+  <rect x="58" y="102" width="300" height="50" rx="7" fill="#ffffff" stroke="#818cf8"/>
+  <text x="70" y="122" font-size="13" font-weight="600" fill="#1e1b4b">BehaviorModel / StructuralModel</text>
+  <text x="70" y="140" font-size="12" fill="#475569">output() · int_trans() · ext_trans() · named ports</text>
+  <text x="380" y="122" font-size="12.5" fill="#475569">models import nothing RTI-specific; the same class runs standalone,</text>
+  <text x="380" y="140" font-size="12.5" fill="#475569">on the in-process bus, or against a live RTI — selected at run time</text>
+
+  <!-- L2 BINDINGS -->
+  <rect x="40" y="180" width="1160" height="96" rx="10" fill="#fdf4ff" stroke="#c026d3" stroke-width="1.4"/>
+  <text x="58" y="202" font-size="13.5" font-weight="700" fill="#86198f">BINDING DESCRIPTORS — declarative, attached to ports outside the model (bindings.py)</text>
+  <rect x="58" y="212" width="280" height="52" rx="7" fill="#ffffff" stroke="#d946ef"/>
+  <text x="70" y="232" font-size="13" font-weight="600" fill="#4a044e">HLAInteraction</text>
+  <text x="70" y="250" font-size="12" fill="#475569">fom_id · direction (in / out / inout)</text>
+  <rect x="356" y="212" width="300" height="52" rx="7" fill="#ffffff" stroke="#d946ef"/>
+  <text x="368" y="232" font-size="13" font-weight="600" fill="#4a044e">HLAAttribute</text>
+  <text x="368" y="250" font-size="12" fill="#475569">fom_id · object_class · direction</text>
+  <rect x="674" y="212" width="506" height="52" rx="7" fill="#fef9c3" stroke="#ca8a04"/>
+  <text x="686" y="232" font-size="12.5" font-weight="600" fill="#713f12">NEW · validated at construction (__post_init__)</text>
+  <text x="686" y="250" font-size="12" fill="#713f12">direction ∉ {in, out, inout} → ValueError before any executor or connector exists</text>
+
+  <!-- L3 FEDERATE LAYER -->
+  <rect x="40" y="294" width="1160" height="196" rx="10" fill="#eff6ff" stroke="#2563eb" stroke-width="1.4"/>
+  <text x="58" y="316" font-size="13.5" font-weight="700" fill="#1e40af">FEDERATE LAYER — RTI-agnostic (hla_executor.py · federate.py · transport.py)</text>
+
+  <rect x="58" y="330" width="250" height="140" rx="7" fill="#ffffff" stroke="#3b82f6"/>
+  <text x="70" y="350" font-size="13" font-weight="600" fill="#1e3a8a">SysExecutor — HLA_TIME</text>
+  <text x="70" y="368" font-size="12" fill="#475569">step(granted) · get_next_event_time()</text>
+  <text x="70" y="385" font-size="12" fill="#475569">two-phase Parallel-DEVS tick:</text>
+  <text x="70" y="402" font-size="12" fill="#475569">all output() first, then δint / δext / δcon</text>
+  <text x="70" y="419" font-size="12" fill="#475569">sigma=0 cascades within one grant</text>
+  <text x="70" y="443" font-size="11.5" fill="#64748b">V_TIME · R_TIME · HLA_TIME share one tick body</text>
+
+  <rect x="330" y="330" width="255" height="140" rx="7" fill="#ffffff" stroke="#3b82f6"/>
+  <text x="342" y="350" font-size="13" font-weight="600" fill="#1e3a8a">HLAExecutor (+ factory)</text>
+  <text x="342" y="368" font-size="12" fill="#475569">decorates BehaviorExecutor per bindings</text>
+  <text x="342" y="385" font-size="12" fill="#475569">① intercepts bound out-ports → send</text>
+  <text x="342" y="402" font-size="12" fill="#475569">⑥ inbound → insert_external_event</text>
+  <text x="342" y="419" font-size="12" fill="#475569">unbound ports keep pure-DEVS routing</text>
+  <text x="342" y="443" font-size="11.5" fill="#64748b">unknown port in required direction → ValueError</text>
+
+  <rect x="607" y="330" width="255" height="140" rx="7" fill="#ffffff" stroke="#3b82f6"/>
+  <text x="619" y="350" font-size="13" font-weight="600" fill="#1e3a8a">_HLARouter</text>
+  <text x="619" y="368" font-size="12" fill="#475569">single on_receive callback per transport</text>
+  <text x="619" y="385" font-size="12" fill="#475569">(kind, fom_id, payload, timestamp)</text>
+  <text x="619" y="402" font-size="12" fill="#475569">fans out to subscribed executors</text>
+  <text x="619" y="419" font-size="12" fill="#475569">per-item injection into DEVS input queue</text>
+
+  <rect x="884" y="330" width="296" height="140" rx="7" fill="#ffffff" stroke="#3b82f6"/>
+  <text x="896" y="350" font-size="13" font-weight="600" fill="#1e3a8a">Federate — lifecycle owner</text>
+  <text x="896" y="368" font-size="12" fill="#475569">join · publish · subscribe · resign</text>
+  <text x="896" y="385" font-size="12" fill="#475569">sync-point register / achieve / wait</text>
+  <text x="896" y="402" font-size="12" fill="#475569">⑦ run_until: TAR(t+lookahead) → grant</text>
+  <text x="896" y="419" font-size="12" fill="#475569">→ SysExecutor.step(granted)</text>
+  <text x="896" y="443" font-size="11.5" fill="#64748b">publish/subscribe before join → RuntimeError</text>
+
+  <!-- L4 TRANSPORT INTERFACE -->
+  <rect x="40" y="508" width="1160" height="168" rx="10" fill="#f0fdfa" stroke="#0d9488" stroke-width="1.4"/>
+  <text x="58" y="530" font-size="13.5" font-weight="700" fill="#115e59">TRANSPORT INTERFACE — template base + pluggable pieces (transport.py · registry.py)</text>
+
+  <rect x="58" y="544" width="620" height="118" rx="7" fill="#ffffff" stroke="#14b8a6"/>
+  <text x="70" y="564" font-size="13" font-weight="600" fill="#134e4a">RTIConnector (ABC) — inherited by every backend</text>
+  <text x="70" y="582" font-size="12" fill="#475569">direction guard on send · codec encode/decode hook · ⑤ _emit dispatch</text>
+  <text x="70" y="599" font-size="12" fill="#475569">join/resign state machine · idempotent close (auto-resign) · error surfacing</text>
+  <text x="70" y="622" font-size="12.5" font-weight="600" fill="#0f766e">abstract (a new RTI implements exactly two):</text>
+  <text x="70" y="640" font-size="12.5" font-family="Consolas, monospace" fill="#134e4a">_do_send(binding, wire, timestamp)&#160;&#160;·&#160;&#160;_do_request_time_advance(target) → granted</text>
+
+  <rect x="698" y="544" width="230" height="118" rx="7" fill="#ffffff" stroke="#14b8a6"/>
+  <text x="710" y="564" font-size="13" font-weight="600" fill="#134e4a">Codec / IdentityCodec</text>
+  <text x="710" y="582" font-size="12" fill="#475569">FOM (de)serialization,</text>
+  <text x="710" y="599" font-size="12" fill="#475569">orthogonal to the wire:</text>
+  <text x="710" y="616" font-size="12" fill="#475569">HLAunicodeString ·</text>
+  <text x="710" y="633" font-size="12" fill="#475569">HLAfloat64BE · HLAinteger32BE</text>
+
+  <rect x="948" y="544" width="232" height="118" rx="7" fill="#ffffff" stroke="#14b8a6"/>
+  <text x="960" y="564" font-size="13" font-weight="600" fill="#134e4a">RTICapabilities + registry</text>
+  <text x="960" y="582" font-size="12" fill="#475569">time_management · TSO ·</text>
+  <text x="960" y="599" font-size="12" fill="#475569">object_attributes · lookahead</text>
+  <text x="960" y="622" font-size="12" font-family="Consolas, monospace" fill="#134e4a">create_rti("name")</text>
+  <text x="960" y="640" font-size="12" fill="#475569">register_rti · available_rtis</text>
+
+  <!-- L5 BACKENDS -->
+  <rect x="40" y="694" width="1160" height="176" rx="10" fill="#fff7ed" stroke="#ea580c" stroke-width="1.4"/>
+  <text x="58" y="716" font-size="13.5" font-weight="700" fill="#9a3412">RTI BACKENDS — selected by name at run time (backends/)</text>
+
+  <rect x="58" y="728" width="180" height="128" rx="7" fill="#ffffff" stroke="#fb923c"/>
+  <text x="70" y="748" font-size="13" font-weight="600" fill="#7c2d12">loopback</text>
+  <text x="70" y="766" font-size="12" fill="#475569">self-mirror,</text>
+  <text x="70" y="783" font-size="12" fill="#475569">single-federate tests</text>
+  <text x="70" y="800" font-size="12" fill="#475569">no time management</text>
+
+  <rect x="256" y="728" width="200" height="128" rx="7" fill="#ffffff" stroke="#fb923c"/>
+  <text x="268" y="748" font-size="13" font-weight="600" fill="#7c2d12">inprocess</text>
+  <text x="268" y="766" font-size="12" fill="#475569">InProcessFederation bus,</text>
+  <text x="268" y="783" font-size="12" fill="#475569">multi-federate, pure Python</text>
+  <text x="268" y="800" font-size="12" fill="#475569">coordinated stepping</text>
+  <text x="268" y="817" font-size="12" fill="#475569">(no Java, no CRC)</text>
+
+  <rect x="474" y="728" width="330" height="128" rx="7" fill="#ffffff" stroke="#fb923c"/>
+  <text x="486" y="748" font-size="13" font-weight="600" fill="#7c2d12">pitch — Pitch pRTI Free 5.5.2 (commercial)</text>
+  <text x="486" y="766" font-size="12" fill="#475569">JPype 1.7.1 → JVM (Temurin 11) → hla.rti1516e API</text>
+  <text x="486" y="783" font-size="12" fill="#475569">prti1516e.jar + running CRC · standard encoders</text>
+  <text x="486" y="800" font-size="12" fill="#475569">time-regulating + constrained · lookahead 1 · TSO</text>
+  <text x="486" y="817" font-size="12" fill="#475569">sync points · teardown absorbs peer-left errors</text>
+  <text x="486" y="843" font-size="11.5" fill="#64748b">validated: 5/5 invocations × 2 scenarios, 180/180 rows</text>
+
+  <rect x="822" y="728" width="358" height="128" rx="7" fill="#ffffff" stroke="#fb923c"/>
+  <text x="834" y="748" font-size="13" font-weight="600" fill="#7c2d12">portico — Portico 2.1.4 (open source)  <tspan font-size="11" fill="#ca8a04">NEW</tspan></text>
+  <text x="834" y="766" font-size="12" fill="#475569">PorticoTransport(PitchTransport) — same 1516e Java API,</text>
+  <text x="834" y="783" font-size="12" fill="#475569">no CRC · std HLAunicodeString codec (fixes silent data loss)</text>
+  <text x="834" y="800" font-size="12" fill="#475569">TSO rebuilt from time regulation: 3 RTI sub-steps / tick</text>
+  <text x="834" y="817" font-size="12" fill="#475569">same-JVM RID · peer-reflection fail-fast (no silent split)</text>
+  <text x="834" y="843" font-size="11.5" fill="#64748b">validated: 5/5 invocations × 2 scenarios, 180/180 rows</text>
+
+  <!-- L6 VALIDATION -->
+  <rect x="40" y="888" width="1160" height="92" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="1.4"/>
+  <text x="58" y="910" font-size="13.5" font-weight="700" fill="#166534">VALIDATION LAYER — equivalence gates + archived machine-checkable record  <tspan font-size="11" fill="#ca8a04">NEW</tspan></text>
+  <text x="58" y="931" font-size="12" fill="#475569">verify_equivalence.py (Java-free gate) · verify_equivalence_rti.py (live gate, one JVM per subprocess) — canonical rows (tick, object, x, y, z), %.10g, exact equality → MATCH 180 rows</text>
+  <text x="58" y="950" font-size="12" fill="#475569">docs/hla-validation/ @ ad9f54a: 5-invocation campaigns (both RTIs) · canonical SHA-256 references · acceptance manifest (toolchain hashes: pRTI jar / portico jar / jvm.dll) · negative control</text>
+  <text x="58" y="969" font-size="12" fill="#475569">verify_results.py re-checks archived artifacts with no RTI · pinned by tests/hla/test_validation_verifier.py · suite: 160 passed, 3 skipped (live-RTI self-skips)</text>
+
+  <!-- ARROWS -->
+  <!-- model -> bindings (declare) -->
+  <path d="M208,162 L208,180" stroke="#334155" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text x="216" y="176" font-size="11.5" fill="#334155">declared on existing ports</text>
+  <!-- bindings -> federate layer -->
+  <path d="M208,276 L208,294" stroke="#334155" stroke-width="1.6" marker-end="url(#arr)"/>
+  <!-- HLAExecutor -> RTIConnector (send) -->
+  <path d="M420,470 L420,544" stroke="#334155" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text x="428" y="500" font-size="11.5" fill="#334155">② send → codec.encode</text>
+  <!-- RTIConnector -> backends -->
+  <path d="M368,662 L368,728" stroke="#334155" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text x="376" y="690" font-size="11.5" fill="#334155">③ _do_send / ⑦ _do_request_time_advance</text>
+  <!-- backends -> RTIConnector (callback) -->
+  <path d="M700,728 L700,662" stroke="#0e7490" stroke-width="1.6" marker-end="url(#arrB)"/>
+  <text x="708" y="690" font-size="11.5" fill="#0e7490">④ RTI callback (RX thread)</text>
+  <!-- RTIConnector -> router -->
+  <path d="M700,544 L700,470" stroke="#0e7490" stroke-width="1.6" marker-end="url(#arrB)"/>
+  <text x="708" y="500" font-size="11.5" fill="#0e7490">⑤ _emit → codec.decode</text>
+  <!-- router -> executor (via label only) -->
+  <path d="M607,400 L585,400" stroke="#0e7490" stroke-width="1.6" marker-end="url(#arrB)"/>
+  <!-- Federate <-> connector time axis -->
+  <path d="M1032,470 L1032,544" stroke="#334155" stroke-width="1.6" marker-end="url(#arr)"/>
+  <text x="1040" y="500" font-size="11.5" fill="#334155">⑦ TAR / grant</text>
+  <!-- SysExecutor <- Federate step(granted) -->
+  <path d="M884,412 L840,412 L840,478 L320,478 L320,470" stroke="#334155" stroke-width="1.3" fill="none" marker-end="url(#arr)"/>
+  <text x="560" y="474" font-size="11.5" fill="#334155">step(granted)</text>
+  <!-- backends -> validation -->
+  <path d="M620,870 L620,888" stroke="#16a34a" stroke-width="1.6" marker-end="url(#arr)"/>
+</svg>
