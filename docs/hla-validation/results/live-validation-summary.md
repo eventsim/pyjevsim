@@ -35,11 +35,12 @@ for `self_propelled` and
 for `stationary`. Each hash covers the UTF-8 CSV header and numerically sorted
 rows with LF line endings.
 
-The later clean-checkout run also checked the bundled Portico same-JVM
-configuration and the missing-peer failure path. Its
-[machine-readable manifest](live-acceptance-manifest.json) records source,
-configuration, toolchain, return codes, and output hashes. It was generated
-before the v2.2.0 tag and records `archive_ready: false`.
+The earlier clean-checkout run also checked the bundled Portico same-JVM
+configuration and the missing-peer failure path. Its historical
+[2026-08-19 manifest](live-acceptance-manifest.json) records that campaign.
+The current [v2.2.0 acceptance manifest](live-acceptance-v2.2.0.json) records
+source, configuration, toolchain, return codes, and output hashes for all
+three clean release-candidate campaigns.
 
 For the GORTI qualification, `git archive HEAD` produced a clean source tree
 with SHA-256

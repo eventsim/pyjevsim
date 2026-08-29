@@ -14,6 +14,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 REPOSITORY_ROOT = HERE.parents[2]
 HEADER = ["tick", "object_name", "x", "y", "z"]
+CURRENT_LIVE_MANIFEST = "live-acceptance-v2.2.0.json"
 
 
 def _summary() -> list[dict[str, str]]:
@@ -74,7 +75,7 @@ def main() -> None:
             f"records={backends}"
         )
 
-    manifest_path = HERE / "live-acceptance-manifest.json"
+    manifest_path = HERE / CURRENT_LIVE_MANIFEST
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
     bindings = (
         manifest["validation_source_artifacts"]
@@ -95,7 +96,7 @@ def main() -> None:
         if len(checked) != expected_size or actual_hash != expected_hash:
             raise SystemExit(f"live acceptance source binding mismatch: {path}")
     print(
-        "OK live acceptance manifest: "
+        f"OK live acceptance manifest {CURRENT_LIVE_MANIFEST}: "
         f"{len(bindings)} source/reference bindings"
     )
 
