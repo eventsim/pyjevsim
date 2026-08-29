@@ -81,8 +81,8 @@ receive-order reflections. Its tick barrier depends on documented
 The ``gorti`` backend uses GORTI's native ``rti1516e`` Python SDK, without
 Java or JPype. The SDK is not published on PyPI, so install it from its source
 checkout with ``python -m pip install -e C:\path\to\gorti\pysdk``.
-Recorded checks cover interaction exchange, object registration/discovery,
-attribute update/reflection, and regulating/constrained logical time. They do
+Recorded AT/SIM checks cover object registration/discovery, six-attribute
+update/reflection, and regulating/constrained logical time. They do
 not establish release-grade GORTI support, complete HLA Object Management, or
 formal IEEE 1516 conformance.
 

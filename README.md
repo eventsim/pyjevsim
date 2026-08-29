@@ -411,8 +411,8 @@ The `gorti` backend uses GORTI's `rti1516e` Python SDK directly and supports
 interactions, object attributes, and regulating/constrained logical time
 without a JVM.
 
-Recorded GORTI functional checks cover interaction exchange, object instance
-registration/discovery, attribute update/reflection, and logical-time grants.
+Recorded GORTI AT/SIM checks cover object instance registration/discovery,
+six-attribute update/reflection, and logical-time grants.
 They do not establish release-grade GORTI support, a public multi-instance or
 explicit delete-object API, complete HLA Object Management, or formal IEEE
 1516 conformance.

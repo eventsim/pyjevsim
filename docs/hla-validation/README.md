@@ -12,10 +12,10 @@ communication performance, and multi-host operation are not tested. See
 DEVS/HLA systems.
 
 Version 2.2.0 includes an experimental, source-installed GORTI adapter. Its
-recorded functional checks cover interactions, object registration/discovery,
-attribute update/reflection, and regulating/constrained logical time; they are
-not release-grade GORTI support, complete HLA Object Management, or formal
-IEEE 1516 conformance.
+recorded AT/SIM checks cover object registration/discovery, six-attribute
+update/reflection, and regulating/constrained logical time; they are not
+release-grade GORTI support, complete HLA Object Management, or formal IEEE
+1516 conformance.
 
 ## Terms
 
@@ -31,7 +31,7 @@ IEEE 1516 conformance.
 | Area | Published pyjevsim baseline (SoftwareX 2025) | `v2.1.2` | `2.2.0` |
 |---|---|---|---|
 | Main focus | local Python DEVS execution and journaling | pluggable HLA connector, `HLA_TIME`, in-process tests, Pitch backend | Portico backend, experimental/source-installed GORTI code, AT/SIM comparison workflow, committed traces, and service/limitations documentation |
-| Live HLA checks | not part of the published contribution | Pitch 5.5.2 ping-pong, including a same-host multiprocess synchronization-point run | Pitch 5.5.2 and Portico 2.1.4 checks, plus a pre-release GORTI functional qualification, on one physical host |
+| Live HLA checks | not part of the published contribution | Pitch 5.5.2 ping-pong, including a same-host multiprocess synchronization-point run | Five clean-candidate AT/SIM invocations each for Pitch 5.5.2, Portico 2.1.4, and experimental GORTI, on one physical host |
 | Identifier | article DOI `10.1016/j.softx.2025.102291` | tag `v2.1.2`, version DOI `10.5281/zenodo.21002029` | tag `v2.2.0`; the version DOI is assigned when Zenodo archives the GitHub release |
 
 The supported Python floor is consistently `>=3.10` in `pyproject.toml`, the
@@ -294,17 +294,16 @@ summary data, and representative rows are under [`results/`](results/).
 |---|---|---|
 | In-process | no Java; identity grants; explicit lock-step | five current invocations above; also exercised by the test suite |
 | Pitch pRTI | Pitch pRTI Free 5.5.2, Temurin 11.0.31+11, JPype 1.7.1, CPython 3.11.15 | five recorded live AT/SIM runs matched both 180-row scenarios |
-| Portico | Portico 2.1.4, Temurin 11.0.31+11, JPype 1.7.1, CPython 3.14.0 | five recorded same-JVM live AT/SIM runs matched both 180-row scenarios; a later run without an externally supplied RID also matched both scenarios |
-| GORTI (experimental; source-installed SDK) | clean GORTI commit `475b23b`; source-installed SDK 0.9.0; clean-tree `rtid`; CPython 3.11.15; grpcio 1.82.1; protobuf 7.35.1 | five recorded live AT/SIM runs matched both 180-row scenarios |
+| Portico | Portico 2.1.4, Temurin 11.0.31+11, JPype 1.7.1, CPython 3.11.15 | five clean-candidate invocations matched both 180-row scenarios |
+| GORTI (experimental; source-installed SDK) | clean GORTI commit `475b23b`; SDK 0.9.0; `-buildvcs=false -trimpath` clean-built `rtid`; CPython 3.11.15; grpcio 1.82.1; protobuf 7.35.1 | five clean-candidate invocations matched both 180-row scenarios; each invocation used its own hidden `rtid` process |
 
 These are functional checks. A concise result and environment record is in
 [`results/live-validation-summary.md`](results/live-validation-summary.md).
-That record includes the clean GORTI archive and binary SHA-256 values. The
-GORTI source/runtime qualification is reproducible from commit `475b23b`.
-At the time of that run, the tested pyjevsim connector was an uncommitted
-candidate; its recorded SHA-256 is byte-identical to `gorti.py` in pyjevsim
-commit `bdb4cf1`. The historical run nevertheless remains pre-release evidence
-because it preceded a clean committed/tagged acceptance campaign.
+That record binds the clean sources, generated SDK files, toolchains, output
+hashes, and the retained 55-file evidence bundle. The current campaign used
+the committed connector in clean pyjevsim commit `70a27d9`. An earlier
+2026-08-28 GORTI campaign used an uncommitted but byte-identical connector;
+that earlier run is retained only as historical pre-release evidence.
 
 ## 6. HLA time management
 

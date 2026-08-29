@@ -205,7 +205,7 @@ receive order, so the adapter uses a three-sub-step barrier. The barrier
 prevents next-tick over-read; current-batch completeness still depends on the
 configured `quiet` and `settle` waits.
 
-`backends/gorti.py` uses GORTI's native `rti1516e` SDK. Its recorded checks
-cover interaction exchange, object registration/discovery, attribute
-update/reflection, and regulating/constrained logical time; they do not cover
-complete Object Management or formal conformance.
+`backends/gorti.py` uses GORTI's native `rti1516e` SDK. Its recorded AT/SIM
+checks cover object registration/discovery, six-attribute update/reflection,
+and regulating/constrained logical time; they do not cover complete Object
+Management or formal conformance.

@@ -1,9 +1,9 @@
 {
   "schema_version": 2,
-  "recorded_at_utc": "2026-08-29T01:26:25.9645007Z",
+  "recorded_at_utc": "2026-08-29T01:43:46.541219Z",
   "campaign_window_utc": {
     "started_at": "2026-08-29T01:23:18.9611754Z",
-    "finished_at": "2026-08-29T01:26:25.9645007Z"
+    "finished_at": "2026-08-29T01:43:46.541219Z"
   },
   "source_state": {
     "acceptance_source_commit": "70a27d9aa902a8a12dad7d850e4a15ac73e25df2",
@@ -21,14 +21,367 @@
   },
   "external_sources": {
     "gorti": {
-      "commit": "475b23b7ea0e6714825c2d3cdbd5ec5c2f21bf6f",
-      "tree": "109b1cd3b8f1307248ebd96b4f62cd22d7596da8",
+      "validated_source_commit": "475b23b7ea0e6714825c2d3cdbd5ec5c2f21bf6f",
+      "validated_full_tree": "109b1cd3b8f1307248ebd96b4f62cd22d7596da8",
       "remote_ref": null,
-      "source_archive": {
+      "tracked_sdk": {
+        "source_path": "pysdk/rti1516e",
+        "tree": "132741a4fb6d1be5b50decd35f680f31959c49e1",
+        "planned_tree_ref": "refs/tags/validation/pyjevsim-v2.2.0-gorti-sdk-132741a"
+      },
+      "generated_sdk": {
+        "path": "pysdk/rti1516e/_generated",
+        "file_count": 58,
+        "total_size": 565068,
+        "aggregate_sha256": "21f7f992ba822bcdb85acd68956f846199835dfd048a122fcf7ca6ec0df33f17",
+        "aggregate_algorithm": "SHA-256 over sorted UTF-8 path, NUL, decimal size, NUL, lowercase file SHA-256, LF",
+        "generator": "python -m rti1516e._proto",
+        "equivalent_make_target": "make py-codegen",
+        "proto_source_tree": "e8cb0ef9c8181fb81956502d7e4e6edec3641080",
+        "grpcio_tools_version": "1.82.1",
+        "libprotoc_version": "35.0",
+        "generated_code_protobuf_version": "7.35.0",
+        "protobuf_runtime_version": "7.35.1",
+        "files": [
+          {
+            "path": "__init__.py",
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          {
+            "path": "rti/v1/admin_mutating_pb2.py",
+            "size": 4318,
+            "sha256": "81f49c1f5744525924c66ba3c4f33f7c526bf69bb68a6ef1a478b60017e31cad"
+          },
+          {
+            "path": "rti/v1/admin_mutating_pb2.pyi",
+            "size": 3810,
+            "sha256": "adb2a90c9b731aa4dd9bb802ae21049debbc07b259b13aeb2cb911cf4927c190"
+          },
+          {
+            "path": "rti/v1/admin_mutating_pb2_grpc.py",
+            "size": 13319,
+            "sha256": "12a33f2e92d89fa7a7aa8b0193900ee4fccb0a1686047d85425e181c20bfb9ab"
+          },
+          {
+            "path": "rti/v1/admin_pb2.py",
+            "size": 7175,
+            "sha256": "f902c88ab3f5d540b5d4bfe58507c3afa9c938c295826307df37dd5788392b48"
+          },
+          {
+            "path": "rti/v1/admin_pb2.pyi",
+            "size": 11585,
+            "sha256": "6096f5ab456ee89b1bb782d096df9b2b380684006ea3a190233206d0a9885d20"
+          },
+          {
+            "path": "rti/v1/admin_pb2_grpc.py",
+            "size": 8904,
+            "sha256": "7ac67f014ba9db7d7222e662627b1f056596edb809ba73758134a5cbd55118fb"
+          },
+          {
+            "path": "rti/v1/cluster_pb2.py",
+            "size": 4334,
+            "sha256": "f3b280b5ca6b3948ae0faa76ff4d8db27b4bb02a1725decd2e3e699dd5d4c66e"
+          },
+          {
+            "path": "rti/v1/cluster_pb2.pyi",
+            "size": 4297,
+            "sha256": "66501dfb7c522ffecfa26539527523c0491ed30c4e4cb35f5fcf799d53fc4825"
+          },
+          {
+            "path": "rti/v1/cluster_pb2_grpc.py",
+            "size": 10568,
+            "sha256": "7303e827d69e89da828a856a65b31ea235ad42de41c1914b460803869591d021"
+          },
+          {
+            "path": "rti/v1/common_pb2.py",
+            "size": 2928,
+            "sha256": "4b15ab0de4d940747638b67ac169bb45ca0dff47d3df148da9351bcde258275d"
+          },
+          {
+            "path": "rti/v1/common_pb2.pyi",
+            "size": 2639,
+            "sha256": "c4a83efdce62fbd17ddd8994579312f21ab173f0a05c598bf1146275193f7a3e"
+          },
+          {
+            "path": "rti/v1/common_pb2_grpc.py",
+            "size": 893,
+            "sha256": "b8610e12b5f5c9207b80fdb66434cd699bb9be54bfb83dd0b7190f989fde2ad4"
+          },
+          {
+            "path": "rti/v1/confirmed_object_pb2.py",
+            "size": 3062,
+            "sha256": "a5c3e74c6887a1c9a98a2ef21d6bb824d50b398a44b9c3abc99cea60cb60c23e"
+          },
+          {
+            "path": "rti/v1/confirmed_object_pb2.pyi",
+            "size": 2636,
+            "sha256": "fba9c2c26520713bcb00f9c9809d4a2301108b15e14895cd574405ac357104a9"
+          },
+          {
+            "path": "rti/v1/confirmed_object_pb2_grpc.py",
+            "size": 4389,
+            "sha256": "cc606d311cb5a5ba6edae4d988f9bf63c8d565ca97101c256b8486fa36fa1718"
+          },
+          {
+            "path": "rti/v1/ddm_pb2.py",
+            "size": 15001,
+            "sha256": "2025b4b06a2a1cff1427688d8b658928a57f45d958ba7f35643dd7dad1b55d9b"
+          },
+          {
+            "path": "rti/v1/ddm_pb2.pyi",
+            "size": 21797,
+            "sha256": "1d8b08733d17b9806c0cf291c249a4d67cec3a9ebd1324c697d97c7c65ecb8cb"
+          },
+          {
+            "path": "rti/v1/ddm_pb2_grpc.py",
+            "size": 32591,
+            "sha256": "e635d4b61c97e3a0e1fcf436c37203609675ed1d05cbd626f843758721fea6c5"
+          },
+          {
+            "path": "rti/v1/declaration_pb2.py",
+            "size": 5561,
+            "sha256": "96c1288a10467c093972b62998e3a65a6550baf2acff3379ff2c6d4fe0caaca5"
+          },
+          {
+            "path": "rti/v1/declaration_pb2.pyi",
+            "size": 6693,
+            "sha256": "3899be34cd57719965f9a901d9065551a0bb79ca207006269251f60b4e9602c1"
+          },
+          {
+            "path": "rti/v1/declaration_pb2_grpc.py",
+            "size": 16995,
+            "sha256": "cd6aa41127818630c73f2df2371a527f5e052936f0f92dc49630a61750b57b2e"
+          },
+          {
+            "path": "rti/v1/errors_pb2.py",
+            "size": 3129,
+            "sha256": "7bae38e0db8e121357ce3d9f2457981ee1532e46f1e5672fc8fc79dbee368b61"
+          },
+          {
+            "path": "rti/v1/errors_pb2.pyi",
+            "size": 3280,
+            "sha256": "7dacb8f65d9ab30325ff17dd25f5fae6b81ce5be68256fd5249e886d4067b968"
+          },
+          {
+            "path": "rti/v1/errors_pb2_grpc.py",
+            "size": 893,
+            "sha256": "b6276048c2ce0f6e49ce5809bd895229b4d563671d865bc4fecc47c1b7484704"
+          },
+          {
+            "path": "rti/v1/eventlog_pb2.py",
+            "size": 5715,
+            "sha256": "a6852589b8977e2a46fd47572c49bb5404a223dabd54335d637a2093056a8427"
+          },
+          {
+            "path": "rti/v1/eventlog_pb2.pyi",
+            "size": 6709,
+            "sha256": "8caa4998e428d35b2fa9280d51cf164ed51fdfbaad6c94d59ecb380c737a67a2"
+          },
+          {
+            "path": "rti/v1/eventlog_pb2_grpc.py",
+            "size": 895,
+            "sha256": "407b498022b3c6f3b32114aabd2c397350141cbb8de0d29135a22c1a3cad42d8"
+          },
+          {
+            "path": "rti/v1/federation_pb2.py",
+            "size": 6566,
+            "sha256": "6193317e8234d57049857a7960d4fdc7cf94c6b86a7158fd4dc2dba5c1aa9be9"
+          },
+          {
+            "path": "rti/v1/federation_pb2.pyi",
+            "size": 7454,
+            "sha256": "f57bb6875f91a0658c546160feec38b82c328b7e45cac896eb4c988fb761016c"
+          },
+          {
+            "path": "rti/v1/federation_pb2_grpc.py",
+            "size": 13163,
+            "sha256": "d36450fa984ab2c1cb76ba7ba18d6836035f955ad014a1be7c35100380360373"
+          },
+          {
+            "path": "rti/v1/local_lrc_pb2.py",
+            "size": 5113,
+            "sha256": "e200ebb0d652756d3289fe42fd03941c9a933762f6f1c3ae782398f19721dd3f"
+          },
+          {
+            "path": "rti/v1/local_lrc_pb2.pyi",
+            "size": 5372,
+            "sha256": "0a1755899250ccfaac5ba5aa2c38168422a442affa9ea22b0cfb4009adcd76d5"
+          },
+          {
+            "path": "rti/v1/local_lrc_pb2_grpc.py",
+            "size": 4120,
+            "sha256": "2a21dcb136817a4a91ee45af13d060f84f0dbdd8f0153d5f1dca60bb0382adc2"
+          },
+          {
+            "path": "rti/v1/mom_pb2.py",
+            "size": 5625,
+            "sha256": "07d1640c97c0da68a66651cb716f6c3997cc1bce309fc7f25f45ddbdd72e793d"
+          },
+          {
+            "path": "rti/v1/mom_pb2.pyi",
+            "size": 7451,
+            "sha256": "621a94f5866de9238afcdfb22687fb48310be1fca23b7b0f207c35de1ca7123a"
+          },
+          {
+            "path": "rti/v1/mom_pb2_grpc.py",
+            "size": 11212,
+            "sha256": "153a58e1b49ead410944b96c04f3eba49ea4bddedae63a50bd3e7ab8149ae864"
+          },
+          {
+            "path": "rti/v1/object_pb2.py",
+            "size": 10337,
+            "sha256": "01b2d1ccf12cc733da964c3ae93e01353c6459a2d35198c444832ba2dfce8774"
+          },
+          {
+            "path": "rti/v1/object_pb2.pyi",
+            "size": 12835,
+            "sha256": "85e4cc0ee8d916fe35fda54629ff11fbd8cb7ef84c82aa0f14a57a20f974b8f3"
+          },
+          {
+            "path": "rti/v1/object_pb2_grpc.py",
+            "size": 26617,
+            "sha256": "86ab6a814b24166c8d25b176a870d6cc995609b699d7da9ef60b90c1f3937dbc"
+          },
+          {
+            "path": "rti/v1/ownership_pb2.py",
+            "size": 8187,
+            "sha256": "f8ebf475b3b2d65f0edec063dacebd6cae5f5613a8d4deced88bd2d18d7524e9"
+          },
+          {
+            "path": "rti/v1/ownership_pb2.pyi",
+            "size": 11227,
+            "sha256": "a708137e679f243ffd0b6952c7044c5e0b070002ffd3eeb0ccee44df2cdcbfae"
+          },
+          {
+            "path": "rti/v1/ownership_pb2_grpc.py",
+            "size": 19727,
+            "sha256": "397b95d33caec30420085ee29350528564e6152aedbed453cd171161a314ba97"
+          },
+          {
+            "path": "rti/v1/savepoint_pb2.py",
+            "size": 6642,
+            "sha256": "f0a82dc7f818d8aa1f0c3bb43f937b35763379755f0a08fc2d0da202dde79f54"
+          },
+          {
+            "path": "rti/v1/savepoint_pb2.pyi",
+            "size": 6452,
+            "sha256": "1f92032c8445b78cd490a6dfd1dc860b8e140ca1964034d0246596c2e5b7d45e"
+          },
+          {
+            "path": "rti/v1/savepoint_pb2_grpc.py",
+            "size": 18894,
+            "sha256": "3a63f65cd83c4e1dd4645e22e31f47d42135a449a16cce35f74e3751d97d9321"
+          },
+          {
+            "path": "rti/v1/stream_pb2.py",
+            "size": 16196,
+            "sha256": "e723da35e5cb324022d8eed8ffa7a9231243d24801f2fd33167926a17a90fc2b"
+          },
+          {
+            "path": "rti/v1/stream_pb2.pyi",
+            "size": 23099,
+            "sha256": "e03f65a4e002abf493e6a4aa71b1c2f9b32bbe3c003a64ad4d07b5d40f665e6a"
+          },
+          {
+            "path": "rti/v1/stream_pb2_grpc.py",
+            "size": 5621,
+            "sha256": "fed8e54c92e87926f323a9dc8f116db3732022af01392f75e2085e972e6364be"
+          },
+          {
+            "path": "rti/v1/support_pb2.py",
+            "size": 12616,
+            "sha256": "54a800ca729509f9913e809c0d31e7badf74803a5bff0c95ebc16d22d0c8c28f"
+          },
+          {
+            "path": "rti/v1/support_pb2.pyi",
+            "size": 13321,
+            "sha256": "e59601145bd467e4ef181eec2dc4e5d5a633052a332ce45cccc6c326520f44ce"
+          },
+          {
+            "path": "rti/v1/support_pb2_grpc.py",
+            "size": 35326,
+            "sha256": "bcdf8e22b3006c3e7d902dde4b2e89399387403bcbc26e3318e2c4d7db573b84"
+          },
+          {
+            "path": "rti/v1/sync_pb2.py",
+            "size": 3584,
+            "sha256": "f4c741deb5040da83a01a9d428e017b87c10f2af9199737c8f56b685334a7f2a"
+          },
+          {
+            "path": "rti/v1/sync_pb2.pyi",
+            "size": 3796,
+            "sha256": "93e23e8deae322f282e38f065a959513ab792016502ef0b94d0c88c9084876bb"
+          },
+          {
+            "path": "rti/v1/sync_pb2_grpc.py",
+            "size": 5839,
+            "sha256": "bec73129f7312eba9301266f50c4322905bba1441a5343fbc70b9fa32143ad67"
+          },
+          {
+            "path": "rti/v1/time_pb2.py",
+            "size": 8965,
+            "sha256": "65560ec85789b71dfe946d175c1940b140a4d056f83d141ab6cd6b11d03fe3aa"
+          },
+          {
+            "path": "rti/v1/time_pb2.pyi",
+            "size": 9801,
+            "sha256": "ed73147a40a7ff2ed01dd918632f1616d8171c84d9195def2e1964c2ba63a851"
+          },
+          {
+            "path": "rti/v1/time_pb2_grpc.py",
+            "size": 35794,
+            "sha256": "9f77e37c23ce9a76c967c2ad00f3f512d09cf90f08e50da153724d4844e2af4c"
+          }
+        ]
+      },
+      "private_full_source_archive": {
+        "name": "gorti-475b23b.tar",
+        "published": false,
         "size": 45148160,
         "sha256": "e9ee4b5b86d3a6e6ba1f2e6890bd22f1e37732d30b91be1dea15e5d1a5af493f"
       },
-      "sdk_install": "source archive placed first on PYTHONPATH"
+      "runtime_source_archive": {
+        "name": "gorti-475b23b-runtime-source.zip",
+        "repository_path": "docs/hla-validation/results/assets/gorti-475b23b-runtime-source.zip",
+        "format": "deterministic ZIP (sorted paths, fixed timestamps)",
+        "file_count": 599,
+        "size": 1409838,
+        "sha256": "b78ebdf016448041479ef8a096ca0b4b96f86b3cf8584825d725a95c9078a18f",
+        "contents_scope": [
+          "LICENSE",
+          "go.mod",
+          "go.sum",
+          "rti/",
+          "proto/",
+          "pysdk/rti1516e/ including the exact generated stubs used"
+        ],
+        "provenance_marker_scan": "No matches for the project audit pattern set; standard protoc generated-code headers are retained."
+      },
+      "rtid_build": {
+        "command": "go build -buildvcs=false -trimpath -o rtid-475b23b-buildvcs-false.exe ./rti/cmd/rtid",
+        "go_version": "go1.26.5 windows/amd64",
+        "buildvcs": false,
+        "trimpath": true,
+        "embedded_vcs_metadata": "absent",
+        "binary": {
+          "size": 22643200,
+          "sha256": "af0e539fb9fd6b90bb61d8510bd1826be36b66d96c3365865442ea03fc86b1c6"
+        }
+      },
+      "sdk_install": "clean tracked source archive plus the recorded generated stubs placed first on PYTHONPATH",
+      "server_source_identity": {
+        "public_commit": "5cf718a8f282d6be36cd1eed8d0efb06d388a80c",
+        "byte_identical_paths": [
+          "rti/",
+          "proto/",
+          "go.mod",
+          "go.sum",
+          "buf.gen.yaml",
+          "buf.yaml"
+        ],
+        "byte_identical": true
+      }
     }
   },
   "text_hash_normalization": "validation source artifacts convert CRLF to LF before size and SHA-256 calculation",
@@ -48,7 +401,7 @@
       "two 30-tick scenarios",
       "five independent verifier invocations per backend",
       "180 canonical rows per scenario",
-      "GORTI interaction exchange, object registration/discovery, attribute update/reflection, and logical-time grants"
+      "GORTI object-class publication/subscription, object registration/discovery, six-attribute update/reflection, and regulating/constrained logical-time grants"
     ],
     "excluded": [
       "raw file equality",
@@ -189,7 +542,8 @@
     "grpcio": "1.82.1",
     "grpcio_tools": "1.82.1",
     "protobuf": "7.35.1",
-    "gorti_sdk_metadata": "0.9.0"
+    "gorti_sdk_metadata": "0.9.0",
+    "go": "go1.26.5 windows/amd64"
   },
   "toolchain_artifacts": [
     {
@@ -223,9 +577,9 @@
       "name": "Temurin 11.0.31+11 jvm.dll"
     },
     {
-      "size": 22681600,
-      "sha256": "afbcd83ce88d4955df24a6046a6a5e83d81f2724bbcbf612b9be9dc2d3c7bcc4",
-      "name": "GORTI 475b23b clean-built rtid"
+      "size": 22643200,
+      "sha256": "af0e539fb9fd6b90bb61d8510bd1826be36b66d96c3365865442ea03fc86b1c6",
+      "name": "GORTI 475b23b buildvcs-disabled clean-built rtid"
     },
     {
       "size": 45148160,
@@ -591,16 +945,16 @@
       "runs": [
         {
           "run": "run-01",
-          "started_at_utc": "2026-08-29T01:26:16.3719893Z",
-          "finished_at_utc": "2026-08-29T01:26:18.1341380Z",
+          "started_at_utc": "2026-08-29T01:43:37.820519Z",
+          "finished_at_utc": "2026-08-29T01:43:39.602219Z",
           "return_code": 0,
           "stdout": [
             "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
             "MATCH stationary: 180 canonical rows (gorti vs reference)"
           ],
           "stdout_artifact": {
-            "size": 122,
-            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+            "size": 120,
+            "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
           },
           "outputs": [
             {
@@ -620,7 +974,7 @@
               "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
             }
           ],
-          "federation": "AntiTorpedoGorti-v220-run-01",
+          "federation": "AntiTorpedoGorti-v220-rebuilt-run-01",
           "rtid_stdout": {
             "size": 0,
             "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -632,16 +986,16 @@
         },
         {
           "run": "run-02",
-          "started_at_utc": "2026-08-29T01:26:18.8123796Z",
-          "finished_at_utc": "2026-08-29T01:26:20.0858255Z",
+          "started_at_utc": "2026-08-29T01:43:39.602219Z",
+          "finished_at_utc": "2026-08-29T01:43:41.383738Z",
           "return_code": 0,
           "stdout": [
             "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
             "MATCH stationary: 180 canonical rows (gorti vs reference)"
           ],
           "stdout_artifact": {
-            "size": 122,
-            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+            "size": 120,
+            "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
           },
           "outputs": [
             {
@@ -661,7 +1015,7 @@
               "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
             }
           ],
-          "federation": "AntiTorpedoGorti-v220-run-02",
+          "federation": "AntiTorpedoGorti-v220-rebuilt-run-02",
           "rtid_stdout": {
             "size": 0,
             "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -673,16 +1027,16 @@
         },
         {
           "run": "run-03",
-          "started_at_utc": "2026-08-29T01:26:20.7983041Z",
-          "finished_at_utc": "2026-08-29T01:26:22.0370210Z",
+          "started_at_utc": "2026-08-29T01:43:41.383738Z",
+          "finished_at_utc": "2026-08-29T01:43:43.117823Z",
           "return_code": 0,
           "stdout": [
             "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
             "MATCH stationary: 180 canonical rows (gorti vs reference)"
           ],
           "stdout_artifact": {
-            "size": 122,
-            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+            "size": 120,
+            "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
           },
           "outputs": [
             {
@@ -702,7 +1056,7 @@
               "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
             }
           ],
-          "federation": "AntiTorpedoGorti-v220-run-03",
+          "federation": "AntiTorpedoGorti-v220-rebuilt-run-03",
           "rtid_stdout": {
             "size": 0,
             "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -714,16 +1068,16 @@
         },
         {
           "run": "run-04",
-          "started_at_utc": "2026-08-29T01:26:22.7476940Z",
-          "finished_at_utc": "2026-08-29T01:26:23.9958814Z",
+          "started_at_utc": "2026-08-29T01:43:43.117823Z",
+          "finished_at_utc": "2026-08-29T01:43:44.852147Z",
           "return_code": 0,
           "stdout": [
             "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
             "MATCH stationary: 180 canonical rows (gorti vs reference)"
           ],
           "stdout_artifact": {
-            "size": 122,
-            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+            "size": 120,
+            "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
           },
           "outputs": [
             {
@@ -743,7 +1097,7 @@
               "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
             }
           ],
-          "federation": "AntiTorpedoGorti-v220-run-04",
+          "federation": "AntiTorpedoGorti-v220-rebuilt-run-04",
           "rtid_stdout": {
             "size": 0,
             "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -755,16 +1109,16 @@
         },
         {
           "run": "run-05",
-          "started_at_utc": "2026-08-29T01:26:24.7212396Z",
-          "finished_at_utc": "2026-08-29T01:26:25.9645007Z",
+          "started_at_utc": "2026-08-29T01:43:44.852147Z",
+          "finished_at_utc": "2026-08-29T01:43:46.541219Z",
           "return_code": 0,
           "stdout": [
             "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
             "MATCH stationary: 180 canonical rows (gorti vs reference)"
           ],
           "stdout_artifact": {
-            "size": 122,
-            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+            "size": 120,
+            "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
           },
           "outputs": [
             {
@@ -784,7 +1138,7 @@
               "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
             }
           ],
-          "federation": "AntiTorpedoGorti-v220-run-05",
+          "federation": "AntiTorpedoGorti-v220-rebuilt-run-05",
           "rtid_stdout": {
             "size": 0,
             "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -797,15 +1151,16 @@
       ],
       "configuration": {
         "endpoint": "grpc://127.0.0.1:18442",
-        "rtid_lifecycle": "one hidden clean-built process per run",
+        "rtid_lifecycle": "one hidden buildvcs-disabled clean-built process per run",
         "sdk_import": "GORTI 475b23b clean source archive via PYTHONPATH"
       }
     }
   ],
   "raw_evidence_bundle": {
-    "size": 35572,
-    "sha256": "5b72fa1e9bb4bd50b746f538dad376cb4f2e02280a0885b47fec5ac9461e9b5d",
+    "size": 35567,
+    "sha256": "5ed41296943e8fac4d1b73173cff2e5f0f78a88a2cb186af6d34d1d4160b3da0",
     "name": "pyjevsim-v2.2.0-live-acceptance-evidence.zip",
+    "repository_path": "docs/hla-validation/results/assets/pyjevsim-v2.2.0-live-acceptance-evidence.zip",
     "format": "deterministic ZIP (sorted paths, fixed timestamps)",
     "file_count": 55,
     "contents": [
@@ -831,8 +1186,8 @@
       },
       {
         "path": "gorti/run-01/verifier.log",
-        "size": 122,
-        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+        "size": 120,
+        "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
       },
       {
         "path": "gorti/run-02/rtid.stderr.log",
@@ -856,8 +1211,8 @@
       },
       {
         "path": "gorti/run-02/verifier.log",
-        "size": 122,
-        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+        "size": 120,
+        "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
       },
       {
         "path": "gorti/run-03/rtid.stderr.log",
@@ -881,8 +1236,8 @@
       },
       {
         "path": "gorti/run-03/verifier.log",
-        "size": 122,
-        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+        "size": 120,
+        "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
       },
       {
         "path": "gorti/run-04/rtid.stderr.log",
@@ -906,8 +1261,8 @@
       },
       {
         "path": "gorti/run-04/verifier.log",
-        "size": 122,
-        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+        "size": 120,
+        "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
       },
       {
         "path": "gorti/run-05/rtid.stderr.log",
@@ -931,8 +1286,8 @@
       },
       {
         "path": "gorti/run-05/verifier.log",
-        "size": 122,
-        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+        "size": 120,
+        "sha256": "6ee66cc73b52929dcce33c5a8ec516f12e0b0f3a427445433f32247929bea9fb"
       },
       {
         "path": "pitch/run-01/self_propelled.csv",
