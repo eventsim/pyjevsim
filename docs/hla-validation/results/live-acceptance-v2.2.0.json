@@ -1,0 +1,1089 @@
+{
+  "schema_version": 2,
+  "recorded_at_utc": "2026-08-29T01:26:25.9645007Z",
+  "campaign_window_utc": {
+    "started_at": "2026-08-29T01:23:18.9611754Z",
+    "finished_at": "2026-08-29T01:26:25.9645007Z"
+  },
+  "source_state": {
+    "acceptance_source_commit": "70a27d9aa902a8a12dad7d850e4a15ac73e25df2",
+    "acceptance_source_tree": "c6502fc9827075cdc2d813f8ec87a84be0b1ca1f",
+    "git_describe": "v2.1.2-28-g70a27d9",
+    "clean_revision": true,
+    "source_archive": {
+      "size": 1904640,
+      "sha256": "93935f589b51c6d68e30f139e3914762ef1bc6c690d4ffc443a2de51f3371635",
+      "name": "pyjevsim-70a27d9.tar"
+    },
+    "release_target": "v2.2.0",
+    "archive_ready": false,
+    "note": "All live runs used this clean git archive. The final release commit may add only this evidence and release metadata; all bound executable/configuration/reference artifacts must remain byte-identical. Set archive_ready only after the immutable tag and public evidence/archive identifiers are verified."
+  },
+  "external_sources": {
+    "gorti": {
+      "commit": "475b23b7ea0e6714825c2d3cdbd5ec5c2f21bf6f",
+      "tree": "109b1cd3b8f1307248ebd96b4f62cd22d7596da8",
+      "remote_ref": null,
+      "source_archive": {
+        "size": 45148160,
+        "sha256": "e9ee4b5b86d3a6e6ba1f2e6890bd22f1e37732d30b91be1dea15e5d1a5af493f"
+      },
+      "sdk_install": "source archive placed first on PYTHONPATH"
+    }
+  },
+  "text_hash_normalization": "validation source artifacts convert CRLF to LF before size and SHA-256 calculation",
+  "criterion": {
+    "row": [
+      "tick",
+      "object_name",
+      "x",
+      "y",
+      "z"
+    ],
+    "coordinate_format": "%.10g",
+    "comparison": "exact sorted tuple equality",
+    "scope": [
+      "two federates",
+      "one physical host",
+      "two 30-tick scenarios",
+      "five independent verifier invocations per backend",
+      "180 canonical rows per scenario",
+      "GORTI interaction exchange, object registration/discovery, attribute update/reflection, and logical-time grants"
+    ],
+    "excluded": [
+      "raw file equality",
+      "RTI packet equality",
+      "RTI callback order",
+      "network latency or throughput",
+      "multi-host scalability",
+      "complete HLA Object Management",
+      "ownership management or DDM",
+      "formal IEEE 1516 conformance"
+    ]
+  },
+  "validation_source_artifacts": [
+    {
+      "path": "docs/hla-validation/results/verify_results.py",
+      "size_lf": 3914,
+      "sha256_lf": "120e18b7f358dafedeb188a6fb990d118cf5e898da4cebf6f649c39d3fb7035c"
+    },
+    {
+      "path": "docs/hla-validation/config/portico-jvm.rid",
+      "size_lf": 167,
+      "sha256_lf": "f2d3310541422723aadf1f6cc0bd199a0b50779c866141d79a82f0f2d3856430"
+    },
+    {
+      "path": "examples/hla_atsim/verify_equivalence_rti.py",
+      "size_lf": 4988,
+      "sha256_lf": "edfdcae3db76210ade88fc1325d3b62a91324a829d989ac503bb9c60df510d47"
+    },
+    {
+      "path": "examples/hla_atsim/run_hla_pitch.py",
+      "size_lf": 7559,
+      "sha256_lf": "f9df595adfe3e5ea7d8dda7cf1f45927599449bb4d3d02c20dee767c5f01f11c"
+    },
+    {
+      "path": "examples/hla_atsim/run_hla_portico.py",
+      "size_lf": 1543,
+      "sha256_lf": "24a8cc230cab2b5b8e47a643fbd415168e2fcf98c24b2f0fe2e12420c0b62bd4"
+    },
+    {
+      "path": "examples/hla_atsim/run_hla_gorti.py",
+      "size_lf": 9816,
+      "sha256_lf": "2757256686569fddeb2b3ab922bfdc47cbbaa4db9d4776d584f412a474df0a14"
+    },
+    {
+      "path": "examples/hla_atsim/hla_common.py",
+      "size_lf": 2232,
+      "sha256_lf": "096ba6a16e7fe900e087d31fe3cb7e91c319bdfdda0ab3949a2f612c74c1c5c7"
+    },
+    {
+      "path": "examples/hla_atsim/fom/AntiTorpedo.xml",
+      "size_lf": 3273,
+      "sha256_lf": "b84822ebff4fea119055ef4762d3607ac1f9342003e7db9140bdaa722226d3a4"
+    },
+    {
+      "path": "examples/hla_atsim/scenarios/self_propelled_decoy.yaml",
+      "size_lf": 1210,
+      "sha256_lf": "3aaf0866989404baf5c698b9f61abb086b906e5d399ba622bc9cb280f4450999"
+    },
+    {
+      "path": "examples/hla_atsim/scenarios/stationary_decoy.yaml",
+      "size_lf": 1003,
+      "sha256_lf": "9809eb331e2ff6184921ae8f2ee0ece94a0f5eee86389f6e6ac05f90676bdc7e"
+    },
+    {
+      "path": "examples/hla_atsim/utils/builder.py",
+      "size_lf": 505,
+      "sha256_lf": "728119843305d99913aeb7ff6ea5ff1714a02ddacd6e04dd1acfc5048e4739e4"
+    },
+    {
+      "path": "examples/hla_atsim/utils/sim_context.py",
+      "size_lf": 885,
+      "sha256_lf": "a4755250887f3d8328c5d1b3b223e2044f38d6475c93ac928c29897923bce21e"
+    },
+    {
+      "path": "examples/hla_atsim/utils/ticking.py",
+      "size_lf": 1283,
+      "sha256_lf": "4c1550e267df313dab63cce0f4833937e1ef7047927f261327d6283640f1f3fa"
+    },
+    {
+      "path": "pyjevsim/hla/backends/gorti.py",
+      "size_lf": 20021,
+      "sha256_lf": "5640ccb14b0367e6b4d6ec1407102f32e9d98634874fea81b72ade806b9d79e5"
+    },
+    {
+      "path": "pyjevsim/hla/backends/pitch.py",
+      "size_lf": 21290,
+      "sha256_lf": "481f729d42582e11d2fa0bb9df0ff77b0f47a645f66c0b46b39bb5cccfff61c9"
+    },
+    {
+      "path": "pyjevsim/hla/backends/portico.py",
+      "size_lf": 9287,
+      "sha256_lf": "85523d2d35fd3b986783c0e59ba86d9812ae57338914c9bfe45328743791b972"
+    },
+    {
+      "path": "pyjevsim/hla/factory.py",
+      "size_lf": 1413,
+      "sha256_lf": "49cc30ac5a3c4acc5f8ff078d70e9eb097de9b93b633399c21caa6615f2bb9e8"
+    },
+    {
+      "path": "pyjevsim/hla/federate.py",
+      "size_lf": 1428,
+      "sha256_lf": "a1b0ffa612651b343ca1508cb6921079f532867405907646f1bf179b2e99c825"
+    },
+    {
+      "path": "pyjevsim/hla/hla_executor.py",
+      "size_lf": 3703,
+      "sha256_lf": "f114ac1d0a9a7431b09f6453c42497cc63514afc747bee060a9383e505510d24"
+    },
+    {
+      "path": "pyjevsim/hla/registry.py",
+      "size_lf": 2536,
+      "sha256_lf": "8340b8b7213d0ff0c6e907226edfcb72f6b9ecb3466bb2d988b469a680fd9fbd"
+    }
+  ],
+  "reference_artifacts": [
+    {
+      "path": "docs/hla-validation/results/expected_self_propelled.csv",
+      "size": 6265,
+      "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205",
+      "rows": 180
+    },
+    {
+      "path": "docs/hla-validation/results/expected_stationary.csv",
+      "size": 6067,
+      "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c",
+      "rows": 180
+    },
+    {
+      "path": "docs/hla-validation/results/equivalence-summary.csv",
+      "size": 1344,
+      "sha256": "9c6db3fd1857152901af8d306f0262c176e36e0ba21b0c2fd3537756d5c40d4f"
+    }
+  ],
+  "toolchain_versions": {
+    "pitch_portico_python": "3.11.15",
+    "gorti_python": "3.11.15",
+    "jpype1": "1.7.1",
+    "grpcio": "1.82.1",
+    "grpcio_tools": "1.82.1",
+    "protobuf": "7.35.1",
+    "gorti_sdk_metadata": "0.9.0"
+  },
+  "toolchain_artifacts": [
+    {
+      "size": 45568,
+      "sha256": "9221fdf01cdafac7d42acec3cb5cf55e02a3f49982e2edf83ee9a986c447ca67",
+      "name": "CPython 3.11.15 launcher for Pitch and Portico"
+    },
+    {
+      "size": 45568,
+      "sha256": "9221fdf01cdafac7d42acec3cb5cf55e02a3f49982e2edf83ee9a986c447ca67",
+      "name": "CPython 3.11.15 launcher for GORTI"
+    },
+    {
+      "size": 259984,
+      "sha256": "48c1545b89cc741610bef59abc0d7444439e35a693386365f0a509df56871978",
+      "name": "Pitch pRTI Free 5.5.2 prti1516e.jar"
+    },
+    {
+      "size": 30363510,
+      "sha256": "f20b23513bbe51b64012244fe22d7357ec10cab6d61fa6de68f0e0f1b931032a",
+      "name": "Pitch pRTI Free 5.5.2 prtifull.jar"
+    },
+    {
+      "size": 6105681,
+      "sha256": "146dc0a7916b168396c6e595c42aaed0bdc69d64c5c54e728b7cb53fdd94ea84",
+      "name": "Portico 2.1.4 portico.jar"
+    },
+    {
+      "size": 12028584,
+      "sha256": "de36fc880fe3ec2bd027255b96d25060b1c426ba7cc38bd31e8551a9dfd50601",
+      "name": "Temurin 11.0.31+11 jvm.dll"
+    },
+    {
+      "size": 22681600,
+      "sha256": "afbcd83ce88d4955df24a6046a6a5e83d81f2724bbcbf612b9be9dc2d3c7bcc4",
+      "name": "GORTI 475b23b clean-built rtid"
+    },
+    {
+      "size": 45148160,
+      "sha256": "e9ee4b5b86d3a6e6ba1f2e6890bd22f1e37732d30b91be1dea15e5d1a5af493f",
+      "name": "GORTI 475b23b source archive"
+    },
+    {
+      "size": 639,
+      "sha256": "817a9d2725dc29f5a8475e6da31d4cba684beb39ccf165714ec92911ac8e2936",
+      "name": "Pitch CRC user settings"
+    },
+    {
+      "size": 2520,
+      "sha256": "7740e3fc5ccdf4e6f50d8f327d1798ebfc908cb3316ba3e3be422b203d83e26c",
+      "name": "Pitch LRC user settings"
+    }
+  ],
+  "acceptance_campaigns": [
+    {
+      "backend": "pitch",
+      "run_count": 5,
+      "scenarios_per_run": 2,
+      "runs": [
+        {
+          "run": "run-01",
+          "started_at_utc": "2026-08-29T01:23:18.9611754Z",
+          "finished_at_utc": "2026-08-29T01:23:24.7383995Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (pitch vs reference)",
+            "MATCH stationary: 180 canonical rows (pitch vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        },
+        {
+          "run": "run-02",
+          "started_at_utc": "2026-08-29T01:23:24.7508194Z",
+          "finished_at_utc": "2026-08-29T01:23:29.0602829Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (pitch vs reference)",
+            "MATCH stationary: 180 canonical rows (pitch vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        },
+        {
+          "run": "run-03",
+          "started_at_utc": "2026-08-29T01:23:29.0754390Z",
+          "finished_at_utc": "2026-08-29T01:23:33.3460576Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (pitch vs reference)",
+            "MATCH stationary: 180 canonical rows (pitch vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        },
+        {
+          "run": "run-04",
+          "started_at_utc": "2026-08-29T01:23:33.3532011Z",
+          "finished_at_utc": "2026-08-29T01:23:37.6559346Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (pitch vs reference)",
+            "MATCH stationary: 180 canonical rows (pitch vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        },
+        {
+          "run": "run-05",
+          "started_at_utc": "2026-08-29T01:23:37.6592994Z",
+          "finished_at_utc": "2026-08-29T01:23:41.9357251Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (pitch vs reference)",
+            "MATCH stationary: 180 canonical rows (pitch vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        }
+      ],
+      "configuration": {
+        "crc_endpoint": "127.0.0.1:8989",
+        "crc_process": "official pRTI1516e-nogui.bat foreground session",
+        "federates": 2
+      }
+    },
+    {
+      "backend": "portico",
+      "run_count": 5,
+      "scenarios_per_run": 2,
+      "runs": [
+        {
+          "run": "run-01",
+          "started_at_utc": "2026-08-29T01:24:08.8196376Z",
+          "finished_at_utc": "2026-08-29T01:24:27.6111025Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (portico vs reference)",
+            "MATCH stationary: 180 canonical rows (portico vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 126,
+            "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        },
+        {
+          "run": "run-02",
+          "started_at_utc": "2026-08-29T01:24:27.6240933Z",
+          "finished_at_utc": "2026-08-29T01:24:46.2644066Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (portico vs reference)",
+            "MATCH stationary: 180 canonical rows (portico vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 126,
+            "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        },
+        {
+          "run": "run-03",
+          "started_at_utc": "2026-08-29T01:24:46.2695934Z",
+          "finished_at_utc": "2026-08-29T01:25:04.8896028Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (portico vs reference)",
+            "MATCH stationary: 180 canonical rows (portico vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 126,
+            "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        },
+        {
+          "run": "run-04",
+          "started_at_utc": "2026-08-29T01:25:04.8935863Z",
+          "finished_at_utc": "2026-08-29T01:25:23.5638383Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (portico vs reference)",
+            "MATCH stationary: 180 canonical rows (portico vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 126,
+            "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        },
+        {
+          "run": "run-05",
+          "started_at_utc": "2026-08-29T01:25:23.5680556Z",
+          "finished_at_utc": "2026-08-29T01:25:42.2528684Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (portico vs reference)",
+            "MATCH stationary: 180 canonical rows (portico vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 126,
+            "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6446,
+              "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6248,
+              "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ]
+        }
+      ],
+      "configuration": "docs/hla-validation/config/portico-jvm.rid"
+    },
+    {
+      "backend": "gorti",
+      "run_count": 5,
+      "scenarios_per_run": 2,
+      "runs": [
+        {
+          "run": "run-01",
+          "started_at_utc": "2026-08-29T01:26:16.3719893Z",
+          "finished_at_utc": "2026-08-29T01:26:18.1341380Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
+            "MATCH stationary: 180 canonical rows (gorti vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6265,
+              "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6067,
+              "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ],
+          "federation": "AntiTorpedoGorti-v220-run-01",
+          "rtid_stdout": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "rtid_stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "run": "run-02",
+          "started_at_utc": "2026-08-29T01:26:18.8123796Z",
+          "finished_at_utc": "2026-08-29T01:26:20.0858255Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
+            "MATCH stationary: 180 canonical rows (gorti vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6265,
+              "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6067,
+              "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ],
+          "federation": "AntiTorpedoGorti-v220-run-02",
+          "rtid_stdout": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "rtid_stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "run": "run-03",
+          "started_at_utc": "2026-08-29T01:26:20.7983041Z",
+          "finished_at_utc": "2026-08-29T01:26:22.0370210Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
+            "MATCH stationary: 180 canonical rows (gorti vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6265,
+              "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6067,
+              "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ],
+          "federation": "AntiTorpedoGorti-v220-run-03",
+          "rtid_stdout": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "rtid_stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "run": "run-04",
+          "started_at_utc": "2026-08-29T01:26:22.7476940Z",
+          "finished_at_utc": "2026-08-29T01:26:23.9958814Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
+            "MATCH stationary: 180 canonical rows (gorti vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6265,
+              "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6067,
+              "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ],
+          "federation": "AntiTorpedoGorti-v220-run-04",
+          "rtid_stdout": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "rtid_stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        },
+        {
+          "run": "run-05",
+          "started_at_utc": "2026-08-29T01:26:24.7212396Z",
+          "finished_at_utc": "2026-08-29T01:26:25.9645007Z",
+          "return_code": 0,
+          "stdout": [
+            "MATCH self_propelled: 180 canonical rows (gorti vs reference)",
+            "MATCH stationary: 180 canonical rows (gorti vs reference)"
+          ],
+          "stdout_artifact": {
+            "size": 122,
+            "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+          },
+          "outputs": [
+            {
+              "scenario": "self_propelled",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6265,
+              "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205",
+              "canonical_reference_sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+            },
+            {
+              "scenario": "stationary",
+              "rows": 180,
+              "canonical_match": true,
+              "size": 6067,
+              "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c",
+              "canonical_reference_sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+            }
+          ],
+          "federation": "AntiTorpedoGorti-v220-run-05",
+          "rtid_stdout": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          },
+          "rtid_stderr": {
+            "size": 0,
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+          }
+        }
+      ],
+      "configuration": {
+        "endpoint": "grpc://127.0.0.1:18442",
+        "rtid_lifecycle": "one hidden clean-built process per run",
+        "sdk_import": "GORTI 475b23b clean source archive via PYTHONPATH"
+      }
+    }
+  ],
+  "raw_evidence_bundle": {
+    "size": 35572,
+    "sha256": "5b72fa1e9bb4bd50b746f538dad376cb4f2e02280a0885b47fec5ac9461e9b5d",
+    "name": "pyjevsim-v2.2.0-live-acceptance-evidence.zip",
+    "format": "deterministic ZIP (sorted paths, fixed timestamps)",
+    "file_count": 55,
+    "contents": [
+      {
+        "path": "gorti/run-01/rtid.stderr.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-01/rtid.stdout.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-01/self_propelled.csv",
+        "size": 6265,
+        "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+      },
+      {
+        "path": "gorti/run-01/stationary.csv",
+        "size": 6067,
+        "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+      },
+      {
+        "path": "gorti/run-01/verifier.log",
+        "size": 122,
+        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+      },
+      {
+        "path": "gorti/run-02/rtid.stderr.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-02/rtid.stdout.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-02/self_propelled.csv",
+        "size": 6265,
+        "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+      },
+      {
+        "path": "gorti/run-02/stationary.csv",
+        "size": 6067,
+        "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+      },
+      {
+        "path": "gorti/run-02/verifier.log",
+        "size": 122,
+        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+      },
+      {
+        "path": "gorti/run-03/rtid.stderr.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-03/rtid.stdout.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-03/self_propelled.csv",
+        "size": 6265,
+        "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+      },
+      {
+        "path": "gorti/run-03/stationary.csv",
+        "size": 6067,
+        "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+      },
+      {
+        "path": "gorti/run-03/verifier.log",
+        "size": 122,
+        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+      },
+      {
+        "path": "gorti/run-04/rtid.stderr.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-04/rtid.stdout.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-04/self_propelled.csv",
+        "size": 6265,
+        "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+      },
+      {
+        "path": "gorti/run-04/stationary.csv",
+        "size": 6067,
+        "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+      },
+      {
+        "path": "gorti/run-04/verifier.log",
+        "size": 122,
+        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+      },
+      {
+        "path": "gorti/run-05/rtid.stderr.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-05/rtid.stdout.log",
+        "size": 0,
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "gorti/run-05/self_propelled.csv",
+        "size": 6265,
+        "sha256": "0a63baaf7095c646d88a082197bf3a0cb65fe5a278781c37b00f35fe45a0a205"
+      },
+      {
+        "path": "gorti/run-05/stationary.csv",
+        "size": 6067,
+        "sha256": "2357658121aa36ad4c7f17431b2e1084d577fcd0e45abe1d2d184d4f1764549c"
+      },
+      {
+        "path": "gorti/run-05/verifier.log",
+        "size": 122,
+        "sha256": "d894ecc03c5dd5cae5526cf2066f5ff0acc2b5268001803734f4f2b4230301de"
+      },
+      {
+        "path": "pitch/run-01/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "pitch/run-01/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "pitch/run-01/verifier.log",
+        "size": 122,
+        "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+      },
+      {
+        "path": "pitch/run-02/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "pitch/run-02/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "pitch/run-02/verifier.log",
+        "size": 122,
+        "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+      },
+      {
+        "path": "pitch/run-03/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "pitch/run-03/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "pitch/run-03/verifier.log",
+        "size": 122,
+        "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+      },
+      {
+        "path": "pitch/run-04/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "pitch/run-04/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "pitch/run-04/verifier.log",
+        "size": 122,
+        "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+      },
+      {
+        "path": "pitch/run-05/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "pitch/run-05/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "pitch/run-05/verifier.log",
+        "size": 122,
+        "sha256": "e7e837e71e19962abfc05653a01a6e0851fb7016f0a51c5daf772fd3bf577c4a"
+      },
+      {
+        "path": "portico/run-01/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "portico/run-01/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "portico/run-01/verifier.log",
+        "size": 126,
+        "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+      },
+      {
+        "path": "portico/run-02/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "portico/run-02/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "portico/run-02/verifier.log",
+        "size": 126,
+        "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+      },
+      {
+        "path": "portico/run-03/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "portico/run-03/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "portico/run-03/verifier.log",
+        "size": 126,
+        "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+      },
+      {
+        "path": "portico/run-04/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "portico/run-04/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "portico/run-04/verifier.log",
+        "size": 126,
+        "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+      },
+      {
+        "path": "portico/run-05/self_propelled.csv",
+        "size": 6446,
+        "sha256": "a05c49dc5524d0326e1521c32c096993524b0d6cb8d8902419e849cabb534636"
+      },
+      {
+        "path": "portico/run-05/stationary.csv",
+        "size": 6248,
+        "sha256": "a5e78467675639131167cb7af9dffc5e30c06dfed2b90becd01bc39e27e75590"
+      },
+      {
+        "path": "portico/run-05/verifier.log",
+        "size": 126,
+        "sha256": "39b3161f53bf5e611e1b29c9142dd47e1af503e40a00df9a0469237798e7a655"
+      }
+    ]
+  }
+}
