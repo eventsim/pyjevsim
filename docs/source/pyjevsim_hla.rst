@@ -16,6 +16,14 @@ coverage, and limitations.
 Architecture
 ------------
 
+.. figure:: ../hla/architecture.svg
+   :width: 100%
+   :alt: Layered architecture of the pyjevsim HLA subsystem
+
+   Layered architecture: DEVS model layer, declarative binding descriptors,
+   the RTI-agnostic federate layer, the two-method transport interface, the
+   RTI backends, and the validation layer.
+
 ::
 
    BehaviorModel (pure DEVS)
