@@ -186,12 +186,9 @@ snapshot_test
 
 .vs
 log/
-.claude/
 
 # Development / research artifacts kept out of the distributed repository
 # (managed locally; recoverable from git history if needed).
-/CLAUDE.md
-/.agent/
 /paper/
 /utils/
 /performance_profiling.py
