@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `SystemObject` no longer rebinds a class attribute on every instantiation.
+  The former global ID counter (`SystemObject.__GLOBAL_OBJECT_ID += 1`)
+  invalidated the type version of every model, executor and message class
+  on each object creation, which exhausted CPython's per-type version cap
+  early in a run and left attribute access unspecialised for the rest of the
+  process (CPython 3.11 and later). IDs now come from a shared
+  `itertools.count`; they stay unique and increasing, so ordering is
+  unchanged. On CPython 3.14 the DEVStone HI benchmark runs about 1.8x
+  faster and the bank example about 1.4x faster.
+
 ## [2.2.0] — 2026-08-29
 
 ### Added
