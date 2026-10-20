@@ -111,11 +111,42 @@ class ScheduleQueue:
         # Remove the matching heap head now; other stale entries are lazy.
         if self._heap and self._heap[0] == time:
             heapq.heappop(self._heap)
+        reverse = self._reverse
         for executor in bucket:
-            obj_id = executor.get_obj_id()
-            if self._reverse.get(obj_id) == time:
-                del self._reverse[obj_id]
+            obj_id = executor._obj_id
+            if reverse.get(obj_id) == time:
+                del reverse[obj_id]
         return list(bucket)
+
+    def pop_due(self, time, out):
+        """Move every executor scheduled at or before ``time`` into ``out``.
+
+        Equivalent to repeating ``peek_time`` and ``pop_all_at`` while the
+        queue is non-empty and its head is ``<= time``. Buckets are appended
+        in time order.
+        """
+        heap = self._heap
+        mapped = self._mapped
+        reverse = self._reverse
+        while reverse:
+            while heap:
+                t = heap[0]
+                bucket = mapped.get(t)
+                if bucket:
+                    break
+                heapq.heappop(heap)
+                mapped.pop(t, None)
+            else:
+                return
+            if t > time:
+                return
+            del mapped[t]
+            heapq.heappop(heap)
+            for executor in bucket:
+                obj_id = executor._obj_id
+                if reverse.get(obj_id) == t:
+                    del reverse[obj_id]
+            out.extend(bucket)
 
     def peek_time(self, default: Optional[float] = None):
         """Return the smallest non-empty scheduled time without modifying

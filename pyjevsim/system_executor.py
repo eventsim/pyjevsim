@@ -26,6 +26,12 @@ from .termination_manager import TerminationManager
 
 from .message_deliverer import MessageDeliverer
 
+_R_TIME = ExecutionType.R_TIME
+_V_TIME = ExecutionType.V_TIME
+_HLA_TIME = ExecutionType.HLA_TIME
+_SIM_PAUSE = SimulationMode.SIMULATION_PAUSE
+_SIM_TERMINATED = SimulationMode.SIMULATION_TERMINATED
+
 class SysExecutor(CoreModel):
     """The pyjevsim simulation engine.
 
@@ -403,11 +409,7 @@ class SysExecutor(CoreModel):
         and waiting-creation queue. Returns ``Infinite`` if nothing is
         pending.
         """
-        next_t = (
-            self.min_schedule_item.peek_time(default=Infinite)
-            if self.min_schedule_item
-            else Infinite
-        )
+        next_t = self.min_schedule_item.peek_time(default=Infinite)
         if self.input_event_queue:
             ext_t = self.input_event_queue[0][0]
             if ext_t < next_t:
@@ -554,37 +556,35 @@ class SysExecutor(CoreModel):
           * R_TIME: step by ``time_resolution`` and sleep to match
             wall-clock pace.
         """
-        self.create_entity()
+        if self._waiting_keys:
+            self.create_entity()
 
         # Only real-time execution needs a wall-clock duration.
-        is_realtime = self.ex_mode == ExecutionType.R_TIME
+        is_realtime = self.ex_mode is _R_TIME
         before = time.perf_counter() if is_realtime else None
 
         # Collect all request-time buckets that are already due. More than one
         # timestamp can be due after a paused simulation resumes.
         imminent = []
-        fel = self.min_schedule_item
-        while fel:
-            next_t = fel.peek_time(default=Infinite)
-            if next_t > self.global_time:
-                break
-            imminent.extend(fel.pop_all_at(next_t))
+        self.min_schedule_item.pop_due(self.global_time, imminent)
 
         # Include external events due at this instant in the same transition.
         self._run_instant(self.global_time, imminent)
 
         # Advance simulated time. External-event producers lock their queue
         # updates separately.
-        if self.ex_mode == ExecutionType.V_TIME:
+        ex_mode = self.ex_mode
+        if ex_mode is _V_TIME:
             next_t = self._peek_next_event_time()
             new_time = min(next_t, self.target_time)
             # A same-time event is processed by the next schedule call.
             if new_time > self.global_time:
                 self.global_time = new_time
-        elif self.ex_mode != ExecutionType.HLA_TIME:
+        elif ex_mode is not _HLA_TIME:
             self.global_time += self.time_resolution
 
-        self.destroy_active_entity()
+        if self._destructs_pending:
+            self.destroy_active_entity()
 
         if is_realtime:
             delta = float(self.time_resolution) - float(time.perf_counter() - before)
@@ -609,16 +609,18 @@ class SysExecutor(CoreModel):
         # An unbounded virtual-time run stops when all remaining events are at
         # Infinite. A finite run stops at target_time.
         unbounded = (_time == Infinite)
-        v_time = self.ex_mode == ExecutionType.V_TIME
+        v_time = self.ex_mode is _V_TIME
 
         while self.global_time < self.target_time:
+            mode = self.simulation_mode
             # Acquire the condition only while paused; resume_sim notifies it.
-            if self.simulation_mode == SimulationMode.SIMULATION_PAUSE:
+            if mode is _SIM_PAUSE:
                 with self.condition:
-                    while self.simulation_mode == SimulationMode.SIMULATION_PAUSE:
+                    while self.simulation_mode is _SIM_PAUSE:
                         self.condition.wait()
+                mode = self.simulation_mode
 
-            if self.simulation_mode == SimulationMode.SIMULATION_TERMINATED:
+            if mode is _SIM_TERMINATED:
                 break
 
             if (unbounded
