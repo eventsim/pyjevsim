@@ -174,16 +174,17 @@ class BehaviorExecutor(Executor):
 
         ta = bm._states.get(bm._cur_state, -1)
 
-        if ta == Infinite:
-            req_t = Infinite
-        elif self._cancel_reschedule_f:
-            req_t = min(self._next_event_t, global_time + ta)
-        else:
-            req_t = global_time + ta
-
         if self._cancel_reschedule_f:
+            if ta == Infinite:
+                req_t = Infinite
+            else:
+                req_t = min(self._next_event_t, global_time + ta)
             self._cancel_reschedule_f = False
             bm.reset_cancel_flag()
+        elif ta == Infinite:
+            req_t = Infinite
+        else:
+            req_t = global_time + ta
         self.request_time = req_t
         self._next_event_t = req_t
         return req_t
