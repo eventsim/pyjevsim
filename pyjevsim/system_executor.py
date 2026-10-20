@@ -469,6 +469,7 @@ class SysExecutor(CoreModel):
 
         # Start each receiver's input bag with external events due now.
         influenced_inputs = {}      # dst_executor -> list[(dst_port, msg)]
+        bag_of = influenced_inputs.get
         if self.input_event_queue:
             with self.condition:
                 while (self.input_event_queue
@@ -478,26 +479,34 @@ class SysExecutor(CoreModel):
                         self, ext_msg.get_dst()
                     ):
                         if dst_exec is not self and dst_exec._obj_id in active_obj_map:
-                            influenced_inputs.setdefault(
-                                dst_exec, []
-                            ).append((dst_port, ext_msg))
+                            bag = bag_of(dst_exec)
+                            if bag is None:
+                                influenced_inputs[dst_exec] = [(dst_port, ext_msg)]
+                            else:
+                                bag.append((dst_port, ext_msg))
 
         if not imminent and not influenced_inputs:
             return
 
-        # Phase A: collect output from imminent models.
+        # Phase A: collect output from imminent models. One deliverer serves
+        # the whole instant; each model's messages keep their own list.
         outputs = []
+        md = MessageDeliverer()
         for X in imminent:
-            md = MessageDeliverer()
             X.output(md)
-            if md.has_contents():
-                outputs.append((X, md))
+            if md.data_list:
+                outputs.append((X, md.data_list))
+                md.data_list = []
 
         # Phase B: route outputs through coupling, merging into the bag
-        # already seeded with external events.
-        for X, md in outputs:
-            for msg in md.get_contents():
-                for dst_exec, dst_port in self._destinations_for(X, msg.get_dst()):
+        # already seeded with external events. port_map is re-read per
+        # message because an output callback may replace it.
+        for X, msgs in outputs:
+            for msg in msgs:
+                dsts = self.port_map.get((X, msg.get_dst()))
+                if dsts is None:
+                    dsts = self._destinations_for(X, msg.get_dst())
+                for dst_exec, dst_port in dsts:
                     if dst_exec is self:
                         # Output of the top-level simulator. The callback path
                         # uses the condition because another thread may wait.
@@ -508,21 +517,23 @@ class SysExecutor(CoreModel):
                         else:
                             output_queue.append((instant, msg))
                     elif dst_exec._obj_id in active_obj_map:
-                        influenced_inputs.setdefault(
-                            dst_exec, []
-                        ).append((dst_port, msg))
+                        bag = bag_of(dst_exec)
+                        if bag is None:
+                            influenced_inputs[dst_exec] = [(dst_port, msg)]
+                        else:
+                            bag.append((dst_port, msg))
 
         imminent_set = set(imminent)
         affected = imminent_set | set(influenced_inputs)
 
         # Phase C: apply a transition to every affected model.
         for M in affected:
-            bag = influenced_inputs.get(M, ())
-            is_imminent = M in imminent_set
-            if is_imminent and bag:
-                M.con_trans(bag)
-            elif is_imminent:
-                M.int_trans()
+            bag = bag_of(M)
+            if M in imminent_set:
+                if bag:
+                    M.con_trans(bag)
+                else:
+                    M.int_trans()
             else:
                 for port, msg in bag:
                     M.ext_trans(port, msg)
