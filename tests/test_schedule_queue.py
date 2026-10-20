@@ -79,6 +79,36 @@ def test_reschedule_all_keeps_overridden_set_req_time():
     assert queue.peek_time() == 7
 
 
+def test_reschedule_all_keeps_set_req_time_inherited_from_mixin():
+    calls = []
+
+    class DelayMixin:
+        def set_req_time(self, global_time):
+            calls.append(global_time)
+            super().set_req_time(global_time)
+            self.request_time += 1
+
+    class Mixed(DelayMixin, BehaviorExecutor):
+        pass
+
+    assert Mixed._reschedule is Executor._reschedule
+
+    ex = _executor("x", 4, cls=Mixed)
+    queue = ScheduleQueue()
+    queue.reschedule_all([ex], 3)
+
+    assert calls == [3]
+    assert queue.peek_time() == 8
+
+
+def test_plain_subclass_keeps_fused_reschedule():
+    class Plain(BehaviorExecutor):
+        def output(self, msg_deliver):
+            return super().output(msg_deliver)
+
+    assert Plain._reschedule is BehaviorExecutor._reschedule
+
+
 def test_pop_due_matches_peek_and_pop_all_at_loop():
     q_ref, ex_ref = _build([1, 1, 2, 3, 5])
     q_new, ex_new = _build([1, 1, 2, 3, 5])

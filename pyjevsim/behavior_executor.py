@@ -39,9 +39,12 @@ class BehaviorExecutor(Executor):
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         # The fused _reschedule below would bypass an overridden
-        # set_req_time or get_req_time, so such subclasses call both.
+        # set_req_time or get_req_time, so such subclasses call both. Compare
+        # the resolved attributes so an override inherited from a mixin
+        # (class X(Mixin, BehaviorExecutor)) is detected too.
         if "_reschedule" not in cls.__dict__ and (
-                "set_req_time" in cls.__dict__ or "get_req_time" in cls.__dict__):
+                cls.set_req_time is not BehaviorExecutor.set_req_time
+                or cls.get_req_time is not BehaviorExecutor.get_req_time):
             cls._reschedule = Executor._reschedule
 
     def set_global_time(self, gtime):
@@ -166,7 +169,12 @@ class BehaviorExecutor(Executor):
     def _reschedule(self, global_time):
         """``set_req_time(global_time)`` then ``get_req_time()`` in one call.
 
-        Keep this in step with the two methods above.
+        Keep this in step with the two methods above. Subclasses that
+        override either method (directly or through a mixin) fall back to
+        ``Executor._reschedule``, which calls both. Replacing
+        ``BehaviorExecutor.set_req_time``/``get_req_time`` on the class after
+        import (monkeypatching, ``mock.patch.object``) is not seen by this
+        fused path; patch ``_reschedule`` as well, or subclass instead.
         """
         bm = self.behavior_model
         self.global_time = global_time
