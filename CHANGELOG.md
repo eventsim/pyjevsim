@@ -8,6 +8,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- The engine's per-instant loop does less fixed work: phase A reuses one
+  `MessageDeliverer` for every imminent model in an instant (each model's
+  messages still travel in their own list), phase B looks couplings up in
+  `port_map` directly, phase D reschedules all affected models with one
+  `ScheduleQueue.reschedule_all` call, and `schedule()` collects due models
+  with `ScheduleQueue.pop_due`. Transition order and same-time semantics are
+  unchanged. A model or `SnapshotCondition` that keeps a reference to the
+  deliverer passed to `output()` (rather than to its contents) now sees later
+  models' messages or an empty bag; keep `get_contents()` instead.
+- `BehaviorExecutor` reschedules through a fused `_reschedule` method that
+  does the work of `set_req_time` followed by `get_req_time`. Subclasses
+  that override either method, directly or through a mixin, keep the
+  two-call path automatically. Replacing `BehaviorExecutor.set_req_time` or
+  `get_req_time` on the class at run time (monkeypatching,
+  `mock.patch.object`) is not seen by the fused path. An executor returned
+  by a custom `ExecutorFactory` must now derive from
+  `pyjevsim.executor.Executor` (or provide `_reschedule`), in addition to the
+  `_obj_id` and `_cached_destruct_time` attributes it already needed.
+- `import pyjevsim` no longer imports `dill`, `json`, `ast` or `typing`; the
+  snapshot and restore code imports them when it runs. Importing the package
+  is about 5x faster. The incidental module attributes
+  `pyjevsim.snapshot_manager.dump`/`json`,
+  `pyjevsim.restore_handler.load`/`loads`/`json`/`ast`,
+  `pyjevsim.snapshot_executor.dill`, `pyjevsim.system_executor.copy`/`math`
+  and `pyjevsim.structural_executor.copy`/`heapq` are gone, and importing
+  pyjevsim no longer triggers dill's import-time registration in the
+  pure-Python pickler.
 - `SysMessage` no longer calls `SystemObject.__init__`: it takes its ID from
   the same shared counter directly, so IDs, ordering and the pickled
   instance state are unchanged. Building a message is about 1.4x faster on
