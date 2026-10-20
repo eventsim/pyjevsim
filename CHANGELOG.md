@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- `SysMessage` no longer calls `SystemObject.__init__`: it takes its ID from
+  the same shared counter directly, so IDs and ordering are unchanged. The
+  unused per-message `_msg_time` store is replaced by a class default of `-1`;
+  `get_msg_time()` and `set_msg_time()` behave as before. Building a message
+  is about 1.4x faster on CPython 3.14. Messages in snapshots taken with
+  earlier versions still load. A message snapshotted by this version before
+  `set_msg_time()` was called has no `_msg_time` entry, so an older pyjevsim
+  that loads it raises on `get_msg_time()`.
+
 ### Fixed
 - `SystemObject` no longer rebinds a class attribute on every instantiation.
   The former global ID counter (`SystemObject.__GLOBAL_OBJECT_ID += 1`)

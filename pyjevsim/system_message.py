@@ -8,7 +8,7 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module contains an object SysMessage for handling messages (port and data) between Models. 
 """
 
-from .system_object import SystemObject
+from .system_object import SystemObject, _next_object_id
 
 class SysMessage(SystemObject):
     """SysMessage for handling messages(port and data) between Models.
@@ -19,16 +19,19 @@ class SysMessage(SystemObject):
         mutating it when receivers must remain isolated.
     """
 
+    _msg_time = -1  # Message time, until set_msg_time() is called
+
     def __init__(self, src_name="", dst_name=""):
         """
         Args:
             src_name (str): The source name(Model name)
             dst_name (str): The destination name(port)
         """
-        super().__init__()
+        # SystemObject.__init__ inlined: one SysMessage is built per output
+        # event, so the extra call frame is measurable.
+        self._SystemObject__object_id = _next_object_id()
         self._src = src_name  # Source name(Model)
         self._dst = dst_name  # Destination name(port)
-        self._msg_time = -1  # Message time
         self._msg_list = []  # List of messages
 
     def __str__(self):
