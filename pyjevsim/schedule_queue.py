@@ -7,7 +7,6 @@ reach the head of the heap.
 """
 
 import heapq
-from typing import Optional
 
 
 class ScheduleQueue:
@@ -148,7 +147,7 @@ class ScheduleQueue:
                     del reverse[obj_id]
             out.extend(bucket)
 
-    def peek_time(self, default: Optional[float] = None):
+    def peek_time(self, default: float | None = None):
         """Return the smallest non-empty scheduled time without modifying
         which executors are queued at it. Stale heap entries (timestamps
         whose bucket is empty) are pruned eagerly here.

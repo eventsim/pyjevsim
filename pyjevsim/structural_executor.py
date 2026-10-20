@@ -8,9 +8,6 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module contains a StructuralExecutor, an object for executing a StructuralModel.
 """
 
-import copy
-import heapq
-
 from .definition import Infinite
 from .executor import Executor
 from .schedule_queue import ScheduleQueue

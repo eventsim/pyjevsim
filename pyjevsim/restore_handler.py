@@ -6,10 +6,7 @@ License: MIT.  The full license text is available at:
 https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 """
-from dill import load, loads
 from .definition import ModelType, ExecutionType
-import json
-import ast
 from .system_executor import SysExecutor
 
 class RestoreHandler():
@@ -35,6 +32,9 @@ class RestoreHandler():
         """
         Sets up SysExecutor with the relation map and model map.
         """
+        import ast
+        import json
+
         with open(f"{self.path}/relation_map.json", "r") as f:
             relation = json.load(f)   
         relation = {ast.literal_eval(key): ast.literal_eval(value) for key, value in relation.items()}
@@ -54,6 +54,8 @@ class RestoreHandler():
         Args:
             model_list (list): List of model names
         """
+        from dill import load
+
         for model_name in model_list:
             with open(f"{self.path}/{model_name}.simx", "rb") as f:
                 model = load(f)
@@ -102,6 +104,8 @@ class RestoreHandler():
         Raises:
             Exception: If the model type is not ModelType.BEHAVIORAL
         """
+        from dill import loads
+
         model_info = loads(shotmodel)
         
         if model_info["type"] != ModelType.BEHAVIORAL and model_info["type"] != ModelType.STRUCTURAL :

@@ -8,10 +8,8 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module includes SysExecutor, a simulation engine that manages models over time. 
 """
 
-import copy
 import datetime
 import heapq
-import math
 import threading
 import time
 from collections import deque
@@ -829,6 +827,8 @@ class SysExecutor(CoreModel):
         Returns:
             deque: List of output events
         """
+        import copy
+
         with self.condition:
             event_lists = copy.deepcopy(self.output_event_queue)
             self.output_event_queue.clear()
