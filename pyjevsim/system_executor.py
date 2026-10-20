@@ -409,7 +409,14 @@ class SysExecutor(CoreModel):
         and waiting-creation queue. Returns ``Infinite`` if nothing is
         pending.
         """
-        next_t = self.min_schedule_item.peek_time(default=Infinite)
+        # The truthiness guard keeps this consistent with pop_due, which
+        # stops when no executor is registered even if a stale bucket
+        # remains (possible when two executors share an obj_id).
+        next_t = (
+            self.min_schedule_item.peek_time(default=Infinite)
+            if self.min_schedule_item
+            else Infinite
+        )
         if self.input_event_queue:
             ext_t = self.input_event_queue[0][0]
             if ext_t < next_t:
