@@ -8,6 +8,8 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module contains SystemObject, the top-level class for all models.
 """
 
+import itertools
+
 
 class SystemObject:
     """Base class for all system objects, providing unique object IDs.
@@ -19,12 +21,17 @@ class SystemObject:
     it). It has been removed.
     """
 
-    # Object ID which tracks the entire instantiated Objects
-    __GLOBAL_OBJECT_ID = 0
+    # Shared source of object IDs. It is advanced with next(), never rebound:
+    # rebinding a class attribute on every instantiation (the former
+    # ``SystemObject.__GLOBAL_OBJECT_ID += 1``) invalidates the type version
+    # of this class and every subclass, and once CPython's per-type cap on
+    # version reassignments is reached the interpreter stops specialising
+    # attribute access on all models, executors and messages for the rest of
+    # the process.
+    __ID_SOURCE = itertools.count()
 
     def __init__(self):
-        self.__object_id = SystemObject.__GLOBAL_OBJECT_ID  # Unique object ID
-        SystemObject.__GLOBAL_OBJECT_ID += 1  # Increment global object ID
+        self.__object_id = next(SystemObject.__ID_SOURCE)  # Unique object ID
 
     def __str__(self):
         """
