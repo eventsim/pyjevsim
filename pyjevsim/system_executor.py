@@ -539,9 +539,7 @@ class SysExecutor(CoreModel):
                     M.ext_trans(port, msg)
 
         # Phase D: record each affected model's new request time.
-        for M in affected:
-            M.set_req_time(instant)
-            self.min_schedule_item.push(M)
+        self.min_schedule_item.reschedule_all(affected, instant)
 
     def schedule(self):
         """Run one simulated-instant tick (V_TIME / R_TIME).

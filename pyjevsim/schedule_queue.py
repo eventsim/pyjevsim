@@ -49,6 +49,34 @@ class ScheduleQueue:
         else:
             bucket.add(executor)
 
+    def reschedule_all(self, executors, global_time):
+        """Call ``set_req_time(global_time)`` on each executor and push it.
+
+        Equivalent to ``set_req_time`` followed by ``push`` for one executor
+        at a time, in iteration order.
+        """
+        reverse = self._reverse
+        mapped = self._mapped
+        for executor in executors:
+            executor.set_req_time(global_time)
+            new_t = executor.get_req_time()
+            obj_id = executor._obj_id
+
+            old_t = reverse.get(obj_id)
+            if old_t is not None and old_t != new_t:
+                old_bucket = mapped.get(old_t)
+                if old_bucket is not None:
+                    old_bucket.discard(executor)
+
+            reverse[obj_id] = new_t
+
+            bucket = mapped.get(new_t)
+            if bucket is None:
+                mapped[new_t] = {executor}
+                heapq.heappush(self._heap, new_t)
+            else:
+                bucket.add(executor)
+
     def pop(self):
         """Remove and return one executor with the smallest ``req_time``.
 
