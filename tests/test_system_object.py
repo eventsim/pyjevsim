@@ -52,3 +52,11 @@ def test_sys_message_state_and_pickle_round_trip():
     m.set_msg_time(3.5)
     assert m.get_msg_time() == 3.5
     assert SysMessage().get_msg_time() == -1
+
+
+def test_sys_message_instance_state_matches_system_object_layout():
+    # Pickles must stay loadable by releases that build SysMessage through
+    # SystemObject.__init__, so the instance dict keeps the same keys.
+    m = SysMessage("src", "dst")
+    assert list(vars(m)) == [
+        "_SystemObject__object_id", "_src", "_dst", "_msg_time", "_msg_list"]
