@@ -158,18 +158,20 @@ class SysExecutor(CoreModel):
         if dest_t < Infinite:
             self._destructs_pending += 1
 
-        if sim_obj.get_create_time() not in self.waiting_obj_map:
-            self.waiting_obj_map[sim_obj.get_create_time()] = []
-            heapq.heappush(self._waiting_keys, sim_obj.get_create_time())
-
-        self.waiting_obj_map[sim_obj.get_create_time()].append(sim_obj)
-
-        if sim_obj.get_name() in self.model_map:
-            self.model_map[sim_obj.get_name()].append(sim_obj)
+        create_t = sim_obj.get_create_time()
+        waiting = self.waiting_obj_map.get(create_t)
+        if waiting is None:
+            self.waiting_obj_map[create_t] = [sim_obj]
+            heapq.heappush(self._waiting_keys, create_t)
         else:
-            self.model_map[sim_obj.get_name()] = [sim_obj]
-        
-        
+            waiting.append(sim_obj)
+
+        name = sim_obj.get_name()
+        same_name = self.model_map.get(name)
+        if same_name is None:
+            self.model_map[name] = [sim_obj]
+        else:
+            same_name.append(sim_obj)
 
     def get_entity(self, model_name):
         """
@@ -216,11 +218,13 @@ class SysExecutor(CoreModel):
             key = self._waiting_keys[0]
             if key <= self.global_time:
                 heapq.heappop(self._waiting_keys)
-                lst = self.waiting_obj_map.pop(key)
-                for obj in lst:
-                    self.active_obj_map[obj.get_obj_id()] = obj
-                    obj.set_req_time(self.global_time)
-                    self.min_schedule_item.push(obj)
+                active_obj_map = self.active_obj_map
+                fel = self.min_schedule_item
+                global_time = self.global_time
+                for obj in self.waiting_obj_map.pop(key):
+                    active_obj_map[obj._obj_id] = obj
+                    obj.set_req_time(global_time)
+                    fel.push(obj)
 
     def destory_entity(self, delete_lst):
         """

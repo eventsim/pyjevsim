@@ -27,13 +27,13 @@ class BehaviorExecutor(Executor):
 
         self._next_event_t = 0  # Next event time
         self._cur_state = ""  # Current state of the behavior executor
-        self.request_time = float("inf")  # Request time initialized to infinity
+        self.request_time = Infinite  # Request time initialized to infinity
 
         self.behavior_model = behavior_model #Behavior Model
         self._cancel_reschedule_f = False #cancel reschedule flag
 
         # Object identity and destruction time do not change after creation.
-        self._cached_destruct_time = self._destruct_t
+        self._cached_destruct_time = dtime
         self._obj_id = behavior_model.get_obj_id()
 
     def __init_subclass__(cls, **kwargs):
