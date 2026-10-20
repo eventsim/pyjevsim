@@ -18,7 +18,7 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LAZY_MODULES = ("dill", "json", "ast", "typing")
 
 
-def _loaded_after(code):
+def _run(code):
     script = (
         "import sys\n"
         f"sys.path.insert(0, {REPO!r})\n"
@@ -29,6 +29,14 @@ def _loaded_after(code):
         [sys.executable, "-c", script], capture_output=True, text=True, check=True
     ).stdout
     return [m for m in out.strip().split(",") if m]
+
+
+def _loaded_after(code):
+    # Ignore modules the interpreter already loads before pyjevsim (a
+    # sitecustomize, a .pth hook such as pytest-cov's, an editable-install
+    # finder), so the test only flags imports pyjevsim itself triggers.
+    baseline = set(_run("pass"))
+    return [m for m in _run(code) if m not in baseline]
 
 
 def test_import_and_run_do_not_load_snapshot_dependencies():
