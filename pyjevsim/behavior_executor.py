@@ -36,6 +36,14 @@ class BehaviorExecutor(Executor):
         self._cached_destruct_time = self._destruct_t
         self._obj_id = behavior_model.get_obj_id()
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # The fused _reschedule below would bypass an overridden
+        # set_req_time or get_req_time, so such subclasses call both.
+        if "_reschedule" not in cls.__dict__ and (
+                "set_req_time" in cls.__dict__ or "get_req_time" in cls.__dict__):
+            cls._reschedule = Executor._reschedule
+
     def set_global_time(self, gtime):
         """Sets the global time for the executor and behavior model"""
         self.global_time = gtime
@@ -154,3 +162,28 @@ class BehaviorExecutor(Executor):
             self.behavior_model.reset_cancel_flag()
         self._next_event_t = self.request_time
         return self.request_time
+
+    def _reschedule(self, global_time):
+        """``set_req_time(global_time)`` then ``get_req_time()`` in one call.
+
+        Keep this in step with the two methods above.
+        """
+        bm = self.behavior_model
+        self.global_time = global_time
+        bm.global_time = global_time
+
+        ta = bm._states.get(bm._cur_state, -1)
+
+        if ta == Infinite:
+            req_t = Infinite
+        elif self._cancel_reschedule_f:
+            req_t = min(self._next_event_t, global_time + ta)
+        else:
+            req_t = global_time + ta
+
+        if self._cancel_reschedule_f:
+            self._cancel_reschedule_f = False
+            bm.reset_cancel_flag()
+        self.request_time = req_t
+        self._next_event_t = req_t
+        return req_t
