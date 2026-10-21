@@ -31,11 +31,12 @@ class ExecutorFactory:
         Returns:
             Executor: The created executor
         """
-        if model.get_model_type() == ModelType.BEHAVIORAL:
+        model_type = model.get_model_type()
+        if model_type == ModelType.BEHAVIORAL:
             return self.create_behavior_executor(
                 global_time, ins_t, des_t, en_name, model, parent
             )
-        elif model.get_model_type() == ModelType.STRUCTURAL:
+        elif model_type == ModelType.STRUCTURAL:
             return self.create_structural_executor(
                 global_time, ins_t, des_t, en_name, model, parent
             )

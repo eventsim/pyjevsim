@@ -9,9 +9,8 @@ This module contains SnapshotManager, which manages snapshots associated with
 BehaviorModel instances.
 """
 
-from dill import dump
-import json
 import os
+
 from .snapshot_factory import SnapshotFactory
 
 class SnapshotManager:
@@ -82,6 +81,10 @@ class SnapshotManager:
             name (str): The name of Simulation
             directory_path (str): The directory path to save the snapshot
         """
+        import json
+
+        from dill import dump
+
         relation = {}
         for key, value in relation_map.items():
             if key[0]:

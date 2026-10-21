@@ -27,3 +27,12 @@ class Executor:
         self._destruct_t = dtime
         self.model = model
         self.parent = parent
+
+    def _reschedule(self, global_time):
+        """Set the request time for ``global_time`` and return it.
+
+        ``ScheduleQueue.reschedule_all`` calls this once per affected
+        executor in place of ``set_req_time`` followed by ``get_req_time``.
+        """
+        self.set_req_time(global_time)
+        return self.get_req_time()

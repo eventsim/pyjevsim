@@ -7,7 +7,6 @@ reach the head of the heap.
 """
 
 import heapq
-from typing import Optional
 
 
 class ScheduleQueue:
@@ -32,22 +31,52 @@ class ScheduleQueue:
         """
         new_t = executor.get_req_time()
         obj_id = executor._obj_id
+        mapped = self._mapped
 
         old_t = self._reverse.get(obj_id)
-        if old_t is not None and old_t != new_t:
-            old_bucket = self._mapped.get(old_t)
-            if old_bucket is not None:
-                old_bucket.discard(executor)
-                # Leave an empty timestamp for lazy heap cleanup.
+        if old_t != new_t:
+            if old_t is not None:
+                old_bucket = mapped.get(old_t)
+                if old_bucket is not None:
+                    old_bucket.discard(executor)
+                    # Leave an empty timestamp for lazy heap cleanup.
+            self._reverse[obj_id] = new_t
 
-        self._reverse[obj_id] = new_t
-
-        bucket = self._mapped.get(new_t)
+        bucket = mapped.get(new_t)
         if bucket is None:
-            self._mapped[new_t] = {executor}
+            mapped[new_t] = {executor}
             heapq.heappush(self._heap, new_t)
         else:
             bucket.add(executor)
+
+    def reschedule_all(self, executors, global_time):
+        """Recompute each executor's request time and move it in the queue.
+
+        Equivalent to ``executor.set_req_time(global_time)`` followed by
+        ``push(executor)`` for each executor in iteration order. The two
+        executor calls are fused into ``Executor._reschedule``.
+        """
+        heap = self._heap
+        mapped = self._mapped
+        reverse = self._reverse
+        for executor in executors:
+            new_t = executor._reschedule(global_time)
+            obj_id = executor._obj_id
+
+            old_t = reverse.get(obj_id)
+            if old_t != new_t:
+                if old_t is not None:
+                    old_bucket = mapped.get(old_t)
+                    if old_bucket is not None:
+                        old_bucket.discard(executor)
+                reverse[obj_id] = new_t
+
+            bucket = mapped.get(new_t)
+            if bucket is None:
+                mapped[new_t] = {executor}
+                heapq.heappush(heap, new_t)
+            else:
+                bucket.add(executor)
 
     def pop(self):
         """Remove and return one executor with the smallest ``req_time``.
@@ -81,26 +110,56 @@ class ScheduleQueue:
         if not bucket:
             return []
         # Remove the matching heap head now; other stale entries are lazy.
-        if self._heap and self._heap[0] == time:
-            heapq.heappop(self._heap)
+        heap = self._heap
+        if heap and heap[0] == time:
+            heapq.heappop(heap)
+        reverse = self._reverse
         for executor in bucket:
-            obj_id = executor.get_obj_id()
-            if self._reverse.get(obj_id) == time:
-                del self._reverse[obj_id]
+            obj_id = executor._obj_id
+            if reverse.get(obj_id) == time:
+                del reverse[obj_id]
         return list(bucket)
 
-    def peek_time(self, default: Optional[float] = None):
+    def pop_due(self, now, out):
+        """Move every executor scheduled at or before ``now`` into ``out``.
+
+        Buckets are taken in time order, each in ``pop_all_at`` order. This
+        matches repeating ``peek_time`` and ``pop_all_at`` while the queue is
+        non-empty.
+        """
+        heap = self._heap
+        mapped = self._mapped
+        reverse = self._reverse
+        while reverse and heap:
+            t = heap[0]
+            bucket = mapped.get(t)
+            if not bucket:
+                heapq.heappop(heap)
+                mapped.pop(t, None)
+                continue
+            if t > now:
+                break
+            heapq.heappop(heap)
+            del mapped[t]
+            for executor in bucket:
+                obj_id = executor._obj_id
+                if reverse.get(obj_id) == t:
+                    del reverse[obj_id]
+            out.extend(bucket)
+
+    def peek_time(self, default: float | None = None):
         """Return the smallest non-empty scheduled time without modifying
         which executors are queued at it. Stale heap entries (timestamps
         whose bucket is empty) are pruned eagerly here.
         """
-        while self._heap:
-            t = self._heap[0]
-            bucket = self._mapped.get(t)
-            if bucket:
+        heap = self._heap
+        mapped = self._mapped
+        while heap:
+            t = heap[0]
+            if mapped.get(t):
                 return t
-            heapq.heappop(self._heap)
-            self._mapped.pop(t, None)
+            heapq.heappop(heap)
+            mapped.pop(t, None)
         if default is not None:
             return default
         raise IndexError("peek from empty ScheduleQueue")

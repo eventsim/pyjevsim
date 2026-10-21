@@ -8,10 +8,8 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module includes SysExecutor, a simulation engine that manages models over time. 
 """
 
-import copy
 import datetime
 import heapq
-import math
 import threading
 import time
 from collections import deque
@@ -25,6 +23,12 @@ from .system_message import SysMessage
 from .termination_manager import TerminationManager
 
 from .message_deliverer import MessageDeliverer
+
+_R_TIME = ExecutionType.R_TIME
+_V_TIME = ExecutionType.V_TIME
+_HLA_TIME = ExecutionType.HLA_TIME
+_SIM_PAUSE = SimulationMode.SIMULATION_PAUSE
+_SIM_TERMINATED = SimulationMode.SIMULATION_TERMINATED
 
 class SysExecutor(CoreModel):
     """The pyjevsim simulation engine.
@@ -154,18 +158,20 @@ class SysExecutor(CoreModel):
         if dest_t < Infinite:
             self._destructs_pending += 1
 
-        if sim_obj.get_create_time() not in self.waiting_obj_map:
-            self.waiting_obj_map[sim_obj.get_create_time()] = []
-            heapq.heappush(self._waiting_keys, sim_obj.get_create_time())
-
-        self.waiting_obj_map[sim_obj.get_create_time()].append(sim_obj)
-
-        if sim_obj.get_name() in self.model_map:
-            self.model_map[sim_obj.get_name()].append(sim_obj)
+        create_t = sim_obj.get_create_time()
+        waiting = self.waiting_obj_map.get(create_t)
+        if waiting is None:
+            self.waiting_obj_map[create_t] = [sim_obj]
+            heapq.heappush(self._waiting_keys, create_t)
         else:
-            self.model_map[sim_obj.get_name()] = [sim_obj]
-        
-        
+            waiting.append(sim_obj)
+
+        name = sim_obj.get_name()
+        same_name = self.model_map.get(name)
+        if same_name is None:
+            self.model_map[name] = [sim_obj]
+        else:
+            same_name.append(sim_obj)
 
     def get_entity(self, model_name):
         """
@@ -212,11 +218,13 @@ class SysExecutor(CoreModel):
             key = self._waiting_keys[0]
             if key <= self.global_time:
                 heapq.heappop(self._waiting_keys)
-                lst = self.waiting_obj_map.pop(key)
-                for obj in lst:
-                    self.active_obj_map[obj.get_obj_id()] = obj
-                    obj.set_req_time(self.global_time)
-                    self.min_schedule_item.push(obj)
+                active_obj_map = self.active_obj_map
+                fel = self.min_schedule_item
+                global_time = self.global_time
+                for obj in self.waiting_obj_map.pop(key):
+                    active_obj_map[obj._obj_id] = obj
+                    obj.set_req_time(global_time)
+                    fel.push(obj)
 
     def destory_entity(self, delete_lst):
         """
@@ -403,6 +411,9 @@ class SysExecutor(CoreModel):
         and waiting-creation queue. Returns ``Infinite`` if nothing is
         pending.
         """
+        # The truthiness guard keeps this consistent with pop_due, which
+        # stops when no executor is registered even if a stale bucket
+        # remains (possible when two executors share an obj_id).
         next_t = (
             self.min_schedule_item.peek_time(default=Infinite)
             if self.min_schedule_item
@@ -469,6 +480,7 @@ class SysExecutor(CoreModel):
 
         # Start each receiver's input bag with external events due now.
         influenced_inputs = {}      # dst_executor -> list[(dst_port, msg)]
+        bag_of = influenced_inputs.get
         if self.input_event_queue:
             with self.condition:
                 while (self.input_event_queue
@@ -478,26 +490,34 @@ class SysExecutor(CoreModel):
                         self, ext_msg.get_dst()
                     ):
                         if dst_exec is not self and dst_exec._obj_id in active_obj_map:
-                            influenced_inputs.setdefault(
-                                dst_exec, []
-                            ).append((dst_port, ext_msg))
+                            bag = bag_of(dst_exec)
+                            if bag is None:
+                                influenced_inputs[dst_exec] = [(dst_port, ext_msg)]
+                            else:
+                                bag.append((dst_port, ext_msg))
 
         if not imminent and not influenced_inputs:
             return
 
-        # Phase A: collect output from imminent models.
+        # Phase A: collect output from imminent models. One deliverer serves
+        # the whole instant; each model's messages keep their own list.
         outputs = []
+        md = MessageDeliverer()
         for X in imminent:
-            md = MessageDeliverer()
             X.output(md)
-            if md.has_contents():
-                outputs.append((X, md))
+            if md.data_list:
+                outputs.append((X, md.data_list))
+                md.data_list = []
 
         # Phase B: route outputs through coupling, merging into the bag
-        # already seeded with external events.
-        for X, md in outputs:
-            for msg in md.get_contents():
-                for dst_exec, dst_port in self._destinations_for(X, msg.get_dst()):
+        # already seeded with external events. port_map is re-read per
+        # message because an output callback may replace it.
+        for X, msgs in outputs:
+            for msg in msgs:
+                dsts = self.port_map.get((X, msg.get_dst()))
+                if dsts is None:
+                    dsts = self._destinations_for(X, msg.get_dst())
+                for dst_exec, dst_port in dsts:
                     if dst_exec is self:
                         # Output of the top-level simulator. The callback path
                         # uses the condition because another thread may wait.
@@ -508,29 +528,29 @@ class SysExecutor(CoreModel):
                         else:
                             output_queue.append((instant, msg))
                     elif dst_exec._obj_id in active_obj_map:
-                        influenced_inputs.setdefault(
-                            dst_exec, []
-                        ).append((dst_port, msg))
+                        bag = bag_of(dst_exec)
+                        if bag is None:
+                            influenced_inputs[dst_exec] = [(dst_port, msg)]
+                        else:
+                            bag.append((dst_port, msg))
 
         imminent_set = set(imminent)
         affected = imminent_set | set(influenced_inputs)
 
         # Phase C: apply a transition to every affected model.
         for M in affected:
-            bag = influenced_inputs.get(M, ())
-            is_imminent = M in imminent_set
-            if is_imminent and bag:
-                M.con_trans(bag)
-            elif is_imminent:
-                M.int_trans()
+            bag = bag_of(M)
+            if M in imminent_set:
+                if bag:
+                    M.con_trans(bag)
+                else:
+                    M.int_trans()
             else:
                 for port, msg in bag:
                     M.ext_trans(port, msg)
 
         # Phase D: record each affected model's new request time.
-        for M in affected:
-            M.set_req_time(instant)
-            self.min_schedule_item.push(M)
+        self.min_schedule_item.reschedule_all(affected, instant)
 
     def schedule(self):
         """Run one simulated-instant tick (V_TIME / R_TIME).
@@ -545,37 +565,35 @@ class SysExecutor(CoreModel):
           * R_TIME: step by ``time_resolution`` and sleep to match
             wall-clock pace.
         """
-        self.create_entity()
+        if self._waiting_keys:
+            self.create_entity()
 
         # Only real-time execution needs a wall-clock duration.
-        is_realtime = self.ex_mode == ExecutionType.R_TIME
+        is_realtime = self.ex_mode is _R_TIME
         before = time.perf_counter() if is_realtime else None
 
         # Collect all request-time buckets that are already due. More than one
         # timestamp can be due after a paused simulation resumes.
         imminent = []
-        fel = self.min_schedule_item
-        while fel:
-            next_t = fel.peek_time(default=Infinite)
-            if next_t > self.global_time:
-                break
-            imminent.extend(fel.pop_all_at(next_t))
+        self.min_schedule_item.pop_due(self.global_time, imminent)
 
         # Include external events due at this instant in the same transition.
         self._run_instant(self.global_time, imminent)
 
         # Advance simulated time. External-event producers lock their queue
         # updates separately.
-        if self.ex_mode == ExecutionType.V_TIME:
+        ex_mode = self.ex_mode
+        if ex_mode is _V_TIME:
             next_t = self._peek_next_event_time()
             new_time = min(next_t, self.target_time)
             # A same-time event is processed by the next schedule call.
             if new_time > self.global_time:
                 self.global_time = new_time
-        elif self.ex_mode != ExecutionType.HLA_TIME:
+        elif ex_mode is not _HLA_TIME:
             self.global_time += self.time_resolution
 
-        self.destroy_active_entity()
+        if self._destructs_pending:
+            self.destroy_active_entity()
 
         if is_realtime:
             delta = float(self.time_resolution) - float(time.perf_counter() - before)
@@ -600,16 +618,18 @@ class SysExecutor(CoreModel):
         # An unbounded virtual-time run stops when all remaining events are at
         # Infinite. A finite run stops at target_time.
         unbounded = (_time == Infinite)
-        v_time = self.ex_mode == ExecutionType.V_TIME
+        v_time = self.ex_mode is _V_TIME
 
         while self.global_time < self.target_time:
+            mode = self.simulation_mode
             # Acquire the condition only while paused; resume_sim notifies it.
-            if self.simulation_mode == SimulationMode.SIMULATION_PAUSE:
+            if mode is _SIM_PAUSE:
                 with self.condition:
-                    while self.simulation_mode == SimulationMode.SIMULATION_PAUSE:
+                    while self.simulation_mode is _SIM_PAUSE:
                         self.condition.wait()
+                mode = self.simulation_mode
 
-            if self.simulation_mode == SimulationMode.SIMULATION_TERMINATED:
+            if mode is _SIM_TERMINATED:
                 break
 
             if (unbounded
@@ -811,6 +831,8 @@ class SysExecutor(CoreModel):
         Returns:
             deque: List of output events
         """
+        import copy
+
         with self.condition:
             event_lists = copy.deepcopy(self.output_event_queue)
             self.output_event_queue.clear()

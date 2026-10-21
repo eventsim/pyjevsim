@@ -27,14 +27,25 @@ class BehaviorExecutor(Executor):
 
         self._next_event_t = 0  # Next event time
         self._cur_state = ""  # Current state of the behavior executor
-        self.request_time = float("inf")  # Request time initialized to infinity
+        self.request_time = Infinite  # Request time initialized to infinity
 
         self.behavior_model = behavior_model #Behavior Model
         self._cancel_reschedule_f = False #cancel reschedule flag
 
         # Object identity and destruction time do not change after creation.
-        self._cached_destruct_time = self._destruct_t
+        self._cached_destruct_time = dtime
         self._obj_id = behavior_model.get_obj_id()
+
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        # The fused _reschedule below would bypass an overridden
+        # set_req_time or get_req_time, so such subclasses call both. Compare
+        # the resolved attributes so an override inherited from a mixin
+        # (class X(Mixin, BehaviorExecutor)) is detected too.
+        if "_reschedule" not in cls.__dict__ and (
+                cls.set_req_time is not BehaviorExecutor.set_req_time
+                or cls.get_req_time is not BehaviorExecutor.get_req_time):
+            cls._reschedule = Executor._reschedule
 
     def set_global_time(self, gtime):
         """Sets the global time for the executor and behavior model"""
@@ -154,3 +165,34 @@ class BehaviorExecutor(Executor):
             self.behavior_model.reset_cancel_flag()
         self._next_event_t = self.request_time
         return self.request_time
+
+    def _reschedule(self, global_time):
+        """``set_req_time(global_time)`` then ``get_req_time()`` in one call.
+
+        Keep this in step with the two methods above. Subclasses that
+        override either method (directly or through a mixin) fall back to
+        ``Executor._reschedule``, which calls both. Replacing
+        ``BehaviorExecutor.set_req_time``/``get_req_time`` on the class after
+        import (monkeypatching, ``mock.patch.object``) is not seen by this
+        fused path; patch ``_reschedule`` as well, or subclass instead.
+        """
+        bm = self.behavior_model
+        self.global_time = global_time
+        bm.global_time = global_time
+
+        ta = bm._states.get(bm._cur_state, -1)
+
+        if self._cancel_reschedule_f:
+            if ta == Infinite:
+                req_t = Infinite
+            else:
+                req_t = min(self._next_event_t, global_time + ta)
+            self._cancel_reschedule_f = False
+            bm.reset_cancel_flag()
+        elif ta == Infinite:
+            req_t = Infinite
+        else:
+            req_t = global_time + ta
+        self.request_time = req_t
+        self._next_event_t = req_t
+        return req_t

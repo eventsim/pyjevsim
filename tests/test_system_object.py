@@ -7,6 +7,8 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 Regression tests for SystemObject ID allocation.
 """
+import dill
+
 from pyjevsim.system_object import SystemObject
 from pyjevsim.system_message import SysMessage
 
@@ -29,3 +31,32 @@ def test_instantiation_does_not_rebind_class_attributes():
         SysMessage("src", "dst")
     after = {k: id(v) for k, v in vars(SystemObject).items()}
     assert before == after
+
+
+def test_sys_message_shares_the_id_stream():
+    a = SystemObject()
+    m = SysMessage("src", "dst")
+    b = SystemObject()
+    assert a.get_obj_id() < m.get_obj_id() < b.get_obj_id()
+    assert a < m < b
+
+
+def test_sys_message_state_and_pickle_round_trip():
+    m = SysMessage("src", "dst")
+    assert m.get_msg_time() == -1
+    m.insert([1, 2])
+    copy = dill.loads(dill.dumps(m))
+    assert copy.get_obj_id() == m.get_obj_id()
+    assert (copy.get_src(), copy.get_dst(), copy.retrieve()) == ("src", "dst", [[1, 2]])
+    assert copy.get_msg_time() == -1
+    m.set_msg_time(3.5)
+    assert m.get_msg_time() == 3.5
+    assert SysMessage().get_msg_time() == -1
+
+
+def test_sys_message_instance_state_matches_system_object_layout():
+    # Pickles must stay loadable by releases that build SysMessage through
+    # SystemObject.__init__, so the instance dict keeps the same keys.
+    m = SysMessage("src", "dst")
+    assert list(vars(m)) == [
+        "_SystemObject__object_id", "_src", "_dst", "_msg_time", "_msg_list"]

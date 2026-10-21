@@ -7,7 +7,6 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 This module contains an object SnapshotExecutor that decorates a BehaviorExecutor to snapshot a BehaviorModel. 
 """
-import dill
 import os
 
 from .executor import Executor
@@ -216,6 +215,8 @@ class SnapshotExecutor(Executor):
         Returns:
             bytes: The dumped BehaviorModel
         """
+        import dill
+
         return dill.dumps(self.behavior_executor.get_core_model().model_snapshot())
 
     def get_behavior_executor(self):
