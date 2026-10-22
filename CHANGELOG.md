@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- A standard performance suite, `python -m benchmark.suite`, with seven
+  workloads: DEVStone HI and LI, a sparse generator, an idle-heavy model
+  set, the bank example, import and start-up time, and DEVStone with every
+  executor wrapped in `SnapshotExecutor`. Every timed run is a fresh
+  process; base and candidate checkouts are interleaved round by round,
+  compared by the ratio of minimums with a 5% noise floor, and refused
+  when their transition counts or result counters differ. Optional CPU
+  pinning, JSON and Markdown output. The workloads, measurement rules and
+  an A/A noise floor are documented in `docs/source/benchmark.rst`.
+- A call-count budget test (`tests/test_call_budget.py`) that counts the
+  Python and C calls made per transition during `simulate()` and fails when
+  either grows by more than 3% over the values recorded per Python version.
+- The `SystemObject` class-attribute regression test now also checks that
+  creating messages and models and running executors and the schedule
+  queue never rebinds a class attribute of those hot-path classes.
+
 ### Changed
 - `SysExecutor` calls a plain `BehaviorExecutor`'s model directly for
   output and transitions instead of going through the executor's
@@ -75,6 +92,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `itertools.count`; they stay unique and increasing, so ordering is
   unchanged. On CPython 3.14 the DEVStone HI benchmark runs about 1.8x
   faster and the bank example about 1.4x faster.
+- The dill requirement now follows the Python version. `dill>=0.3.6`
+  allowed releases that predate support for the Python in use (0.3.6
+  was released before Python 3.12 existed); the minimum is now the
+  first release with formal support for that Python: 0.3.6 on 3.10,
+  0.3.7 on 3.11, 0.3.8 on 3.12, 0.3.9 on 3.13 and 0.4.1 on 3.14. A CI
+  job runs the snapshot and restore tests against exactly these
+  versions, and the test matrix now includes Windows and Python 3.14.
 
 ## [2.2.0] — 2026-08-29
 

@@ -94,7 +94,8 @@ Requirements
 ------------
 
 - Python >= 3.10
-- ``dill >= 0.3.6`` (installed automatically)
+- ``dill`` (installed automatically): at least 0.3.6 on Python 3.10,
+  0.3.7 on 3.11, 0.3.8 on 3.12, 0.3.9 on 3.13 and 0.4.1 on 3.14
 
 PyJEvSim Components
 -------------------

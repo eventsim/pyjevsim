@@ -30,17 +30,32 @@ def _atomics_per_level(depth: int, width: int) -> list[int]:
 
 def build(variant: str, depth: int, width: int,
           int_cycles: int = 0, ext_cycles: int = 0,
-          events: int = 1, period: float = 1.0):
+          events: int = 1, period: float = 1.0,
+          snapshot_manager=None, snapshot_condition=None):
+    """Build the flattened DEVStone graph.
+
+    With ``snapshot_manager`` and ``snapshot_condition`` given, the
+    condition is registered for every model (seeder included) before the
+    model is registered with the executor, so every executor is wrapped in
+    a ``SnapshotExecutor`` (the standard suite's W7 workload).
+    """
     variant = variant.upper()
     if variant not in ("LI", "HI", "HO"):
         raise ValueError(f"variant {variant} not supported")
     if depth < 1 or width < 1:
         raise ValueError("depth and width must be >= 1")
 
-    ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
+    ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME,
+                     snapshot_manager=snapshot_manager)
+
+    def register(model):
+        if snapshot_manager is not None and snapshot_condition is not None:
+            snapshot_manager.register_snapshot_condition(
+                model.get_name(), snapshot_condition)
+        ss.register_entity(model)
 
     seeder = Seeder("seeder", events=events, period=period)
-    ss.register_entity(seeder)
+    register(seeder)
 
     levels: list[list[DEVStoneAtomic]] = []
     for d, count in enumerate(_atomics_per_level(depth, width)):
@@ -51,7 +66,7 @@ def build(variant: str, depth: int, width: int,
                 int_cycles=int_cycles,
                 ext_cycles=ext_cycles,
             )
-            ss.register_entity(atomic)
+            register(atomic)
             row.append(atomic)
         levels.append(row)
 
