@@ -266,6 +266,25 @@ refuses to pin to; pinning is not available on macOS. There is no default,
 because which logical CPUs are the fast cores is machine specific (on the
 i7-12700 used for the 2026-10 records, the P-core threads are ``0-15``).
 
+On Windows 11 the scheduler may put a process that has run busy for a few
+seconds into power throttling (EcoQoS): it is steered to the efficient cores
+and run at a lower clock, while a freshly spawned process starts at full
+speed again. This was first seen in the 2026-10 replication study, where a
+long sequential run slowed down 4-5x after about 3 s, and it is easy to
+reproduce: a 6 s busy loop in a fresh child on the i7-12700 ran at about
+27-30 M iterations/s for 3 s and then at 9-12.5 M/s (0.37-0.43 of its
+early rate, five runs), while the same loop with the opt-out stayed flat
+(0.99-1.00, five runs). The suite therefore opts its own process out at
+start-up and every child out twice, through the child's handle right after
+the spawn and from ``child.py`` itself before the workload runs, by calling
+``SetProcessInformation(..., ProcessPowerThrottling, ...)`` with
+``PROCESS_POWER_THROTTLING_EXECUTION_SPEED`` in the control mask and a
+zero state mask (``benchmark/power.py``). Failures (Windows before 10
+1709) are ignored, and the call is a no-op on other platforms.
+``--out`` records whether the parent opt-out was accepted, and each run
+records ``power_opt_out`` for its child; ``--allow-throttling`` skips the
+opt-out, for example to measure what a default process would see.
+
 How a comparison is made
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

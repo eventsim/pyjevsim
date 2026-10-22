@@ -160,7 +160,7 @@ def _fake_run_once(fail):
     calls = {}
 
     def run_once(wid, repo, python=None, params=None, cpus=None,
-                 timeout=None):
+                 timeout=None, allow_throttling=False):
         n = calls[wid, repo] = calls.get((wid, repo), 0) + 1
         if fail.get((wid, repo)) == n:
             raise suite.ChildError(f"{wid} on {repo}: exit 1 | no result\n"
@@ -219,3 +219,41 @@ def test_single_checkout_run_end_to_end():
     assert entry["summary"]["sim_s"]["n"] == 2
     assert all(r["pyjevsim_file"].startswith(REPO)
                for r in entry["runs"]["repo"])
+    # The child opted itself out of EcoQoS (a no-op, False, off Windows).
+    assert all(r["power_opt_out"] is (sys.platform == "win32")
+               for r in entry["runs"]["repo"])
+    assert doc["power_throttling"]["allowed"] is False
+
+
+def test_allow_throttling_reaches_the_child():
+    doc = suite.run_suite({"repo": REPO}, ["W3"], rounds=1, warmup=0,
+                          params={"W3": {"count": 20}}, quiet=True,
+                          allow_throttling=True)
+    run, = doc["workloads"]["W3"]["runs"]["repo"]
+    assert run["power_opt_out"] is False
+    assert doc["power_throttling"]["allowed"] is True
+
+
+def test_power_throttling_opt_out_is_a_no_op_off_windows(monkeypatch):
+    from benchmark import power
+    monkeypatch.setattr(power.sys, "platform", "linux")
+    assert power.disable_power_throttling() is False
+
+
+@pytest.mark.skipif(sys.platform != "win32", reason="Windows API")
+def test_power_throttling_opt_out_on_windows():
+    from benchmark import power
+    # Windows 10 1709 and later accept the request for this process.
+    assert power.disable_power_throttling() is True
+
+
+@pytest.mark.parametrize("flag, calls", [([], 1), (["--allow-throttling"], 0)])
+def test_main_opts_out_of_power_throttling_at_start_up(monkeypatch, flag,
+                                                       calls):
+    seen = []
+    monkeypatch.setattr(suite, "disable_power_throttling",
+                        lambda process=None: seen.append(process) or True)
+    monkeypatch.setattr(suite, "run_suite", lambda *a, **k: {"status": 0})
+    monkeypatch.setattr(suite, "format_report", lambda doc, markdown: "")
+    assert suite.main(["--workloads", "W3", "--quiet"] + flag) == 0
+    assert seen == [None] * calls
