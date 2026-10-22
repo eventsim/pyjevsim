@@ -1788,9 +1788,10 @@ def compare(pa, pb, max_lines):
         sa, sb = _strict_of(ea), _strict_of(eb)
         if sa != sb:
             warns += 1
-            ka = set((ea.get("strict") or {}).items())
-            kb = set((eb.get("strict") or {}).items())
-            ks = sorted({k for k, _ in ka ^ kb})
+            ks = []
+            if "strict" in ea and "strict" in eb:   # hash files carry only a hash
+                ka, kb = set(ea["strict"].items()), set(eb["strict"].items())
+                ks = sorted({k for k, _ in ka ^ kb})
             print("WARN      %s strict (raw dill bytes) differ%s" % (n, (": " + ", ".join(ks[:6])) if ks else ""))
     print("RESULT: %s (%d failing, %d warnings)" % ("PASS" if fails == 0 else "FAIL", fails, warns))
     return 0 if fails == 0 else 1
