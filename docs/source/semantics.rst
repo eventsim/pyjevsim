@@ -64,8 +64,11 @@ C. **Transitions.** Every affected model makes exactly one transition:
 D. **Rescheduling.** Each affected model's next request time becomes the
    instant plus the time advance of its new state (``Infinite`` makes it
    passive). If the model called ``cancel_rescheduling()`` during the
-   transition, the earlier of its previous request time and that new time
-   is kept instead, so a stream of inputs does not postpone its deadline.
+   transition and its new state has a finite time advance, the earlier of
+   its previous request time and that new time is kept instead, so a
+   stream of inputs does not postpone its deadline. A model that enters a
+   passive (``Infinite``) state becomes passive anyway and does not keep
+   its previous deadline.
 
 Confluent transitions
 ---------------------
@@ -101,8 +104,9 @@ model that has not been activated yet), not the current instant. A model
 that needs the current time should read ``SysExecutor.global_time``
 (``get_global_time()``) through a reference to the executor.
 
-This is the current behaviour and is scheduled to change in 2.4.0, when the
-model-visible time will become the current instant.
+This is the current behaviour. It is planned to change in a future
+semantic release, in which the model-visible time will become the current
+instant.
 
 When ``simulate()`` stops
 -------------------------
