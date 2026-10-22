@@ -85,8 +85,13 @@ def run_bank(seed, ticks=3000):
         ss.coupling_relation(accountants[i], "next", result, "process")
     ss.insert_external_event("start", None)
 
+    # _tm=False: with the default _tm=True every simulate() call appends the
+    # executor to the process-global TerminationManager._executors list, so
+    # no replication's models are ever freed and a process that runs many
+    # replications (this loop, or a pool worker) slows down as the heap
+    # grows.  Signal handling is not needed inside a replication.
     for _ in range(ticks):
-        ss.simulate(1)
+        ss.simulate(1, _tm=False)
 
     return {
         "seed": seed,
