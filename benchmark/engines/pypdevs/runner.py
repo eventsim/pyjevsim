@@ -2,7 +2,7 @@
 
 import time
 
-from benchmark.engines.common import RunResult
+from benchmark.engines.common import RunResult, check_events, seed_horizon
 
 
 ENGINE_NAME = "pypdevs"
@@ -17,11 +17,13 @@ def is_available() -> bool:
 
 
 def run(variant: str, depth: int, width: int,
-        int_cycles: int = 0, ext_cycles: int = 0) -> RunResult:
+        int_cycles: int = 0, ext_cycles: int = 0,
+        events: int = 1, period: float = 1.0) -> RunResult:
     from pypdevs.minimal import Simulator
 
     from .topology import DEVStoneRoot
 
+    check_events(events, period)
     result = RunResult(
         engine=ENGINE_NAME,
         variant=variant,
@@ -29,16 +31,26 @@ def run(variant: str, depth: int, width: int,
         width=width,
         int_cycles=int_cycles,
         ext_cycles=ext_cycles,
+        events=events,
+        period=period,
+        seed="generator",
     )
 
     t0 = time.perf_counter()
-    root = DEVStoneRoot(variant, depth, width, int_cycles, ext_cycles)
+    root = DEVStoneRoot(variant, depth, width, int_cycles, ext_cycles,
+                        events=events, period=period)
     t1 = time.perf_counter()
 
     sim = Simulator(root)
     # The DEVStone cascade completes within a tiny simulated horizon since
-    # all transitions use sigma=0; bound it generously.
-    sim.setTerminationTime(max(8.0, depth * width + 4.0))
+    # all transitions use sigma=0; bound it generously. Multi-event mode
+    # extends the bound past the last seed at (events - 1) * period. Note:
+    # with events > 1 time advances, which needs the SchedulerHS heap
+    # sentinel edit documented in results/BASELINE.md (edit 3).
+    if events == 1:
+        sim.setTerminationTime(max(8.0, depth * width + 4.0))
+    else:
+        sim.setTerminationTime(float(seed_horizon(depth, width, events, period)))
     t2 = time.perf_counter()
 
     sim.simulate()

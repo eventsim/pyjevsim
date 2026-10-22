@@ -23,6 +23,16 @@ Restrict to specific engines:
 Persist results to CSV:
 
     python -m benchmark.run_compare --output benchmark/results/baseline.csv
+
+Steady-state (multi-event) mode: inject N seed events into the same root
+input at simulated times 0, P, 2P, ... instead of a single seed at t=0.
+Every seed's zero-delay cascade drains before the next one arrives (P > 0),
+so transitions(N) == N * transitions(1) for every engine. The seed
+generator's own transitions are not counted:
+
+    python -m benchmark.run_compare --variant HI --depth 10 --width 10 --events 100 --period 1.0
+
+--events 1 (the default) runs exactly the historical single-event path.
 """
 
 import argparse
@@ -34,7 +44,7 @@ import traceback
 if __package__ in (None, ""):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from benchmark.engines.common import RunResult, VARIANTS  # noqa: E402
+from benchmark.engines.common import RunResult, VARIANTS, check_events  # noqa: E402
 from benchmark.engines.pyjevsim import runner as pyjevsim_runner  # noqa: E402
 from benchmark.engines.pypdevs import runner as pypdevs_runner  # noqa: E402
 from benchmark.engines.reference import runner as reference_runner  # noqa: E402
@@ -66,21 +76,27 @@ def available_engines() -> list[str]:
     return [name for name, mod in ENGINE_RUNNERS.items() if mod.is_available()]
 
 
-def run_grid(grid, engines, int_cycles=0, ext_cycles=0, repeat=1):
+def run_grid(grid, engines, int_cycles=0, ext_cycles=0, repeat=1,
+             events=1, period=1.0, xdevs_seed="auto"):
     results: list[RunResult] = []
     for variant, depth, width in grid:
         for engine_name in engines:
             mod = ENGINE_RUNNERS[engine_name]
+            extra = {}
+            if engine_name == "xdevs" and xdevs_seed != "auto":
+                extra["seed"] = xdevs_seed
             best: RunResult | None = None
             for _ in range(repeat):
                 try:
-                    res = mod.run(variant, depth, width, int_cycles, ext_cycles)
+                    res = mod.run(variant, depth, width, int_cycles, ext_cycles,
+                                  events=events, period=period, **extra)
                 except Exception as exc:
                     res = RunResult(
                         engine=engine_name, variant=variant,
                         depth=depth, width=width,
                         int_cycles=int_cycles, ext_cycles=ext_cycles,
                         error=f"{type(exc).__name__}: {exc}",
+                        events=events, period=period,
                     )
                     traceback.print_exc(file=sys.stderr)
                 if best is None or (res.error == "" and res.sim_s < best.sim_s):
@@ -91,21 +107,26 @@ def run_grid(grid, engines, int_cycles=0, ext_cycles=0, repeat=1):
 
 
 def format_table(results: list[RunResult]) -> str:
+    # The events/period columns appear only in multi-event mode so the
+    # single-event table is byte-identical to the historical output.
+    multi = any(r.events != 1 for r in results)
+    ev_head = f" {'events':>7} {'period':>7}" if multi else ""
     header = (
-        f"{'engine':>10} {'variant':>7} {'d':>2} {'w':>2} "
+        f"{'engine':>10} {'variant':>7} {'d':>2} {'w':>2}{ev_head} "
         f"{'atomics':>8} {'transitions':>11} "
         f"{'sim_s':>9} {'tr/s':>11}"
     )
     lines = [header, "-" * len(header)]
     for r in results:
+        ev = f" {r.events:>7} {r.period:>7g}" if multi else ""
         if r.error:
             lines.append(
-                f"{r.engine:>10} {r.variant:>7} {r.depth:>2} {r.width:>2} "
+                f"{r.engine:>10} {r.variant:>7} {r.depth:>2} {r.width:>2}{ev} "
                 f"{'-':>8} {'-':>11} {'-':>9} {'-':>11}  ERROR: {r.error}"
             )
             continue
         lines.append(
-            f"{r.engine:>10} {r.variant:>7} {r.depth:>2} {r.width:>2} "
+            f"{r.engine:>10} {r.variant:>7} {r.depth:>2} {r.width:>2}{ev} "
             f"{r.n_atomics:>8} {r.transitions:>11} "
             f"{r.sim_s:>9.4f} {r.transitions_per_s:>11,.0f}"
         )
@@ -136,6 +157,21 @@ def parse_args(argv=None):
                    help="dhrystone-style cycles per external transition")
     p.add_argument("--repeat", type=int, default=3,
                    help="run each config N times and keep the best")
+    p.add_argument("--events", type=int, default=1,
+                   help="number of seed events injected into the root input "
+                        "at t = 0, P, 2P, ... (default 1: the historical "
+                        "single-event cascade)")
+    p.add_argument("--period", type=float, default=1.0,
+                   help="simulated time P between seed events (default 1.0; "
+                        "must be > 0)")
+    p.add_argument("--xdevs-seed", choices=("auto", "generator"),
+                   default="auto",
+                   help="xdevs seeding: 'auto' keeps the historical "
+                        "Coordinator.inject path for --events 1 and uses a "
+                        "seed generator otherwise; 'generator' uses the "
+                        "generator also for --events 1 (see "
+                        "engines/xdevs/runner.py for why this matters for "
+                        "HO and for sim_s)")
     p.add_argument("--output", default=None,
                    help="path to write CSV output to")
     p.add_argument("--list-engines", action="store_true",
@@ -145,6 +181,11 @@ def parse_args(argv=None):
 
 def main(argv=None):
     args = parse_args(argv)
+    try:
+        check_events(args.events, args.period)
+    except ValueError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
 
     if args.list_engines:
         for name, mod in ENGINE_RUNNERS.items():
@@ -178,6 +219,9 @@ def main(argv=None):
         int_cycles=args.int_cycles,
         ext_cycles=args.ext_cycles,
         repeat=args.repeat,
+        events=args.events,
+        period=args.period,
+        xdevs_seed=args.xdevs_seed,
     )
 
     print(format_table(results))

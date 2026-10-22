@@ -2,7 +2,7 @@
 
 import time
 
-from benchmark.engines.common import RunResult
+from benchmark.engines.common import RunResult, check_events
 from .topology import build
 
 
@@ -14,7 +14,9 @@ def is_available() -> bool:
 
 
 def run(variant: str, depth: int, width: int,
-        int_cycles: int = 0, ext_cycles: int = 0) -> RunResult:
+        int_cycles: int = 0, ext_cycles: int = 0,
+        events: int = 1, period: float = 1.0) -> RunResult:
+    check_events(events, period)
     result = RunResult(
         engine=ENGINE_NAME,
         variant=variant,
@@ -22,10 +24,14 @@ def run(variant: str, depth: int, width: int,
         width=width,
         int_cycles=int_cycles,
         ext_cycles=ext_cycles,
+        events=events,
+        period=period,
+        seed="generator",
     )
 
     t0 = time.perf_counter()
-    eng, atomics, _levels = build(variant, depth, width, int_cycles, ext_cycles)
+    eng, atomics, _levels = build(variant, depth, width, int_cycles, ext_cycles,
+                                  events=events, period=period)
     t1 = time.perf_counter()
 
     eng.initialize()
