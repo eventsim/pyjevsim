@@ -91,6 +91,9 @@ DEFAULT_REPO = os.path.dirname(os.path.dirname(HERE))
 FIXED_SALT = 7919           # used for informational (order-sensitive) scenarios
 INLINE_LIMIT = 4000          # groups; larger traces go to the sidecar gz only
 HASHES_FORMAT = "pyjevsim-oracle-hashes"
+# The golden CI compares with. When a semantic change is accepted (see
+# LEDGER.md), its pull request adds a new golden and points this at it.
+GOLDEN = os.path.join(HERE, "golden", "v2.2.0.json")
 
 
 # --------------------------------------------------------------------------
@@ -1572,12 +1575,12 @@ def run_all(repo, out, names, jobs, salt, hash_only=False, skipped=(), label=Non
     digest = {"oracle_version": ORACLE_VERSION, "label": label, "git": git_info(repo), "salt": salt,
               "python": platform.python_version(), "implementation": platform.python_implementation(),
               "platform": "%s-%s" % (platform.system(), platform.machine()),
-              "created": time.strftime("%Y-%m-%d %H:%M:%S"), "wall_s": wall,
-              "skipped": sorted(skipped), "scenarios": {}}
+              "created": time.strftime("%Y-%m-%d %H:%M:%S"), "skipped": sorted(skipped), "scenarios": {}}
     if hash_only:
         digest = dict({"format": HASHES_FORMAT}, **digest)
     else:
         digest["repo"] = repo
+        digest["wall_s"] = wall
         side = out[:-5] + ".traces" if out.endswith(".json") else out + ".traces"
         os.makedirs(side, exist_ok=True)
     for n in names:
@@ -1720,6 +1723,9 @@ def compare(pa, pb, max_lines):
     print("cand: " + _describe(B))
     if A.get("platform") and B.get("platform") and (A["python"], A["platform"]) != (B["python"], B["platform"]):
         print("NOTE      base and candidate ran on different Python versions or platforms")
+    if A.get("oracle_version") != B.get("oracle_version"):
+        print("NOTE      oracle versions differ (%s vs %s): hashes are not comparable"
+              % (A.get("oracle_version"), B.get("oracle_version")))
     skipped = set(A.get("skipped") or ()) | set(B.get("skipped") or ())
     names = list(A["scenarios"]) + [n for n in B["scenarios"] if n not in A["scenarios"]]
     for n in names:
@@ -1826,8 +1832,9 @@ def main(argv=None):
                     help="checkout or export to run (default: the repository containing this tool)")
     ap.add_argument("--out", help="write a full digest (or, with --hash-only, a hash file) here")
     ap.add_argument("--hash-only", action="store_true", help="write per-scenario hashes only, no traces")
-    ap.add_argument("--golden", metavar="JSON",
-                    help="compare a hash-only run with this golden file (or write it with --write-golden)")
+    ap.add_argument("--golden", metavar="JSON", nargs="?", const=GOLDEN,
+                    help="compare a hash-only run with this golden file (or write it with --write-golden);"
+                         " without a value, the current golden %s" % os.path.relpath(GOLDEN, DEFAULT_REPO))
     ap.add_argument("--write-golden", action="store_true")
     ap.add_argument("--label", help="free-text name of the checkout, recorded in the output")
     ap.add_argument("--scenarios", default="", help="comma-separated subset (default: all)")
