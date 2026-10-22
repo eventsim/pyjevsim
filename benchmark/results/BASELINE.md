@@ -7,6 +7,8 @@ three runs. The benchmark disabled synthetic CPU work
 routing overhead. The exact invocation and generated CSV were not retained,
 so this table is a historical record rather than a reproducible release
 result.
+A reproducible comparison with recorded environment, invocations and CSVs
+is in [COMPARE-2026-10-22.md](COMPARE-2026-10-22.md).
 
 | Variant | depth × width | pyjevsim tr/s | xdevs tr/s | pypdevs tr/s | reference tr/s |
 |---|---:|---:|---:|---:|---:|
