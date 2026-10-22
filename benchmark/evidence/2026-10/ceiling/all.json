@@ -1,0 +1,694 @@
+{
+ "anatomy": {
+  "per_transition_work": "Scope: HI 10x10 with 100 seeds. There are 82 counted atomics plus the seeder. Measured per instant: 40.7 outputs, 40.6 deliveries, 48.9 models transitioning, 81.2 counted transitions (a confluent transition counts as 2). That is 1000 instants in total.\n\nCORRECTION TO THE TASK FRAMING: in this flattened HI topology no model receives more than one message per instant. I instrumented it: every con_trans got a bag of exactly 1 (histogram {1: 32400}), and every ext-only call got 1 message (8200 calls = 82 atomics x 100 seeds). So the bag-versus-per-message difference contributes nothing here.\n\nDeterministic counts, taken with sys.monitoring on HI 10x10 with 10 seeds (not timing):\n- pyjevsim: 194.4 bytecodes, 8.45 Python frames and 7.99 C calls per transition.\n- pypdevs minimal: 129.7 bytecodes, 3.59 frames and 2.83 C calls per transition.\n- LI 10x10: 250.3 / 9.82 / 11.40 versus 163.3 / 3.61 / 3.63.\n- cProfile on the real 100-seed run: 1,246 versus 576 function calls per instant.\n\nPER OUTPUT MESSAGE\n- pyjevsim makes 5 Python frames: BehaviorExecutor.output, DEVStoneAtomic.output, CoreModel.get_name, SysMessage.__init__ (plus one C call to count.__next__), SysMessage.insert (list.append) and MessageDeliverer.insert_message (list.append).\n- pyjevsim allocates a SysMessage with a 5-attribute __dict__, a _msg_list list, a fresh md.data_list list per outputting model, and an (X, msgs) tuple in `outputs`.\n- pyjevsim routing per message: one msg.get_dst() frame, an (X, port) key tuple (allocate and hash), and port_map.get. On a miss (uncoupled chain tails, about 0.1 per transition) it adds a second get_dst, a _destinations_for frame, another tuple and another get.\n- pypdevs makes 1 frame (outputFnc) and allocates one dict and one list. It does `transitioning[c] |= 1` (defaultdict get and set), iterates the outbag dict with one getitem, then follows the precomputed list outport.routing_outline. There is no id, no wrapper and no tuple key.\n\nPER DELIVERED MESSAGE\n- pyjevsim routing: a `dst is self` test, `dst._obj_id in active_obj_map` (attribute read plus dict lookup), bag_of(dst) (dict.get), then either a new list, a new (port, msg) tuple and a dict setitem, or a tuple plus append.\n- pyjevsim phase C: one tuple unpack and one ext_trans call per message. Ext-only costs 4 frames (BehaviorExecutor.ext_trans, model ext_trans, msg.retrieve, get_cancel_flag). Inside con_trans it costs the model ext_trans plus retrieve.\n- pypdevs: an attribute chain inport.host_DEVS.my_input, then setdefault(inport, []) (an eager list allocation every time), .extend(payload) and `transitioning[host] |= 2` (get and set). The bag is handed to one deltext per model. Here that is still one call per message, because fan-in is 1.\n\nPER TRANSITIONING MODEL\n- pyjevsim phase C: bag_of(M) and `M in imminent_set`.\n  - con_trans: BE.con_trans, BM.con_trans, int_trans, a loop over the bag running ext_trans and retrieve, then a get_cancel_flag() frame.\n  - int only: BE.int_trans then int_trans.\n  - ext only: as above.\n- pyjevsim phase D (reschedule_all):\n  - A _reschedule frame: 2 attribute stores of global_time (executor and model), a cancel-flag test, _states.get(_cur_state), an Infinite compare, a float add, and 2 attribute stores.\n  - Then reverse.get(obj_id) and a compare. If the time changed: mapped.get(old), set.discard and a reverse setitem.\n  - Then mapped.get(new) and set.add, or a new set plus heappush.\n- pyjevsim also pays per imminent model in pop_due: reverse.get, `del reverse[obj_id]` and out.extend. That reverse entry is re-added in phase D, so it churns every instant.\n- pypdevs: a ttype compare chain, then an intTransition / extTransition / confTransition frame (conf adds 2 more frames). For ext it computes elapsed (tuple index, float subtract, store). Then a timeAdvance() frame, a time_next tuple allocation, a time_last store and a `my_input = {}` allocation.\n- pypdevs scheduler, HS case: per model, mapped[reverse[id]].remove (raises and catches KeyError for imminent models whose bucket was popped), a reverse store into a list indexed by model_id, and mapped[tn].add on a (float, int) tuple key.\n- pypdevs scheduler, ML case: SchedulerAuto swapped to Minimal List for 899 of the 1000 instants of this benchmark. ML does no per-model work at all.\n\nPER INSTANT\n- pyjevsim:\n  - simulate loop: a mode test, then the unbounded check (waiting_obj_map truth test, a ScheduleQueue.__bool__ frame, a peek_time frame).\n  - schedule() frame: _waiting_keys test, ex_mode test, a new imminent list, a pop_due frame (heappop, mapped del).\n  - _run_instant frame: input_event_queue test, allocation of the dict, the MessageDeliverer and the outputs list, set(imminent), set(influenced), and the union (3 set builds over about 40–49 objects).\n  - A reschedule_all frame. The sigma=0 bucket is re-created every round (new set plus heappush, later heappop).\n  - A _peek_next_event_time frame (with __bool__ and peek_time frames), min(), and the _destructs_pending test.\n- pypdevs:\n  - A termination lambda frame and a defaultdict allocation.\n  - Each of getImminent, massReschedule and readFirst costs 2 frames (Auto plus the subscheduler). Auto keeps statistics.\n  - HS: heappop, mapped.pop and a set union.\n  - ML: two O(N) Python scans over all 83 models, the getImminent one calling abs() per model (74.8 abs calls per instant).\n\nWHERE THE BYTECODE GAP GOES (HI, gap 64.7 bytecodes per transition)\n- Output/message API: about 29 (45%). SysMessage.__init__ 8.0, insert 4.0, insert_message 4.0, get_dst 1.8, get_name 1.5, retrieve 1.5, _destinations_for 1.8, and model output 9.5 versus 3.0.\n- Scheduler bookkeeping: about 22.6 (35%). reschedule_all 24.0 + _reschedule 19.4 + pop_due 8.5 + misc, against pypdevs HS massReschedule 24.6 + timeAdvance 4.7 + misc.\n- Executor wrapper: about 12.2 (19%). BE.con_trans 5.6, output 3.0, ext 1.4, int 0.7, get_cancel_flag 1.5.\n- Model-code differences: about 8.1. int_trans tests the state, and con_trans loops over the bag.\n- pyjevsim's _run_instant is leaner than pypdevs' simulate loop: -8.7 (53.2 versus 61.9). It has no timeAdvance call, no time tuples and no per-model dict.\n\nIn time terms: 58.8 versus 42.3 µs per instant, i.e. 0.725 versus 0.52 µs per counted transition. The bytecode ratio (0.667) is a little worse than the measured speed ratio (0.72–0.77), because pyjevsim's extra bytecodes are mostly cheap dict.get calls and attribute reads.",
+  "pypdevs_advantages": [
+   {
+    "item": "Outputs as a plain dict {port: [payload]} instead of a SysMessage object built by the model, plus MessageDeliverer and get_name",
+    "mechanism": "outputFnc is one frame and two C-level allocations (dict and list). pyjevsim's output path is 5 Python frames: executor output, model output, get_name, SysMessage.__init__ with a shared-counter id, insert and insert_message. It allocates a __dict__-backed object and a list. Microbenchmark: building a SysMessage costs about 116 ns versus about 43 ns for {X: [0]}. Adding __slots__ only reaches about 107 ns, because the __init__ frame dominates.",
+    "adoptable_in_pyjevsim": "opt-in-api",
+    "estimated_share": "About 45% of the HI bytecode gap (about 29 of 64.7 bytecodes per transition; about 2.5 frames per transition). Part of it can be done today at model level without any API change: reuse one prebuilt SysMessage, which is legal because payloads go by reference. Prototype measured +0 to +6%. A real fast-emit or lightweight-message path would recover most of the 45%."
+   },
+   {
+    "item": "Scheduler design: list indexed by model_id for the reverse map, no per-model Python frame, and adaptive switching from HeapSet to Minimal List under dense activity",
+    "mechanism": "SchedulerAuto swapped to SchedulerML for 899 of the 1000 instants of HI 10x10 with 100 seeds, because more than 15 x N models were rescheduled per 100 instants. ML does no per-model reschedule work, only two O(N) scans per instant. HS stores the reverse map in a list indexed by a dense model_id and never deletes on pop. pyjevsim calls a _reschedule frame per model with 4 attribute writes. Its reverse map is a dict keyed by sparse obj_id; obj_ids are not dense because SysMessage draws from the same counter. pop_due deletes each imminent model's reverse entry, and phase D re-adds it.",
+    "adoptable_in_pyjevsim": "api-preserving",
+    "estimated_share": "About 35% of the gap (about 22.6 bytecodes per transition). It is internal to ScheduleQueue and reschedule_all: inline the fused reschedule for exact BehaviorExecutor, give each executor a dense slot index assigned at registration, stop deleting reverse entries in pop_due, and optionally add a dense-activity policy. Realistically 12–15 of the 22.6 bytecodes can be recovered."
+   },
+   {
+    "item": "No executor wrapper layer between kernel and model",
+    "mechanism": "pypdevs calls aDEVS.intTransition / extTransition / confTransition / outputFnc directly. pyjevsim goes through BehaviorExecutor.output / ext_trans / con_trans / int_trans, and after each ext or con it calls get_cancel_flag() as a method rather than reading the attribute. The wrapper adds about 16 ns per call (43 ns versus 28 ns for a trivial method).",
+    "adoptable_in_pyjevsim": "api-preserving",
+    "estimated_share": "About 19% of the gap (about 12.2 bytecodes and about 2.0 frames per transition). The engine can take a fast path when type(X) is BehaviorExecutor exactly: call bm methods directly and read bm._cancel_reschedule_f. SnapshotExecutor, subclasses and structural/HLA executors keep the slow path. Prototype B (this plus the inlined reschedule plus msg._dst) measured +3 to +8% against pypdevs in the same batch; not oracle-validated."
+   },
+   {
+    "item": "Getter methods replaced by attribute access in the kernel",
+    "mechanism": "pypdevs reads outport.routing_outline and inport.host_DEVS. pyjevsim's kernel calls msg.get_dst() (0.6 per transition, called twice on a coupling miss) and get_cancel_flag(), and its model code calls get_name() and retrieve(). Each is a frame of about 16 ns.",
+    "adoptable_in_pyjevsim": "api-preserving",
+    "estimated_share": "About 3% (about 3.3 bytecodes and 1.1 frames per transition) on the kernel side: get_dst becomes ._dst, get_cancel_flag becomes ._cancel_reschedule_f. The model-side getters (get_name, retrieve) sit in user code and are counted under the message-API item."
+   },
+   {
+    "item": "directConnect: per-port destination lists precomputed on the port object",
+    "mechanism": "Routing is an attribute read of outport.routing_outline. pyjevsim builds and hashes an (executor, port) tuple and does a dict.get on every output message. Chain tails go through a miss path: a second get_dst, the _destinations_for frame and another lookup.",
+    "adoptable_in_pyjevsim": "api-preserving",
+    "estimated_share": "About 2–4% (about 2–3 bytecodes plus one tuple allocation per message, plus the miss path at 0.1 per transition). port_map stays the authoritative public structure. A per-executor route cache must be invalidated by coupling_relation, remove_relation and reset_relation. Direct user mutation of port_map is a hazard, so keep a cheap version check or invalidate per instant."
+   },
+   {
+    "item": "One deltext per model per instant with a dict bag, instead of one ext_trans(port, msg) call per message",
+    "mechanism": "pypdevs accumulates my_input[inport].extend(payload) and makes one extTransition(inputs) call. pyjevsim makes one ext_trans call per (port, msg) and builds a (port, msg) tuple per delivery.",
+    "adoptable_in_pyjevsim": "opt-in-api",
+    "estimated_share": "0% in this DEVStone. Measured fan-in is exactly 1 message per receiver per instant: con bag-size histogram {1: 32400}, and ext-only calls equal deliveries. It only pays off on models with real fan-in. An opt-in bag-style ext_trans hook is the way to offer it without changing default behaviour."
+   },
+   {
+    "item": "Confluent handled as state = int(); ext(bag) with a dict bag",
+    "mechanism": "pypdevs confTransition is 3 frames. pyjevsim's default BehaviorModel.con_trans is int_trans followed by a Python loop calling ext_trans per message, plus the BE.con_trans wrapper and get_cancel_flag. Both do the int-then-ext order.",
+    "adoptable_in_pyjevsim": "opt-in-api",
+    "estimated_share": "About 5% (about 3.6 bytecodes per transition for the loop and unpack). The wrapper part is already counted under the executor-wrapper item."
+   },
+   {
+    "item": "No liveness, sink or external-input checks on the hot path",
+    "mechanism": "pypdevs never checks whether a destination is alive, never tests whether the destination is the top-level sink, and has no per-instant external-queue, creation-queue or destruction checks.",
+    "adoptable_in_pyjevsim": "api-preserving",
+    "estimated_share": "About 3% (about 2 bytecodes per transition for `dst is self` plus `_obj_id in active_obj_map` per delivery). This could be removed by pruning port_map routes on destroy instead of testing on every delivery. Per-instant checks are negligible."
+   },
+   {
+    "item": "No per-message object id allocation",
+    "mechanism": "pypdevs messages are raw payload lists. Every SysMessage calls _next_object_id(), a C call to count.__next__, and stores the result.",
+    "adoptable_in_pyjevsim": "opt-in-api",
+    "estimated_share": "About 1% (0.5 C calls per transition). It disappears together with the SysMessage object if the model uses a lightweight-message or fast-emit path."
+   }
+  ],
+  "pyjevsim_features_pypdevs_minimal_lacks": [
+   "Runtime external events (insert_external_event with a thread-safe heap merged into the same instant's bag): one `if self.input_event_queue` test per instant; about 0.03 bytecodes per transition, negligible.",
+   "Dynamic create/destroy (waiting_obj_map, destruct times): `_waiting_keys` and `_destructs_pending` tests per instant (negligible) plus `dst._obj_id in active_obj_map` per delivery, about 1.5–2 bytecodes per transition (about 1–2%).",
+   "R_TIME / HLA_TIME step(granted_time) sharing _run_instant: per-instant ex_mode / is_realtime branches; negligible. The cost is architectural: the loop must stay re-entrant per instant.",
+   "Snapshot / restore decorators (SnapshotExecutor wrapping executors, __init_subclass__ fallback to an unfused _reschedule): requires the executor indirection layer, which costs about 12 bytecodes and 2 frames per transition (about 6% of pyjevsim's work, about 19% of the gap). A type-exact fast path would avoid this cost.",
+   "DefaultMessageCatcher / track_uncaught: off by default. The uncoupled-port miss path (second get_dst, _destinations_for frame, tuple and lookup at 0.1 per transition on HI) costs about 2 bytecodes per transition. A negative-route cache outside port_map would remove it.",
+   "cancel_rescheduling: a get_cancel_flag() frame after every ext/con call plus a flag test in _reschedule; about 1.5–2 bytecodes and 0.5 frames per transition.",
+   "By-reference fan-out of one SysMessage to all subscribers: per delivery it is cheaper than pypdevs' per-receiver list.extend copy, so this is a small advantage for pyjevsim, not a cost.",
+   "Top-level output sink (output_event_queue plus output callback with condition lock): one `dst is self` identity test per delivery; negligible.",
+   "Pause / resume / terminate modes and the termination manager: one mode test per instant; negligible.",
+   "State-table time advance (insert_state deadlines): a dict lookup instead of pypdevs' timeAdvance() frame and time-tuple allocation. This is a pyjevsim advantage and part of why its _run_instant runs fewer bytecodes than pypdevs' simulate loop (53.2 versus 61.9).",
+   "Structural / hierarchical models and executors plugging into the same loop, plus a public, mutable port_map (re-read per message because a callback may replace it): blocks naive route caching; about 1–2 bytecodes per message.",
+   "Total feature tax, excluding the executor wrapper: about 5–6 bytecodes per transition, about 3% of pyjevsim's 194. With the wrapper: about 9%. The features are not where the 28% gap comes from."
+  ],
+  "full_pypdevs_vs_minimal": "The adapter uses pypdevs.minimal. That is a 243-line kernel: directConnect is done once, there is one Simulator.simulate loop, and SchedulerAuto picks between HS and ML. Its docstring says it is \"a lot faster due to skipping all features\". It has no tracing, no message copy, no state saving, no locks, no realtime, no checkpoints, no DSDEVS, no classic DEVS and no distribution.\n\nWhat the full kernel (simulator.py + basesimulator.runsim + solver.py) does per instant:\n- Acquires simlock and Vlock twice.\n- Calls priorevent.wait() (a Python-level Event/Condition call).\n- Calls check() for termination with GVT logic, then processIncommingMessages / inqueue tests.\n- Computes round(tn[0], 6) and calls setTimeNext.\n- Allocates a new defaultdict and calls server.flushQueuedMessages().\n\nPer output: an atomicOutputGeneration frame that stores my_output.\n\nPer delivery: an `aDEVS.model_id in self.model.local_model_ids` check plus the remote-routing branch.\n\nPer transition:\n- A chain of flag tests (temporary_irreversible, memoization, activity_tracking, do_some_tracing, relocation_pending) and a `ta < 0` check.\n- The default msg_copy = 0, i.e. `pickle.loads(pickle.dumps(...))` of every input bag before each ext or conf transition. A pickle round trip of a small list costs on the order of microseconds. That alone exceeds pyjevsim's whole cost of about 0.72 µs per transition.\n- Possibly old_states.append(state_saver(...)) when state saving is not disabled.\n\nFrom the code, the full kernel would be clearly slower than minimal: probably several times slower with the default pickle copy, and still noticeably slower with setMessageCopy('none') because of the locks and per-transition checks. So pyjevsim is very likely already faster than full PythonPDEVS at its defaults. Full PythonPDEVS is the feature-comparable engine; minimal is a stripped benchmark kernel.\n\nI could not confirm this by measurement. In this checkout the full simulator does not even import on CPython 3.7+, because controller.py line 551 uses `async` as an identifier and raises SyntaxError. Treating the source as read-only, I did not patch it. This is an inference from the code, not a benchmark result.",
+  "verdict_from_anatomy": "HONEST VERDICT: No, not with the default API and the DEVStone models as they are written today. The realistic ceiling is about 0.85–0.9x of pypdevs minimal. Reaching parity, or a lead of perhaps 5–15%, would need opt-in fast APIs plus a reworked kernel. Even then it holds only on the opt-in path and only for DEVStone-like dense zero-delay workloads. pyjevsim is very likely already faster than the full PythonPDEVS simulator, though that is inferred from code, not measured.\n\nArithmetic (HI 10x10, deterministic sys.monitoring counts; ratios 0.72–0.77 from the maintainer's batch):\n- pyjevsim does 194.4 bytecodes per transition: 70.6 in model and user-API code, 123.8 in the kernel.\n- pypdevs does 129.7: 41.7 in model code (including the timeAdvance call), 88.0 in the kernel.\n- In time: 0.725 versus 0.52 µs per counted transition (58.8 versus 42.3 µs per instant).\n\n(1) API-preserving kernel work:\n- Type-exact BehaviorExecutor fast path: -12.2.\n- Attribute reads instead of kernel getters: -3.\n- Scheduler (inlined reschedule, dense slots, no pop_due reverse churn): -12 to -15.\n- Route cache and miss cache: -2 to -3.\n- That brings the kernel to about 92–95, and the total to about 163–166 bytecodes. That is a 0.78–0.80 bytecode ratio, roughly 0.83–0.87x in time, since pyjevsim's ops are slightly cheaper per bytecode than pypdevs'.\n- A quick in-process prototype of a subset of this (wrapper bypass + _dst + inlined reschedule, not oracle-validated) measured +3 to +8% against pypdevs in the same batch. Model-side SysMessage reuse added +0 to +6%; combined, 0.69 became 0.75–0.79 under heavy machine load. That is consistent with the estimate.\n\n(2) The hard floor of the default API:\n- One SysMessage, get_name, insert and insert_message per output, and one ext_trans(port, msg) per message, cost 70.6 bytecodes of model-side work against pypdevs' 41.7.\n- To beat pypdevs, the kernel would have to fall below 129.7 - 70.6 = 59 bytecodes per transition. That is 33% leaner than pypdevs' own kernel and 52% leaner than pyjevsim's current one, while still carrying external events, create/destroy, cancel, snapshot hooks and step(). That is not plausible in pure CPython.\n\n(3) The opt-in route:\n- A fast emit or lightweight message, and optionally a bag-style ext/con, brings model-side work to about 45.\n- A fused phase C+D loop that keeps pyjevsim's real advantages could bring the kernel to about 70–80. Those advantages are: a state-table time advance with no timeAdvance frame, no time tuples, and no per-model input dict.\n- That gives about 115–125 versus 129.7, i.e. about 1.05–1.15x. But this compares a new opt-in path with pypdevs' standard API. It only helps models rewritten to that path, and pypdevs keeps its adaptive HS/ML scheduler.\n\nTwo caveats for the maintainer:\n- The bag-based deltext often credited for pypdevs' speed contributes nothing on this benchmark, because fan-in is exactly 1. The gap is about 45% message-object API, 35% scheduler bookkeeping and 19% executor wrapper.\n- pyjevsim's extra features cost only about 3% (about 9% including the wrapper), so the slowdown is not the price of its features.\n\nSupporting files are in C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/anatomy/:\n- icount.py, icount_HI10.txt, icount_LI10.txt (bytecode counts)\n- prof.py, prof_HI10.txt (fan-in histogram, scheduler choice, cProfile)\n- proto.py, proto_out.txt, proto2_out.txt (prototype ratios)\n- calib.py (per-operation ns costs)\n- fullkernel.py (shows the full kernel's SyntaxError on 3.14)\n\nNo repo files were modified."
+ },
+ "profile": {
+  "workloads": [
+   "HI 10x10, 100 seeds, period 1.0: 81,200 transitions; 1,000 instants; 40,700 outputs; 8,300 int-only, 8,200 ext-only, 32,400 con (every con bag holds exactly 1 message); 48,900 reschedules. Ratio pypdevs/pyjevsim from the harness (both engines in one process, --repeat 5): 1.46 unpinned (1.37M vs 1.99M tr/s). With the process pinned to P-cores: 1.37 and 1.35 (1.47M vs 2.02M tr/s). Phase-timer batch (12 runs, pinned): pyjevsim 687.9 vs pypdevs 490.7 ns/tr, ratio 1.40, gap 197 ns/tr. Timed runs: 693.4 vs 506.5 ns/tr, gap 186.9.",
+   "LI 10x10, 100 seeds: 16,400 transitions; 200 instants; 8,300 outputs, all on uncoupled ports; 8,300 int, 8,200 ext, 0 con. Harness ratio 1.35 unpinned, 1.35 pinned (1.26M vs 1.70M tr/s). Phase batch: 769.8 vs 582.5 ns/tr, ratio 1.32. Timed runs: 802.4 vs 586.1 ns/tr, gap 216.",
+   "HO 6x6, 100 seeds: 15,200 transitions; 600 instants; 7,700 outputs; 2,700 int, 2,600 ext, 5,000 con (all bags hold 1 message). Harness ratio 1.37 unpinned, 1.39-1.42 pinned (1.25M vs 1.75M tr/s). Phase batch: 768.8 vs 572.4 ns/tr, ratio 1.34. Timed runs: 821.4 vs 598.5 ns/tr, gap 223.",
+   "Control, large models (pinned harness, 10 seeds). At 30x30 (842 atomics) pypdevs is still faster: LI 1.51M vs 1.21M tr/s, HI 2.00M vs 1.45M. At 40x40 (1,522 atomics) pyjevsim is faster: LI 1.13M vs 0.76M, HI 1.32M vs 1.04M. The cause is a one-line pypdevs problem (`AtomicDEVS.ID += 1`, see caveats). With that line patched for diagnosis only, pypdevs runs 1.45M (LI) and 1.92M (HI) tr/s at 40x40, faster than pyjevsim again."
+  ],
+  "gap_breakdown": [
+   {
+    "category": "message/output construction (SysMessage + insert + get_name + insert_message, alloc and dealloc, vs pypdevs outputFnc returning {port:[0]})",
+    "pyjevsim_ns_per_tr": 106.7,
+    "pypdevs_ns_per_tr": 27.6,
+    "method": "Component micro on the real HI10 models (pj model output 213 ns/call, pd outputFnc 55 ns/call) x 0.501 outputs/tr. Cross-checked by in-situ subtraction: d4 (no message allocation) -80 to -88 ns/tr; d2 (standalone __slots__ message) -44 to -49; d3 (no helper calls) -18 to -26; d1 (__slots__ subclass of SysMessage) 0 to -12, i.e. slightly slower, because the base classes still have a __dict__.",
+    "note": "HI +79.2 ns/tr = 42% of the gap; LI +79.9 (37%); HO +80.0 (36%). This is the largest single cost. Experiment (e): SysMessage()+insert(0) costs 144 ns vs 44 ns for the pypdevs dict bag, so +100 ns per output = +50 ns/tr. A plain 5-attribute Python object already costs ~90 ns, a tuple ~29 ns. outer_probe shows 18 ns/tr of SysMessage deallocation lands in the per-instant 'outer' time."
+   },
+   {
+    "category": "transition dispatch: BehaviorExecutor wrapper frames for output/int/ext/con plus get_cancel_flag()",
+    "pyjevsim_ns_per_tr": 29.2,
+    "pypdevs_ns_per_tr": 0,
+    "method": "Micro per wrapper (output 13, int 16, ext 44 incl. get_cancel_flag, con 22 ns/call) x counts. In-situ: b2_no_wrap_all (kernel copy calls the BehaviorModel directly and reads the flag inline) -15 ns/tr on HI (best-of; paired median -15, IQR +2..+30), -28..-39 on LI, -10..-28 on HO. b1 (read the flag attribute instead of calling get_cancel_flag) is within noise: -5 to +9 ns/tr.",
+    "note": "HI +29 (16% of gap) by micro, +15 (7-8%) in-situ. LI +37 (17%). cProfile overstates this category about 2x (59 ns/tr scaled)."
+   },
+   {
+    "category": "con_trans default loop (BehaviorModel.con_trans: int_trans, then a per-message for-loop and an ext_trans call) vs pypdevs confTransition overhead",
+    "pyjevsim_ns_per_tr": 18,
+    "pypdevs_ns_per_tr": 8.9,
+    "method": "Micro: pj con_default minus int minus ext = 45 ns per con; pd conf minus int minus ext = 22 ns per con; x 0.399 con/tr",
+    "note": "+9.0 (5%) on HI, +7.5 on HO, 0 on LI (no con)."
+   },
+   {
+    "category": "model body (DEVStone ext/int bodies themselves)",
+    "pyjevsim_ns_per_tr": 85.9,
+    "pypdevs_ns_per_tr": 91.5,
+    "method": "Micro of the adapters' own methods: pj ext 104, int 68 ns; pd ext 130, int 53 ns; x counts",
+    "note": "-5.7 ns/tr: pyjevsim's model code is not the problem."
+   },
+   {
+    "category": "delivery/routing (pj phase B: (X,port) tuple key, get_dst(), port_map lookup, active check, bag append; pd: routing_outline loop, setdefault().extend, defaultdict ttype marking)",
+    "pyjevsim_ns_per_tr": 127.6,
+    "pypdevs_ns_per_tr": 165.2,
+    "method": "Phase timers (perf_counter_ns around each phase of a statement-for-statement split copy of each kernel's instant loop; timer overhead ~3 ns/tr). The pd value is the AB phase minus getImminent minus outputFnc (micro).",
+    "note": "-37.6 on HI, -40 on LI, -49 on HO: pyjevsim routes more cheaply, but pypdevs' figure includes its affected-set marking. pyjevsim builds that set in phase C (next row). Combined with the next row, pyjevsim is +38 ns/tr on HI (270 vs 232)."
+   },
+   {
+    "category": "per-instant bookkeeping: kernel loop residuals (phase A loop, phase C set(imminent) | set(influenced), bag_of lookups, membership tests) plus schedule()/simulate() loop and deallocation of per-instant lists, tuples and sets",
+    "pyjevsim_ns_per_tr": 142.8,
+    "pypdevs_ns_per_tr": 67.2,
+    "method": "Residual: phase time minus micro-attributed components, plus the measured 'outer' time (total minus phases). pj HI: A-loop 23.9 + C-loop 69.3 + outer 49.7 (outer drops by 18 when no SysMessage is allocated). pd: C residual (ttype dispatch, elapsed, my_input reset) 61.2 + outer 6.0.",
+    "note": "+75.6 on HI (40%), +87 on LI, +100 on HO. This is a residual, not one isolated mechanism. Roughly 4 us per instant in pyjevsim, mostly from building and freeing influenced_inputs {exec: [(port,msg)]}, outputs [(X, list)], and two sets per instant."
+   },
+   {
+    "category": "scheduling (pj pop_due + ScheduleQueue.reschedule_all/_reschedule + peek_time; pd SchedulerAuto, which switched HS->ML: linear-scan getImminent + massReschedule + readFirst, plus the timeAdvance()/time_next tuple/time_last statements in pd phase C)",
+    "pyjevsim_ns_per_tr": 183.3,
+    "pypdevs_ns_per_tr": 146,
+    "method": "Phase timers: pj pop_due 34.8 + D 143.9 + peek 4.5; pd getImminent 51.7 + D 45.7 + readFirst 1.4 + phase-C scheduling statements 47.2 (micro 78 ns x 0.602 reschedules/tr)",
+    "note": "+37 on HI (20%), +58 on LI (27%), +59 on HO (27%). In this dense workload pypdevs' polymorphic scheduler falls back to a linear list, about 240 ns per reschedule vs about 300 in pyjevsim's heapset."
+   },
+   {
+    "category": "GC",
+    "pyjevsim_ns_per_tr": 0,
+    "pypdevs_ns_per_tr": 0,
+    "method": "gc.disable() around simulate, in-situ, interleaved; gc.callbacks counting",
+    "note": "Exactly 1 collection per run in both engines. pj gc-off delta: +4.4 to +8.6 ns/tr best-of (2-4% of gap); paired medians -15..-3 (noise). pd: -23..+21 (noise). Already included in the rows above, so it is not added separately."
+   }
+  ],
+  "totals": "The gap on HI10 is 187-197 ns/tr: pyjevsim 688-693 vs pypdevs 491-507 ns/tr, ratio 1.37-1.40 pinned. The categories sum to the gap by construction, because the residual rows absorb whatever the micro-benchmarks miss. Five rows are tied to a specific mechanism: messages +79, wrappers +29, con loop +9, model body -6, scheduling +37. Together they explain +148 ns/tr (79%). The other +38 net is routing plus per-instant bookkeeping (-38 and +76): measured phase residuals, not one cause. LI10: messages +80, wrappers +37, scheduling +58, routing+bookkeeping +47, body -6, total 216. HO6: messages +80, wrappers +31, con +8, scheduling +59, routing+bookkeeping +51, body -6, total 223.\n\nSubtractive cross-check, in-situ on the pyjevsim side:\n- d4, no message allocation: 80-90 ns/tr (40-46% of the gap), the largest effect.\n- b2, no wrapper frames: 15-39 ns/tr.\n- GC off: 0-9 ns/tr.\n- c, bag path: 0 (every bag holds 1 message).\n- (e) message type: SysMessage costs about 100 ns more per output than the pypdevs dict, about 50 ns/tr.\n\nThese sum to about 100-120 ns/tr, about 55%. Applied together in one run (z_combined: flat __slots__ message, no wrappers, bag path, GC off), they saved 73-84 ns/tr (37-42%). That takes HI10 from 688 to about 615 ns/tr against pypdevs' 491, so pyjevsim would still be about 1.25x slower.\n\nUnexplained by any in-situ subtraction: about 90-110 ns/tr (45-55%). The phase timers place it in scheduling (+37..59) and per-instant containers and loops (+38..100 net). The tested opt-in levers do not remove it.\n\nHonest verdict: with the current public API (one SysMessage object per output, executor wrappers, per-message ext_trans, list-of-tuples bags), pyjevsim cannot beat the PythonPDEVS minimal kernel on DEVStone in a fair comparison (pinned, under pypdevs' 1000-atomic limit). With opt-in fast paths (tuple or __slots__ message, direct model dispatch, leaner per-instant containers, a scheduler path for dense instants), reaching about 0.85-1.0x of pypdevs is plausible, but only part of that has been measured. Beating it would mean being leaner than the in-repo reference engine, which is already at pypdevs speed, while keeping snapshot, HLA, dynamic structure and cancel_rescheduling. The only place pyjevsim wins today is models with more than about 1000 atomics, and only because of a one-line pypdevs problem.\n\nProfiler: pyjevsim makes 15.4 Python and builtin calls per transition vs 7.1 for pypdevs on HI (LI 19.9 vs 7.2, HO 16.7 vs 7.4). cProfile inflates pyjevsim 5.3x and pypdevs 3.9x, so I used the profiles only for call counts and shares.",
+  "gc_effect": "GC is not a factor. Both engines run exactly 1 collection per simulate() on every workload (counted with gc.callbacks). Disabling GC for pyjevsim saved +4.4 to +8.6 ns/tr best-of on HI10 (2-4% of the gap) and +4.4 on LI10; HO6 was within noise. Paired A/B medians were -15 to -3 ns/tr with IQRs of about +/-20, so the effect is indistinguishable from zero. For pypdevs, disabling GC changed -23 to +21 ns/tr (noise). Short-lived SysMessage objects do not trigger extra collections because net allocations stay below the young-generation threshold. Their cost is allocation and deallocation, not GC (see the message/output row).",
+  "per_message_vs_bag": "On HI fan-in in this flattened DEVStone adapter there is nothing to batch: every one of the 32,400 con bags and 8,200 ext bags holds exactly one message. The seed and chain messages never coincide (counted with probe_counts.py). Delivering each model's messages in one call (c_bag_path: kernel calls ext_bag(bag) once per receiver; DEVStone con_trans is int_trans + ext_bag) measured +0.2 ns/tr best-of across 3 processes, paired median -1.3 ns/tr (IQR -11..+29). That is 0% of the 197 ns/tr gap; LI was +/-0.4 and HO -24..+23 (noise). The per-message contract only costs something under real fan-in. With a phase-C loop micro (fanin_micro.py), per-message dispatch (wrapper + get_cancel_flag + kernel inner loop) costs more than one bag call by 28 ns/msg at k=1, 49 at k=2, 57 at k=4, 63 at k=8 and 70 at k=16. That is real for many-to-one models but irrelevant to these DEVStone results.",
+  "files": [
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/HI10_pyjevsim.prof",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/HI10_pypdevs.prof",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/LI10_pyjevsim.prof",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/LI10_pypdevs.prof",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/HO6_pyjevsim.prof",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/HO6_pypdevs.prof",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/HI10_pyjevsim_pstats.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/HI10_pypdevs_pstats.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/profile_categories.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/attribution.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/attribution.json",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/phase_summary.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/experiments_summary.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/paired_summary.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/micro_1.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/msg_micro.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/fanin_micro.json",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/counts.json",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/out/large_models_typecap.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/harness_ratio.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/harness_ratio_pinned.txt",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/split_kernels.py",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/experiments.py",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/paired.py",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/micro.py",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/attribution.py",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/profile_both.py",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/pin.py",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/verify_typever.py",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/dbg_ecore.py",
+   "C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/profile/typecap_large.py"
+  ],
+  "caveats": [
+   "Measurement artifact 1 (machine): an unpinned Python process on this Windows 11 i7-12700 slows to about half speed roughly 3 s after start, likely moved to an E-core or EcoQoS-throttled. dbg_ecore.py shows a pure micro loop going from 34 to 67-73 ns. All my figures come from processes pinned by pin.py, which only touches its own process: power throttling off and affinity set to the P-core mask 0xffff. The harness itself is not pinned. Short runs are mostly unaffected (pinned ratios 1.35-1.42 vs unpinned 1.35-1.46), but long in-process sweeps or many repeats are distorted, and that silently corrupted my first round of in-process experiments.",
+   "Measurement artifact 2 (pypdevs): minimal.AtomicDEVS.__init__ runs `AtomicDEVS.ID += 1`, rebinding a class attribute on every atomic. After about 1000 atomic instantiations in one process, CPython's per-class type-version cap is hit and pypdevs runs about 2x slower for the rest of the process. verify_typever.py shows 599 -> 1179 ns/tr; dbg_poison2.py shows the 13th HI10 build of one process. This is the same bug pyjevsim fixed in #41. Any multi-config or many-repeat pypdevs measurement in one process is pessimistic for pypdevs. I kept every process at 12 or fewer 83-atomic pypdevs builds. It is also the only reason pyjevsim beats stock pypdevs at 40x40 (1.27-1.48x); with the line patched for diagnosis only, pypdevs is faster again.",
+   "The machine is shared, so in-situ noise is large: per-variant spreads of +/-10-20 ns/tr between processes, paired-delta IQRs of +/-15-30. Deltas below about 15 ns/tr (cancel flag, individual wrappers, GC, bag path) cannot be resolved in-situ. For those I report the context-free micro-benchmarks (micro.py, best of 25, 2 runs averaged), which can be off by about 10-20% from in-situ cost.",
+   "The category table combines phase timers (in-situ, timer overhead about 3 ns/tr; split-kernel copies are within noise of the originals, 0-20 ns/tr) with micro x event counts inside each phase. Routing and per-instant bookkeeping are residuals and absorb any misfit, so the sum equals the measured gap by construction. Unexplained by mechanism-level evidence: about 38 ns/tr net on HI, about 47-51 on LI/HO.",
+   "Categories are not perfectly symmetric across engines. pypdevs builds its affected set during routing (defaultdict ttype marking) while pyjevsim builds it in phase C, so compare routing + per-instant bookkeeping combined (+38 HI, +47 LI, +51 HO). The pypdevs timeAdvance()/time_next statements in its phase C are counted as scheduling, to match pyjevsim's _reschedule.",
+   "cProfile inflation differs between engines: 5.3x for pyjevsim (15.4 calls/tr) vs 3.9x for pypdevs (7.1 calls/tr). Its proportionally scaled shares overstate pyjevsim's call-heavy categories about 2x (wrappers 59 ns/tr scaled vs 29 micro vs 15 in-situ; messages 149 scaled vs 107 micro). Profiles were used for call counts and qualitative shares only.",
+   "On these workloads pypdevs' SchedulerAuto switched from the heapset scheduler to SchedulerML, a linear scan of all models per instant, because nearly every model transitions every instant. Its scheduling advantage is specific to dense DEVStone instants and could reverse on sparse large models (not measured).",
+   "The bag-path result is specific to the flattened DEVStone adapters, where bag size is always 1. Models with real fan-in pay 28-70 ns per extra message under the per-message ext_trans contract (fanin_micro.py).",
+   "All variants are in-process monkeypatches of pyjevsim classes or of my phase-split kernel copy; nothing in the worktree or in the PythonPDEVS source was modified. Every variant asserted an identical transition count. The trace oracle was not run because no engine change is proposed for shipping. Any real opt-in fast path (tuple/__slots__ message, direct dispatch) must still pass trace_oracle.py --compare base_digest.json.",
+   "Verdict on the levers: only allocation-free messages (d4, an upper bound since messages are reused) and the __slots__ message (d2) are clearly above noise. Together with wrapper removal they leave pyjevsim about 1.25x slower than pypdevs on HI10 (z_combined measured). Parity would additionally need restructured per-instant containers and a dense-instant scheduler path, and I estimated those, not measured them."
+  ]
+ },
+ "ladder": {
+  "worktree": "D:/development/pyjevsim/.claude/worktrees/wf_90357b10-2d0-3",
+  "branch": "exp/pypdevs-ceiling",
+  "steps": [
+   {
+    "step": 0,
+    "name": "baseline (bench/cross-engine-2026-10 = main 8135542 + multi-event harness)",
+    "commit": "56eacd6",
+    "kind": "measurement-only",
+    "change": "No change. Reference measurement; the run used 3 passes of the official harness (--events 100 --period 1.0 --repeat 5, pyjevsim and pypdevs in one process) and kept the best cell per engine.",
+    "tests": "191 passed, 3 skipped; oracle RESULT: PASS",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10",
+      "pyjevsim_tr_s": 1494083,
+      "pypdevs_tr_s": 2046268,
+      "ratio": 0.73
+     },
+     {
+      "config": "LI 10x10",
+      "pyjevsim_tr_s": 1284099,
+      "pypdevs_tr_s": 1718015,
+      "ratio": 0.747
+     },
+     {
+      "config": "HO 6x6",
+      "pyjevsim_tr_s": 1242378,
+      "pypdevs_tr_s": 1768985,
+      "ratio": 0.702
+     }
+    ],
+    "note": "Consolidated final run, interleaved with the other configurations: 0.720 / 0.735 / 0.704."
+   },
+   {
+    "step": 1,
+    "name": "direct model dispatch + direct cancel-flag read",
+    "commit": "59f8626",
+    "kind": "api-preserving",
+    "change": "BehaviorExecutor sets _model_fast = model when output/int_trans/ext_trans/con_trans are its plain forwarding wrappers (subclasses that override any of them, such as HLAExecutor, keep None; the Executor class default is None). _run_instant calls the model directly and copies the cancel flag exactly as the wrappers do. The wrappers read bm._cancel_reschedule_f instead of calling get_cancel_flag(). The suggested 'bind bound methods on the executor at construction' was tried first and rejected: the oracle failed 11 scenarios because model-class patches applied after registration were no longer seen. The call-time lookup keeps them visible.",
+    "tests": "191 passed, 3 skipped; oracle RESULT: PASS (bound-method variant: FAIL, 11 scenarios)",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10",
+      "pyjevsim_tr_s": 1490365,
+      "pypdevs_tr_s": 2026863,
+      "ratio": 0.735
+     },
+     {
+      "config": "LI 10x10",
+      "pyjevsim_tr_s": 1349406,
+      "pypdevs_tr_s": 1754536,
+      "ratio": 0.769
+     },
+     {
+      "config": "HO 6x6",
+      "pyjevsim_tr_s": 1319525,
+      "pypdevs_tr_s": 1755845,
+      "ratio": 0.752
+     }
+    ],
+    "note": "Small gain (+0.01 to +0.05). On CPython 3.14, Python-to-Python calls are cheap, so dropping a frame buys little."
+   },
+   {
+    "step": 2,
+    "name": "C-level insert_message + direct _dst read",
+    "commit": "5609800",
+    "kind": "api-preserving",
+    "change": "_run_instant shadows insert_message on its per-instant MessageDeliverer with the current list's append, rebinding it whenever a fresh list is installed or output() replaces data_list. Phase B reads msg._dst for exact SysMessage instances and calls get_dst() for everything else. SysMessage __slots__ was rejected: SystemObject has a __dict__, and slotting it would break loading existing .simx snapshots (the object id is stored in __dict__).",
+    "tests": "191 passed, 3 skipped; oracle RESULT: PASS",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10",
+      "pyjevsim_tr_s": 1506264,
+      "pypdevs_tr_s": 2032953,
+      "ratio": 0.741
+     },
+     {
+      "config": "LI 10x10",
+      "pyjevsim_tr_s": 1305088,
+      "pypdevs_tr_s": 1728190,
+      "ratio": 0.755
+     },
+     {
+      "config": "HO 6x6",
+      "pyjevsim_tr_s": 1295293,
+      "pypdevs_tr_s": 1803491,
+      "ratio": 0.718
+     }
+    ],
+    "note": "Within noise (about +/-0.03 at 10-60 ms per run). Microbenchmarks show SysMessage() itself costs about 108 ns, and the engine cannot touch that."
+   },
+   {
+    "step": 3,
+    "name": "no imminent/affected sets in _run_instant",
+    "commit": "ea8c195",
+    "kind": "api-preserving",
+    "change": "Phase C walks the imminent list and takes each model's bag out of influenced_inputs (con_trans if it had one, int_trans otherwise), then walks the receivers left in influenced_inputs (ext_trans). Phase D reschedules both groups. set(imminent) and the union are gone. pop_due de-duplicates only when it merged more than one bucket, which covers the shared-obj_id case.",
+    "tests": "191 passed, 3 skipped; oracle RESULT: PASS (verdict scenarios MATCH; the order-sensitive informational scenarios bank_raw and mwmsim_433sbh now INFO-DIFF because the order among models of one instant changed from set order to imminent-then-receiver order)",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10",
+      "pyjevsim_tr_s": 1484013,
+      "pypdevs_tr_s": 1938216,
+      "ratio": 0.766
+     },
+     {
+      "config": "LI 10x10",
+      "pyjevsim_tr_s": 1359056,
+      "pypdevs_tr_s": 1670061,
+      "ratio": 0.814
+     },
+     {
+      "config": "HO 6x6",
+      "pyjevsim_tr_s": 1327476,
+      "pypdevs_tr_s": 1691916,
+      "ratio": 0.785
+     }
+    ],
+    "note": "Low-noise A/B (subprocess-interleaved, 300 to 1000 events) against the baseline: HI 0.719 to 0.778, LI 0.678 to 0.754."
+   },
+   {
+    "step": 4,
+    "name": "inline BehaviorExecutor._reschedule in reschedule_all (then reverted)",
+    "commit": "b827b24 (inline), 491d38d (revert)",
+    "kind": "api-preserving",
+    "change": "Inlined the fused _reschedule body for executors whose class resolves _reschedule to BehaviorExecutor._reschedule, checked per call. A/B showed no gain: LI 10x10 at 1000 events gave 0.761 for step 3, 0.762 for always-inline and 0.764 for type-checked inline. Reverted. The 'skip churn when the time is unchanged' idea was also dropped: pop_due already removes reverse entries, and keeping them stale would change len()/bool() and break test_pop_due_matches_peek_and_pop_all_at_loop.",
+    "tests": "inline: 191 passed, 3 skipped; oracle PASS",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10",
+      "pyjevsim_tr_s": 1468957,
+      "pypdevs_tr_s": 1998799,
+      "ratio": 0.735
+     },
+     {
+      "config": "LI 10x10",
+      "pyjevsim_tr_s": 1451713,
+      "pypdevs_tr_s": 1751089,
+      "ratio": 0.829
+     },
+     {
+      "config": "HO 6x6",
+      "pyjevsim_tr_s": 1365359,
+      "pypdevs_tr_s": 1813193,
+      "ratio": 0.753
+     }
+    ],
+    "note": "Neutral. Phase D's cost is the queue's dict and set operations (about 220 ns per executor in a microbenchmark), not the call frame. After the revert the code equals step 3."
+   },
+   {
+    "step": 5,
+    "name": "uncoupled-port fast path + one dict op per popped executor (added from the profile)",
+    "commit": "4a9969c",
+    "kind": "api-preserving",
+    "change": "In phase B, an output on an uncoupled port with track_uncaught off is now dropped right away. Before, it paid for the _destinations_for call and a second port_map lookup. This hits every LI atomic's output and the HO chain tails. pop_due takes each reverse entry with a single pop and puts it back only if it points at another time (shared obj_id).",
+    "tests": "191 passed, 3 skipped; oracle RESULT: PASS",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10",
+      "pyjevsim_tr_s": 1595959,
+      "pypdevs_tr_s": 2039212,
+      "ratio": 0.783
+     },
+     {
+      "config": "LI 10x10",
+      "pyjevsim_tr_s": 1518842,
+      "pypdevs_tr_s": 1696125,
+      "ratio": 0.895
+     },
+     {
+      "config": "HO 6x6",
+      "pyjevsim_tr_s": 1413967,
+      "pypdevs_tr_s": 1780172,
+      "ratio": 0.794
+     }
+    ],
+    "note": "A/B against step 3: LI 0.760 to 0.800, HI 0.776 to 0.793."
+   },
+   {
+    "step": 6,
+    "name": "GC tuning inside the benchmark only",
+    "commit": "7b4d783",
+    "kind": "measurement-only",
+    "change": "PYJEVSIM_BENCH_GC=freeze|off|threshold wraps the pyjevsim runner's simulate call; sim_s now starts inside that context, so collect() and freeze() are not timed. A gc.callbacks probe counted 0 collections during the pyjevsim HI 10x10, LI 10x10 and HO 6x6 runs, and 1 collection (0.17 ms) for pypdevs on HO. Messages are freed by refcount, so the young generation never fills.",
+    "tests": "no engine change (pytest and oracle unchanged from step 5)",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10 gc=default",
+      "pyjevsim_tr_s": 1577587,
+      "pypdevs_tr_s": 2051246,
+      "ratio": 0.769
+     },
+     {
+      "config": "LI 10x10 gc=default",
+      "pyjevsim_tr_s": 1471261,
+      "pypdevs_tr_s": 1661264,
+      "ratio": 0.886
+     },
+     {
+      "config": "HO 6x6 gc=default",
+      "pyjevsim_tr_s": 1385635,
+      "pypdevs_tr_s": 1775846,
+      "ratio": 0.78
+     },
+     {
+      "config": "HI 10x10 gc=off",
+      "pyjevsim_tr_s": 1584913,
+      "pypdevs_tr_s": 1996293,
+      "ratio": 0.794
+     },
+     {
+      "config": "LI 10x10 gc=off",
+      "pyjevsim_tr_s": 1538591,
+      "pypdevs_tr_s": 1772609,
+      "ratio": 0.868
+     },
+     {
+      "config": "HO 6x6 gc=off",
+      "pyjevsim_tr_s": 1392847,
+      "pypdevs_tr_s": 1709382,
+      "ratio": 0.815
+     },
+     {
+      "config": "HI 10x10 gc=freeze",
+      "pyjevsim_tr_s": 1592616,
+      "pypdevs_tr_s": 2031539,
+      "ratio": 0.784
+     },
+     {
+      "config": "LI 10x10 gc=freeze",
+      "pyjevsim_tr_s": 1472450,
+      "pypdevs_tr_s": 1725317,
+      "ratio": 0.853
+     },
+     {
+      "config": "HO 6x6 gc=freeze",
+      "pyjevsim_tr_s": 1382296,
+      "pypdevs_tr_s": 1781069,
+      "ratio": 0.776
+     }
+    ],
+    "note": "GC costs nothing measurable here (2 passes per mode; gc=threshold gave 0.793 / 0.874 / 0.782). An engine-level GC default (freeze/disable/threshold) is not warranted, and it would not be acceptable anyway: it is a process-wide side effect on the user's program."
+   },
+   {
+    "step": 7,
+    "name": "opt-in ext_trans_bag",
+    "commit": "a85d315",
+    "kind": "opt-in-api",
+    "change": "BehaviorModel.ext_trans_bag defaults to None. A subclass that defines ext_trans_bag(bag) gets all (port, msg) pairs of an instant in one call from _run_instant. The default con_trans passes its bag to ext_trans_bag after int_trans. BehaviorExecutor.ext_trans, used by decorated and legacy paths, passes one-element bags. Added DEVStoneAtomicBag, selected with PYJEVSIM_BENCH_ATOMIC=bag. New tests: tests/test_ext_trans_bag.py (4).",
+    "tests": "195 passed, 3 skipped; oracle RESULT: PASS",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10 (bag atomic)",
+      "pyjevsim_tr_s": 1510914,
+      "pypdevs_tr_s": 2060291,
+      "ratio": 0.733
+     },
+     {
+      "config": "LI 10x10 (bag atomic)",
+      "pyjevsim_tr_s": 1465712,
+      "pypdevs_tr_s": 1766042,
+      "ratio": 0.83
+     },
+     {
+      "config": "HO 6x6 (bag atomic)",
+      "pyjevsim_tr_s": 1378835,
+      "pypdevs_tr_s": 1757693,
+      "ratio": 0.784
+     }
+    ],
+    "note": "No gain, slightly negative: each DEVStone atomic receives one message per instant, so there is no per-message call to save. A/B HI: default atomic 0.774, bag atomic 0.732. The default con_trans now does one extra attribute lookup (under 1%)."
+   },
+   {
+    "step": 8,
+    "name": "opt-in MessageDeliverer.emit + slotted SlimMessage",
+    "commit": "32da068",
+    "kind": "opt-in-api",
+    "change": "emit(port, value, src='') appends a SlimMessage. SlimMessage has __slots__, no SystemObject id and no __dict__, but offers SysMessage's read API (retrieve/get_src/get_dst/get_msg_time/insert/extend), so every receiver works unchanged. Phase B reads _dst directly for it. The default SysMessage path is untouched. Added DEVStoneAtomicEmit and DEVStoneAtomicBagEmit. New tests: tests/test_emit.py (3, including a dill round-trip).",
+    "tests": "198 passed, 3 skipped; oracle RESULT: PASS",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10 (emit atomic)",
+      "pyjevsim_tr_s": 1688750,
+      "pypdevs_tr_s": 2066095,
+      "ratio": 0.817
+     },
+     {
+      "config": "LI 10x10 (emit atomic)",
+      "pyjevsim_tr_s": 1579444,
+      "pypdevs_tr_s": 1753354,
+      "ratio": 0.901
+     },
+     {
+      "config": "HO 6x6 (emit atomic)",
+      "pyjevsim_tr_s": 1456399,
+      "pypdevs_tr_s": 1830531,
+      "ratio": 0.796
+     },
+     {
+      "config": "HI 10x10 (default atomic)",
+      "pyjevsim_tr_s": 1590800,
+      "pypdevs_tr_s": 2044737,
+      "ratio": 0.778
+     },
+     {
+      "config": "LI 10x10 (default atomic)",
+      "pyjevsim_tr_s": 1489947,
+      "pypdevs_tr_s": 1717367,
+      "ratio": 0.868
+     },
+     {
+      "config": "HO 6x6 (default atomic)",
+      "pyjevsim_tr_s": 1400534,
+      "pypdevs_tr_s": 1765779,
+      "ratio": 0.793
+     }
+    ],
+    "note": "+0.03 to +0.04 over the default atomic. emit costs about 125 ns per output against about 200 ns for the SysMessage path and 63 ns for pypdevs's dict. A slotted Python object costs about 80 ns to build, so emit cannot get much cheaper. bag+emit measured 0.806 / 0.875 / 0.776."
+   },
+   {
+    "step": 9,
+    "name": "bucket cache in reschedule_all (added from the profile)",
+    "commit": "d2b28d2",
+    "kind": "api-preserving",
+    "change": "reschedule_all keeps the last bucket it looked up on the remove side and on the add side, and compares floats instead of repeating the dict lookup. Executors of one instant mostly move between the instant and Infinite. Buckets are never deleted inside this loop, so the cache is safe. Microbenchmark (81 executors flipping between Infinite and t): 219 ns to 189 ns per executor.",
+    "tests": "198 passed, 3 skipped; oracle RESULT: PASS",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10 (default atomic)",
+      "pyjevsim_tr_s": 1599171,
+      "pypdevs_tr_s": 2025594,
+      "ratio": 0.789
+     },
+     {
+      "config": "LI 10x10 (default atomic)",
+      "pyjevsim_tr_s": 1557277,
+      "pypdevs_tr_s": 1729940,
+      "ratio": 0.9
+     },
+     {
+      "config": "HO 6x6 (default atomic)",
+      "pyjevsim_tr_s": 1419831,
+      "pypdevs_tr_s": 1769190,
+      "ratio": 0.803
+     },
+     {
+      "config": "HI 10x10 (emit atomic)",
+      "pyjevsim_tr_s": 1700705,
+      "pypdevs_tr_s": 2049630,
+      "ratio": 0.83
+     },
+     {
+      "config": "LI 10x10 (emit atomic)",
+      "pyjevsim_tr_s": 1669738,
+      "pypdevs_tr_s": 1767641,
+      "ratio": 0.945
+     },
+     {
+      "config": "HO 6x6 (emit atomic)",
+      "pyjevsim_tr_s": 1504459,
+      "pypdevs_tr_s": 1807652,
+      "ratio": 0.832
+     }
+    ],
+    "note": "This is the best API-preserving stack. Consolidated final run (all configurations interleaved, 3 passes): default atomic 0.814 / 0.915 / 0.774; emit atomic 0.816 / 0.944 / 0.821."
+   },
+   {
+    "step": 10,
+    "name": "opt-in DenseScheduleQueue (SysExecutor(scheduler='dense'))",
+    "commit": "703c69a",
+    "kind": "opt-in-api",
+    "change": "A linear-scan future-event list in the style of PythonPDEVS's minimal-list scheduler: an executor-to-time dict plus a cached minimum. pop_due scans every entry and returns at once when the minimum lies in the future. Rescheduling is one dict store and a comparison. The default stays the heap-set ScheduleQueue; an invalid scheduler name raises ValueError. The DEVStone adapter reads PYJEVSIM_BENCH_SCHEDULER. New tests: tests/test_dense_schedule_queue.py (23, including 20 seeded random-operation equivalence runs against ScheduleQueue). As a check, dense was forced as the default: the full suite (198) and every oracle verdict scenario still passed.",
+    "tests": "221 passed, 3 skipped; oracle RESULT: PASS (default heapset); dense forced as default: 198 passed and oracle PASS",
+    "oracle_identical": true,
+    "ratio_vs_pypdevs": [
+     {
+      "config": "HI 10x10 (dense + emit)",
+      "pyjevsim_tr_s": 1724229,
+      "pypdevs_tr_s": 2024413,
+      "ratio": 0.852
+     },
+     {
+      "config": "LI 10x10 (dense + emit)",
+      "pyjevsim_tr_s": 1662157,
+      "pypdevs_tr_s": 1713832,
+      "ratio": 0.97
+     },
+     {
+      "config": "HO 6x6 (dense + emit)",
+      "pyjevsim_tr_s": 1537714,
+      "pypdevs_tr_s": 1779005,
+      "ratio": 0.864
+     },
+     {
+      "config": "HI 10x10 (dense, default atomic)",
+      "pyjevsim_tr_s": 1647390,
+      "pypdevs_tr_s": 2033330,
+      "ratio": 0.81
+     },
+     {
+      "config": "LI 10x10 (dense, default atomic)",
+      "pyjevsim_tr_s": 1599938,
+      "pypdevs_tr_s": 1722544,
+      "ratio": 0.929
+     },
+     {
+      "config": "HO 6x6 (dense, default atomic)",
+      "pyjevsim_tr_s": 1476373,
+      "pypdevs_tr_s": 1738295,
+      "ratio": 0.849
+     }
+    ],
+    "note": "Gives +0.02 to +0.05 on DEVStone but collapses with idle models. Generator-to-sink plus N idle models, dense/heapset throughput: 1.09 at N=0, 0.56 at N=100, 0.11 at N=1000. It must stay opt-in unless an adaptive switch (like pypdevs's SchedulerAuto) is added. Consolidated final run, dense + emit: 0.844 / 0.966 / 0.864."
+   }
+  ],
+  "best_api_preserving_ratio": "0.77-0.92x PythonPDEVS-minimal. Consolidated final run, step 9 stack with the default atomic: HI 10x10 0.814, LI 10x10 0.915, HO 6x6 0.774 (the per-step run gave 0.789 / 0.900 / 0.803). The baseline in the same batch was 0.720 / 0.735 / 0.704, so the default API got 10-25% faster, but it does not catch up.",
+  "best_with_opt_in_ratio": "0.84-0.97x. Consolidated final run with emit + SysExecutor(scheduler='dense'): HI 10x10 0.844, LI 10x10 0.966, HO 6x6 0.864 (the per-step run gave 0.852 / 0.970 / 0.864). LI comes close to parity, but no configuration passes pypdevs.",
+  "what_remains": "Honest verdict: no. Without breaking the API, pyjevsim does not pass the PythonPDEVS minimal kernel on DEVStone. API-preserving changes reach about 0.8-0.9x; opt-in fast paths reach about 0.85-0.97x. The gap is spread over many small Python operations, so there is no single fix left to make.\n\nEvidence from profiling the final stack:\n\n1. Per-phase probe, HI 10x10 at 300 events, default API: 649 ns per transition. Phase A (output) 152, phase B (routing) 121, phase C (transitions) 161, phase D (reschedule) 136, and 76 outside the phases (pop_due plus per-instant loop). pypdevs-minimal runs at about 495-510 ns per transition (1.97-2.02M tr/s). On HO 6x6 the per-instant overhead counts for more: 776 ns per transition, with D at 175 and 120 outside the phases.\n\n2. Message objects and the model API cost about half the gap. With no engine involved, a pyjevsim output() costs 211 ns (SysMessage() 108 ns, insert 36 ns, plus get_name and insert_message); pypdevs's outputFnc dict costs 63 ns. A full ext+output+int model cycle costs 409 ns against 316 ns. The opt-in emit/SlimMessage brings output to about 125 ns. That is close to the floor, because a slotted Python object costs about 80 ns to build; a plain tuple costs 33 ns.\n\n3. The future-event list costs the other half. The heap-set reverse map plus buckets costs about 190 ns per rescheduled executor after step 9, and about 58 ns per popped executor. On these dense workloads pypdevs switches to its minimal-list scheduler, whose cost is a few tuple comparisons per model per instant. The opt-in dense queue cuts LI phase D from 205 to 163 ns per transition but adds about 25 ns of scan. What remains is BehaviorExecutor._reschedule's own bookkeeping: model.global_time, executor.global_time, request_time, _next_event_t and two cancel flags, about 65-80 ns. That bookkeeping is a semantic feature, not waste.\n\n4. GC is not a factor: 0 collections during the pyjevsim runs. Frame elimination is not a lever either: inlining _reschedule was neutral, and the executor-wrapper bypass gave about 0.01-0.05.\n\n5. With dense + emit (HI, 605 ns per transition) the remaining cost is even across phases: A 117, B 124, C 163, D 104, other 96. In cProfile the _run_instant body itself costs about the same as pypdevs's simulate() loop (0.055 s vs 0.058 s tottime). The difference is entirely the auxiliary per-message and per-transition calls.\n\nPassing pypdevs would take a pypdevs-minimal-style kernel. That means no per-message objects (plain dict or tuple outputs handed to receivers), no per-transition global_time/request_time/cancel bookkeeping, no active_obj_map check for destroyed models, and an adaptive scheduler. That gives up exactly the features pyjevsim adds: snapshot/restore hooks, cancel_rescheduling, HLA, R_TIME, dynamic creation and destruction. The in-repo flat reference engine runs at about pypdevs speed, which suggests such a kernel would only reach parity, not a large win; compiled code (Cython/mypyc) or another interpreter would be needed beyond that, and none was measured here.\n\nContext: PythonPDEVS's full kernel does not even import on CPython 3.14 (SyntaxError on 'async' at pypdevs/controller.py line 551). So on 3.14 'PythonPDEVS' in practice means the stripped minimal kernel.",
+  "shippable": [
+   "step1 59f8626: direct model dispatch via _model_fast plus direct cancel-flag read (api-preserving; tests and oracle pass). Caveat: patching BehaviorExecutor.output/int_trans/ext_trans/con_trans on the class after an executor is built is no longer seen, the same caveat the fused _reschedule already documents. Patches to model classes are still seen.",
+   "step2 5609800: C-level insert_message per instant plus direct _dst read for exact SysMessage (api-preserving).",
+   "step3 ea8c195: no imminent/affected sets (api-preserving; verdict oracle scenarios identical). Note for the changelog: the processing order among models of one instant changes from set order to imminent-then-receiver order, which the oracle's order-sensitive informational scenarios (bank_raw, mwmsim) detect.",
+   "step5 4a9969c: uncoupled-port fast path and one dict op per popped executor (api-preserving).",
+   "step9 d2b28d2: bucket cache in reschedule_all (api-preserving).",
+   "step8 32da068: opt-in MessageDeliverer.emit / SlimMessage (default path unchanged; +0.03-0.04 on DEVStone).",
+   "step10 703c69a: opt-in SysExecutor(scheduler='dense') / DenseScheduleQueue, shippable only as an opt-in with its trade-off documented (0.11x of heap-set throughput with 1000 idle models); not as a default without an adaptive switch."
+  ],
+  "not_shippable": [
+   "step4 b827b24 / 491d38d: inlining _reschedule into reschedule_all was neutral and is reverted; nothing to ship.",
+   "step6 7b4d783: GC modes are benchmark-only measurement tooling. No engine-level GC default is warranted (0 collections were observed), and a process-wide gc.freeze/disable would be an unacceptable side effect on user programs.",
+   "step7 a85d315: ext_trans_bag passes tests and the oracle, so it could ship as an API feature, but not as a performance step: no gain on DEVStone (one message per atomic per instant), slightly slower with the bag atomic, and the default con_trans gains one attribute lookup. Recommend shipping it only if bag semantics are wanted for fan-in-heavy models.",
+   "Rejected before commit: binding the model's bound methods on executors at construction (oracle FAIL in 11 scenarios: class patches applied after registration were lost), __slots__ on SysMessage/SystemObject (would break loading existing snapshots), keeping stale reverse entries in pop_due (changes len()/bool() and breaks test_pop_due_matches_peek_and_pop_all_at_loop)."
+  ]
+ },
+ "verify": {
+  "refuted": [
+   {
+    "claim": "Ladder step 2 (5609800, C-level insert_message shadow) is api-preserving with no behaviour change",
+    "why": "_run_instant sets md.insert_message = lst.append before calling output(). If a model's output() assigns a new md.data_list and then calls md.insert_message(), the message goes into the old list and is silently dropped. On baseline it is delivered. The oracle does not cover this pattern.",
+    "evidence": "review/edge/edge_cases.py: an emitter whose output() does `md.data_list = []` and then `md.insert_message(m)`. The sink receives [[1]] on 56eacd6 and 59f8626, and [] on 5609800 and 703c69a."
+   },
+   {
+    "claim": "Ladder step 7 (a85d315, opt-in ext_trans_bag) leaves default behaviour unchanged",
+    "why": "The opt-in is detected by attribute name. Any existing user model that already defines a method or attribute called ext_trans_bag (for any purpose) now has the engine call it instead of ext_trans.",
+    "evidence": "Same edge script: a Sink with its own helper `ext_trans_bag(self, bag)`. The sink gets [[1]] on 56eacd6 and 5609800, and [('helper', 1)] on 703c69a (its ext_trans was never called)."
+   },
+   {
+    "claim": "The api-preserving ladder (steps 1-9) is a net speed-up, shippable as a performance change",
+    "why": "Every step was tuned and checked only on dense DEVStone instants. On the repo's own sparse benchmark (generator to sink, 2 transitions per instant) the final stack is about 10% slower than baseline in absolute throughput, and the ratio against pypdevs gets worse. The losses build up step by step: step 3 adds a second reschedule_all call and extra branches, step 5 adds pop_due bookkeeping, steps 7-9 add per-call lookups and cache setup.",
+    "evidence": "run_sparse --period 10 --count 20000 --repeat 5, pinned, interleaved by commit, 4 rounds. pj/pd ratio: 56eacd6 0.693/0.628/0.671/0.672; 5609800 0.684/0.646/0.632/0.642; ea8c195 0.647/0.631/0.663/0.637; 4a9969c 0.639/0.624/0.622/0.623; 703c69a 0.588/0.593/0.584/0.614. Unpinned, base vs final: about 685-700k vs 619-626k tr/s, with pypdevs steady at about 1.03M."
+   },
+   {
+    "claim": "Anatomy: the realistic api-preserving ceiling is about 0.85-0.9x (0.83-0.87x in time) of pypdevs minimal",
+    "why": "This was too optimistic for HI and HO. The bytecode-share model overweights frames: removing a frame costs little on CPython 3.14.",
+    "evidence": "My interleaved runs of the final default stack: HI 10x10 median 0.797 unpinned and 0.799 pinned; HO 6x6 0.794 (best cell 0.771). Only LI reaches the range (0.89-0.905)."
+   },
+   {
+    "claim": "Anatomy: the executor wrapper is about 19% of the gap and scheduler bookkeeping about 35%, so a type-exact fast path plus scheduler work recovers about 25-30 bytecodes per transition",
+    "why": "Bytecode shares are not time shares. Measured gains were much smaller. The wrapper bypass was worth about 15 ns/tr in-situ (8%), and the ladder's step 1 gave +0.005 to +0.05. Inlining _reschedule was neutral. The bucket cache plus the dense scheduler gave only +0.02 to +0.05.",
+    "evidence": "Profile in-situ b2_no_wrap_all: -15 ns/tr on HI. Ladder steps 1, 4, 9 and 10. My measurements match the ladder: HI final 0.80 against base 0.72."
+   },
+   {
+    "claim": "Ladder: oracle_identical = true for step 3 (behaviour identical)",
+    "why": "The verdict scenarios match, but the order of processing within one instant changed, and that changes real example outcomes. bank_raw produces a different number of event groups, and in mwmsim a payload's state changes because receivers mutate shared by-reference payloads in a different order. The ladder disclosed this, and the old order was unspecified set order anyway, so it is a documented semantic change rather than an identical result.",
+    "evidence": "My oracle --compare on 703c69a: RESULT: PASS, exit 0, but INFO-DIFF bank_raw 'groups 9552 vs 9555, events 79305 vs 79314' and INFO-DIFF mwmsim_433sbh, where the payload's prev_time differs (15.587 vs 17.312)."
+   },
+   {
+    "claim": "Profile: GC runs exactly 1 collection per simulate() in both engines",
+    "why": "This contradicts the ladder's gc.callbacks probe (0 collections for pyjevsim, 1 for pypdevs on HO only). The difference probably comes from where the timed region starts. Both reports agree that GC does not matter, so it has no effect on the verdict.",
+    "evidence": "Profile gc_effect versus ladder step 6 note. Not re-measured, because it does not affect the verdict."
+   }
+  ],
+  "upheld": [
+   "Baseline reproduces. Base 56eacd6 against pypdevs minimal, my interleaved runs (5 processes x --repeat 5), median per-process ratio: HI 10x10 0.713 unpinned / 0.722 pinned; LI 10x10 0.751 / 0.760; HO 6x6 0.719.",
+   "The ladder's measured numbers reproduce within noise. Final 703c69a with the default atomic: HI 0.797 / 0.799, LI 0.890 / 0.905, HO 0.794. Final with emit + dense: HI 0.840 / 0.861, LI 0.978 / 0.969, HO 0.876 (best cell 0.908). No configuration beats pypdevs minimal.",
+   "At 703c69a: 221 tests passed, 3 skipped. Trace oracle RESULT: PASS, exit 0, all verdict scenarios MATCH (snapshot_restore, hla_*, tests_confluent, tests_cancel_rescheduling, entity_destruction, structural).",
+   "Executor routing in step 1 is safe for the decorated executors. SnapshotExecutor and StructuralExecutor derive from Executor, whose class default is _model_fast = None, and there is no __getattr__ delegation, so they keep the slow path. HLAExecutor overrides output, so the identity check leaves it None. HLAExecutor.output builds its own MessageDeliverer, so the step-2 shadow does not affect it.",
+   "Fan-in is exactly 1 in this flattened DEVStone, so a bag-style ext_trans gains nothing here. Anatomy, profile and ladder step 7 agree.",
+   "The message/output API (SysMessage per output, get_name, insert, insert_message) is the largest single cost, about 40-45% of the gap. The opt-in emit/SlimMessage recovers only about 0.03-0.05, because a slotted Python object still costs about 80 ns to build.",
+   "The gap is a roughly constant additive kernel cost of about 0.15-0.2 µs per transition, and model work dilutes it. Measured ratio: about 0.90-0.97 with 50 burn cycles (base and final both, noisy); about 0.94-0.99 with 500 cycles.",
+   "Large models are an artefact. minimal.py line 67 `AtomicDEVS.ID += 1` rebinds a class attribute on every atomic, and repeated pypdevs builds in one process degrade. Single-build 30x30 runs show pypdevs still ahead: LI base 0.78-0.82, final 0.95-0.975; HI base 0.68-0.74, final 0.74-0.82.",
+   "Full PythonPDEVS is slower than pyjevsim. The anatomy only inferred this from code; I measured it on a scratch copy with two Python 3 compatibility fixes: the `async` identifier renamed in controller.py, and the exec-based scheduler import in DEVS.setScheduler replaced with importlib. HI 10x10 at 100 events: about 600k tr/s at defaults (pickle message copy) and about 980k with setMessageCopy('none'). LI: about 380k / 540k. pyjevsim base runs about 1.40-1.44M on HI, so it is about 2.3x faster than full pypdevs at defaults and about 1.45x faster with copy off.",
+   "The in-repo reference flat Python kernel sits at about 0.91-1.06x pypdevs minimal (my medians: HI 0.91-0.99, LI 0.96-1.00, HO 0.97-1.06). That supports the reports' claim that a stripped flat kernel reaches about parity, not a clear lead. pyjevsim with emit + dense on LI (0.97) is already at reference-engine speed.",
+   "Step 9's bucket cache and step 5's pop_due change read as semantically equivalent. Buckets are never deleted inside reschedule_all. The newly created bucket case where new_t equals the cached del_t is handled. pop_due removes duplicates only when it merged more than one bucket, and the step path (pop_all_at) returns a single set.",
+   "Step 10 DenseScheduleQueue must stay opt-in. The ladder reports throughput falling to 0.11x of heap-set with 1000 idle models. I did not re-measure that; the design (a full scan on every due instant) makes it plausible."
+  ],
+  "own_measurements": "All files are under C:/Users/cbchoi/AppData/Local/Temp/claude/D--development-pyjevsim--claude-worktrees-kind-bardeen-27583d/81ea6720-1e88-4770-a698-48baacc3c2eb/scratchpad/xengine/ceiling/review/ (driver drive.py, drive_nopin.json, drive_pin.json, sparse_bisect.txt, extra_cfg.txt, ladder_final.json, edge/edge_cases.py, fullpd_bench.py, plus fullpd/ as a patched copy of PythonPDEVS). Each commit was exported with git archive into review/co/<sha>; neither worktree was modified.\n\n(1) Correctness at the ladder's final commit 703c69a: pytest 221 passed, 3 skipped. Oracle RESULT: PASS, exit 0. The two order-sensitive informational scenarios differ (INFO-DIFF): bank_raw (9552 vs 9555 groups) and mwmsim.\n\n(2) Official harness: --events 100 --period 1.0 --repeat 5, pyjevsim, pypdevs and reference in one process, each variant in its own process, round-robin over base / final / final+emit+dense. Each cell shows the median of the per-process pj/pd ratios, with the best-cell ratio in brackets.\n- Unpinned, 5 rounds:\n  - HI 10x10: base 0.713 [0.711], final 0.797 [0.783], emit+dense 0.840 [0.840]\n  - LI 10x10: base 0.751 [0.732], final 0.890 [0.901], emit+dense 0.978 [0.973]\n  - HO 6x6: base 0.719, final 0.794 [0.771], emit+dense 0.876 [0.908]\n- Pinned to P-cores, 5 rounds:\n  - HI 10x10: base 0.722, final 0.799, emit+dense 0.861\n  - LI 10x10: base 0.760, final 0.905, emit+dense 0.969\n- Reference/pypdevs: 0.91-1.06.\n\n(3) Other configurations, base vs final, 3 rounds:\n- HI 10x10 with a single seed: 0.77-0.80 vs 0.83-0.87.\n- HI 20x20 at 5 events: 0.78-0.86 vs 0.85.\n- Single-build 30x30 at 20 events: LI 0.78-0.82 vs 0.95-0.975; HI 0.68-0.74 vs 0.74-0.82.\n- 50 burn cycles: 0.90-0.97 vs 0.89-0.96.\n- 500 burn cycles: about 0.94-0.99, with one noise outlier.\n\n(4) Sparse generator-to-sink (run_sparse, period 10, 20000 events, pinned, bisected over commits): base about 0.67 (0.63-0.69), final about 0.59 (0.58-0.61), a regression of about 10% in pyjevsim's absolute throughput.\n\n(5) Full PythonPDEVS (scratch copy, Python 3 fixes only): HI 10x10 about 600k tr/s at defaults (pickle copy) and about 980k with setMessageCopy('none'); LI 10x10 about 380k / 540k. This compares with pyjevsim base at about 1.40-1.44M and pypdevs minimal at about 2.0M on HI. The full-kernel timing includes simulate()'s internal setup, which matters most on LI (16.4k transitions).\n\n(6) Edge cases: step 2 drops a message when output() replaces md.data_list before calling insert_message; step 7 hijacks a user method that happens to be named ext_trans_bag.\n\n(7) Pre-existing bug, also on base, not caused by the ladder: SnapshotExecutor has no con_trans (MRO SnapshotExecutor -> Executor -> object), so a snapshot-decorated model that is imminent and receives input in the same instant would raise AttributeError in _run_instant.",
+  "attribution_consistent": true,
+  "strongest_case_against_beating_pypdevs": "I applied every lever the three reports found, including the opt-in ones (emit/SlimMessage, dense scheduler, bag ext). Re-measured in the same batches, the best is 0.84-0.86x on HI 10x10, 0.97x on LI 10x10 and 0.88-0.91x on HO 6x6. No cell exceeds 1.0. The API-preserving stack reaches only 0.80 / 0.90 / 0.79.\n\nWhat is left is not one hotspot. It is spread over the per-output SysMessage object that the public API requires (about 80 ns even when slotted), per-transition bookkeeping that carries semantics (model.global_time, executor.global_time, request_time, _next_event_t, cancel flags), the active_obj_map liveness check, and per-instant containers. Removing all of that would mean writing a pypdevs-minimal clone.\n\nThe in-repo reference engine, a flat Python kernel with none of pyjevsim's features, only reaches 0.91-1.06x pypdevs. So even a fully stripped kernel would land at parity, not a lead, in pure CPython.\n\nOn sparse workloads pyjevsim is further behind (0.59-0.67), and the ladder made that worse. On large models pypdevs leads once its ID bug is avoided (single build at 30x30: HI 0.74-0.82). Model work hides the gap, but because the gap is additive it never reverses.",
+  "strongest_case_for": "First, PythonPDEVS minimal is a 243-line benchmark kernel with no tracing, no realtime, no message copy, no state saving and no dynamic structure. The feature-comparable full PythonPDEVS simulator does not import on 3.14 without patches. Patched, it measures about 600k tr/s at defaults and about 980k with message copy off, against pyjevsim's 1.40M on HI 10x10. Against the real PythonPDEVS product, pyjevsim is already 1.45-2.3x faster.\n\nSecond, on LI-type workloads the opt-in path is within noise of minimal (0.97 median, single runs up to 0.99-1.0) and at reference-engine speed.\n\nThird, the gap is a constant of about 0.15-0.2 µs per transition. With 50 burn cycles of model work it is already about 0.9-0.97x, and with realistic model work it shrinks to a few percent.\n\nFourth, stock pypdevs degrades about 2x once a process has instantiated about 1000 atomics, because `AtomicDEVS.ID += 1` exhausts CPython's per-type version tags. pyjevsim fixed the same issue in #41, so it wins at large scale on stock pypdevs.\n\nFifth, several levers remain unmeasured: a fused phase C+D loop, pruning dead routes on destroy instead of checking liveness on every delivery, an adaptive heapset/dense switch like SchedulerAuto, and compiling the kernel with mypyc or Cython. Together they might reach parity on HI/HO with the opt-in path.",
+  "verdict": "HONEST VERDICT: No. In pure CPython with the default API, pyjevsim cannot be expected to outrun the PythonPDEVS *minimal* kernel on DEVStone, and even with every opt-in fast path it does not do so today.\n\nWhat I measured myself, in the same batches against the same pypdevs runs:\n- API-preserving final stack: 0.80 (HI) / 0.90 (LI) / 0.79 (HO), up from 0.72 / 0.75 / 0.72 at baseline.\n- With the opt-ins (emit/SlimMessage plus the dense scheduler): 0.84-0.86 / 0.97 / 0.88-0.91.\n- Parity is realistic only on LI-like workloads, through the opt-in path. A lead is not demonstrated anywhere except as an artefact (pypdevs' class-ID bug above about 1000 atomics).\n- The flat reference engine lands at about parity, which caps what a pure-Python kernel redesign can buy.\n- Beyond that you would need compiled code (mypyc/Cython), which nobody measured.\n\nAgainst the *full* PythonPDEVS simulator, the feature-comparable product, the answer is the opposite. pyjevsim is already about 2.3x faster than it at defaults and about 1.45x faster with message copy off (measured on a patched copy, since it does not import on 3.14). The fair public claim is therefore \"faster than PythonPDEVS; about 0.8-0.97x of its stripped minimal benchmark kernel.\"\n\nOn the three reports:\n- The attribution arithmetic is internally consistent: rows sum to 693.5 vs 506.4 ns/tr, a gap of 187, by construction via residual rows. It mixes micro-benchmark and in-situ costs, though; for example the wrapper row uses the 29 ns micro figure where in-situ is 15.\n- The anatomy's 0.85-0.9x api-preserving ceiling and its frame and bytecode shares were too optimistic for HI and HO.\n\nBefore shipping the ladder:\n- Fix step 2. The insert_message shadow silently drops a message when output() replaces md.data_list (reproduced). The simplest fix is not to shadow, or to rebind before each output() and also check identity before appending.\n- Rename or guard the ext_trans_bag hook from step 7. A user method of that name is hijacked (reproduced).\n- Document step 3's change in intra-instant processing order. bank_raw and mwmsim outcomes change, though both are order-sensitive by construction.\n- Re-check the sparse regression. Generator-to-sink falls from 0.67 to 0.59x, about 10% lower absolute throughput, before calling steps 3/5/7/9 a net performance win.\n- Pre-existing and separate from the ladder: SnapshotExecutor lacks con_trans, so a snapshot-decorated confluent model would crash."
+ },
+ "verdict": "# pyjevsim은 PythonPDEVS보다 빠를 수 있는가\n\n## 1. 한 줄 판정\n\n**아니요.** 순수 CPython에서 지금의 공개 API를 유지하면, pyjevsim은 PythonPDEVS의 *minimal* 커널을 DEVStone에서 앞서지 못합니다.\n- API를 유지한 최선의 스택은 minimal의 **0.79~0.92배**입니다.\n- opt-in 고속 경로(`emit`/`SlimMessage`, 밀집 스케줄러)를 모두 써도 **0.84~0.98배**이고, 1.0을 넘은 측정값은 하나도 없습니다.\n- 반대로 기능이 대등한 *full* PythonPDEVS보다는 이미 **약 1.45~2.3배 빠릅니다.** 이 수치는 패치한 사본에서 측정한 값입니다.\n\n## 2. 현재 격차와 그 원인\n\nHI 10x10, 시드 100개, 프로세스를 P-core에 고정하고 측정했습니다. pyjevsim은 688~693 ns/tr, pypdevs는 491~507 ns/tr로, 격차는 187~197 ns/tr(비율 1.37~1.40)입니다.\n\n| 범주 | pyjevsim ns/tr | pypdevs ns/tr | 격차 비중 |\n|---|---:|---:|---:|\n| 메시지/출력 생성 (`SysMessage`, `insert`, `get_name`, `insert_message`) | 106.7 | 27.6 | 42% |\n| 실행기 래퍼 프레임 + `get_cancel_flag()` | 29.2 | 0 | 16% (현장 측정으로는 약 15 ns, 8%) |\n| 기본 `con_trans` 루프 | 18.0 | 8.9 | 5% |\n| 모델 본체 (DEVStone ext/int) | 85.9 | 91.5 | -3% |\n| 전달/라우팅 | 127.6 | 165.2 | -20% |\n| 순간(instant)당 부기: 루프 잔차, 컨테이너 생성과 해제 | 142.8 | 67.2 | 40% |\n| 스케줄링 | 183.3 | 146.0 | 20% |\n| GC | 0 | 0 | 0% |\n\n해석은 다음과 같습니다.\n- **가장 큰 단일 비용은 메시지 객체입니다.** 출력 하나에 `SysMessage()`가 약 108 ns 들고, pypdevs의 `{port: [payload]}` 딕셔너리는 약 63 ns입니다.\n- **라우팅과 순간당 부기는 함께 봐야 합니다.** pypdevs는 영향받은 모델 집합을 라우팅 단계에서 만들고, pyjevsim은 phase C에서 만듭니다. 둘을 합치면 +38 ns/tr(20%)입니다. 이 두 행은 측정한 phase 시간에서 나머지를 뺀 잔차라서, 표의 합이 격차와 같아지는 것은 구성상 당연합니다.\n- **모델 코드는 원인이 아닙니다.** 오히려 pyjevsim 쪽이 5.7 ns/tr 쌉니다.\n- **pyjevsim의 기능 비용은 작습니다.** 외부 이벤트, 동적 생성/소멸, cancel, 스냅샷 훅을 합쳐도 약 3%, 래퍼를 포함해도 약 9%(추정)입니다. 느린 이유가 기능의 대가는 아닙니다.\n- **bag 방식은 이 벤치마크에서 이득이 없습니다.** 이 DEVStone에서는 fan-in이 정확히 1입니다(con bag 32,400개가 모두 크기 1). 그래서 bag 방식 `ext_trans`의 이득은 0입니다.\n\n## 3. 실험 사다리 결과\n\n브랜치 `exp/pypdevs-ceiling`에서 측정했습니다. 비율은 pyjevsim/pypdevs의 처리량 비이고, 두 엔진을 같은 배치에서 돌렸습니다. 단계별 측정은 배치가 서로 달라 약 ±0.03의 잡음이 있습니다.\n\n| 단계 | 변경 | 종류 | HI 10x10 | LI 10x10 | HO 6x6 | 테스트/오라클 |\n|---|---|---|---:|---:|---:|---|\n| 0 | 기준선 `56eacd6` | 측정 | 0.730 | 0.747 | 0.702 | 191 통과/3 스킵, PASS |\n| 1 | 모델 직접 디스패치(`_model_fast`) + cancel 플래그 직접 읽기 | API 유지 | 0.735 | 0.769 | 0.752 | 191/3, PASS |\n| 2 | C 수준 `insert_message` + `_dst` 직접 읽기 | API 유지(결함 있음) | 0.741 | 0.755 | 0.718 | PASS. 단, 메시지 유실 재현(7절) |\n| 3 | imminent/affected 집합 제거 | API 유지(순서 변경) | 0.766 | 0.814 | 0.785 | PASS. bank_raw, mwmsim은 INFO-DIFF |\n| 4 | `_reschedule` 인라인 후 되돌림 | API 유지 | 0.735 | 0.829 | 0.753 | PASS. A/B 결과 효과 없음 |\n| 5 | 비결합 포트 fast path + `pop_due` dict 연산 1회 | API 유지 | 0.783 | 0.895 | 0.794 | 191/3, PASS |\n| 6 | GC 모드 (벤치마크 전용) | 측정 | 기본 0.769 / off 0.794 | 0.886 / 0.868 | 0.780 / 0.815 | 엔진 변경 없음 |\n| 7 | opt-in `ext_trans_bag` (bag 원자 모델) | opt-in(이름 충돌 결함) | 0.733 | 0.830 | 0.784 | 195/3, PASS |\n| 8 | opt-in `emit` + `SlimMessage` | opt-in | emit 0.817 (기본 0.778) | 0.901 (0.868) | 0.796 (0.793) | 198/3, PASS |\n| 9 | `reschedule_all` 버킷 캐시 | API 유지 | 기본 0.789 / emit 0.830 | 0.900 / 0.945 | 0.803 / 0.832 | 198/3, PASS |\n| 10 | opt-in `DenseScheduleQueue` | opt-in | dense+emit 0.852 / dense 0.810 | 0.970 / 0.929 | 0.864 / 0.849 | 221/3, PASS |\n\n눈에 띄는 점은 세 가지입니다.\n- 프레임 제거(1단계)와 인라인(4단계)은 거의 효과가 없었습니다. CPython 3.14에서는 Python 간 호출이 싸기 때문입니다.\n- 의미 있는 이득은 3·5·9단계(컨테이너와 dict 연산 축소)와 8·10단계(opt-in)에서 나왔습니다.\n- GC는 요인이 아닙니다. pyjevsim 실행 중 수집 횟수는 0이었습니다.\n\n## 4. 도달 가능한 상한: API 유지 vs opt-in\n\n| 경로 | HI 10x10 | LI 10x10 | HO 6x6 | 출처 |\n|---|---:|---:|---:|---|\n| 기준선 (리뷰어 재측정 중앙값) | 0.713 | 0.751 | 0.719 | 비고정 5라운드 |\n| API 유지 최종 (9단계 스택) | 0.814 | 0.915 | 0.774 | 사다리 통합 실행 |\n| 같은 스택, 리뷰어 재측정 | 0.797 (고정 0.799) | 0.890 (고정 0.905) | 0.794 | 독립 측정 |\n| opt-in (emit + dense) | 0.844 | 0.966 | 0.864 | 사다리 통합 실행 |\n| 같은 경로, 리뷰어 재측정 | 0.840 (고정 0.861) | 0.978 (고정 0.969) | 0.876 | 독립 측정 |\n| 저장소 참조 엔진 (기능 없는 평탄 커널) | 0.91~0.99 | 0.96~1.00 | 0.97~1.06 | 리뷰어 측정 |\n\n**API 유지 상한은 약 0.8~0.9배입니다.** 기본 API는 출력마다 `SysMessage` 객체를 만들어야 합니다. 여기에 전이마다 `global_time`, `request_time`, `_next_event_t`, cancel 플래그 부기가 붙는데, 이 부기는 약 65~80 ns이고 의미를 지닌 비용이라 낭비가 아닙니다.\n\n**opt-in 상한은 약 0.84~0.98배입니다.** `emit`으로 출력 비용은 약 211 ns에서 약 125 ns로 줄었습니다. 그러나 `__slots__` 객체 하나를 만드는 데만 약 80 ns가 들어 더 내려가기 어렵습니다.\n\n**아직 측정하지 않은 수단도 있습니다.**\n- phase C와 D를 합친 루프\n- 소멸 시 경로를 정리해 전달마다 하던 생존 검사를 없애는 방법\n- SchedulerAuto 같은 heapset/dense 적응형 전환\n- mypyc/Cython 컴파일\n\n이 수단들을 다 합쳐도 HI/HO에서 opt-in 경로로 동등 수준에 이르는 정도가 최선이라고 봅니다(추정). 기능이 하나도 없는 참조 엔진조차 0.91~1.06배에 머문다는 점이 순수 Python 재설계의 천장을 보여 줍니다.\n\n## 5. 반대 논거와 그에 대한 답\n\n**리뷰어의 가장 강한 반대 논거**는 다음과 같습니다.\n- 찾아낸 수단을 opt-in까지 모두 적용해도 HI 0.84~0.86, LI 0.97, HO 0.88~0.91배이고 1.0을 넘는 셀이 없습니다.\n- 남은 격차는 한 곳에 몰려 있지 않습니다. 공개 API가 요구하는 메시지 객체, 의미를 지닌 전이 부기, `active_obj_map` 생존 검사, 순간당 컨테이너에 퍼져 있습니다.\n- 이것을 모두 걷어내면 결국 pypdevs-minimal의 복제품이 됩니다. 그렇게 해도 참조 엔진 수준, 즉 동등에 그칩니다.\n- 희소 워크로드에서는 오히려 더 뒤처집니다(0.59~0.67배).\n\n**이 논거에 대한 답**은 다음과 같습니다.\n- minimal과의 비교에서는 이 논거를 받아들입니다.\n- 다만 비교 대상이 공정한지는 따로 봐야 합니다. minimal은 243줄짜리 벤치마크 커널입니다. 추적, 실시간, 메시지 복사, 상태 저장, 동적 구조가 모두 없습니다.\n- 기능이 대등한 full PythonPDEVS는 CPython 3.14에서 import조차 되지 않습니다. `controller.py` 551행의 `async` 식별자가 SyntaxError를 냅니다.\n- 리뷰어가 Python 3 호환 수정만 한 사본으로 측정했습니다. HI 10x10에서 기본 설정(pickle 메시지 복사) 약 600k tr/s, `setMessageCopy('none')` 약 980k tr/s였습니다. pyjevsim 기준선은 1.40~1.44M이므로 **약 2.3배, 복사를 끄면 약 1.45배 빠릅니다.**\n\n## 6. 실제 모델에서의 의미\n\n- **격차는 가산 비용입니다.** 전이당 약 0.15~0.2 µs가 고정으로 붙습니다. 모델 작업이 커지면 그만큼 희석됩니다.\n  - 전이당 burn 50 사이클: 0.90~0.97배 (기준선 0.90~0.97, 최종 0.89~0.96. 사다리 효과도 함께 희석됨)\n  - burn 500 사이클: 약 0.94~0.99배\n  - 가산 비용이므로 모델 작업을 아무리 늘려도 역전되지는 않습니다.\n- **희소 워크로드에서는 사다리가 역효과를 냈습니다.** 생성기에서 싱크로 가는 구성에서 0.67배가 0.59배로 떨어졌고, 절대 처리량으로 약 10% 퇴보입니다. 3·5·7·9단계의 분기와 캐시 설정 비용이 쌓인 결과입니다.\n- **대형 모델에서의 우위는 착시입니다.** pypdevs의 `AtomicDEVS.ID += 1`이 문제입니다. 원자 모델이 약 1000개를 넘으면 CPython의 타입 버전 한도에 걸려 pypdevs가 약 2배 느려집니다. pyjevsim이 #41에서 고친 것과 같은 버그입니다.\n  - 40x40에서 pyjevsim이 이기는 것은 이 버그 때문입니다.\n  - 빌드 1회만 한 30x30에서는 pypdevs가 여전히 앞섭니다. 최종 스택 기준 LI 0.95~0.975배, HI 0.74~0.82배입니다.\n- **fan-in이 있는 모델은 사정이 다릅니다.** 메시지별 `ext_trans` 계약 때문에 메시지 1개당 28~70 ns가 추가됩니다(k=1~16). 이런 모델에서만 bag 방식 API가 의미를 가집니다.\n\n## 7. 권장\n\n**출시 가능 (API 유지).** 다만 희소 퇴보를 먼저 재확인해야 합니다.\n- 1단계 `59f8626`: 실행기를 만든 뒤 `BehaviorExecutor` 클래스 메서드를 패치하면 그 패치가 보이지 않습니다. 이 제약을 문서화해야 합니다.\n- 3단계 `ea8c195`: 한 순간 안의 처리 순서가 집합 순서에서 imminent 다음 수신자 순서로 바뀝니다. 변경 로그에 명시해야 합니다.\n- 5단계 `4a9969c`, 9단계 `d2b28d2`\n- 3·5·7·9단계를 성능 개선이라고 부르기 전에 희소 워크로드 퇴보(0.67에서 0.59)를 해결하거나 감수할지 정해야 합니다.\n\n**수정 후 출시.**\n- 2단계 `5609800`: `output()`이 `md.data_list`를 교체한 뒤 `insert_message`를 호출하면 메시지가 조용히 사라집니다(재현됨). 섀도잉을 빼거나, 추가하기 전에 리스트 동일성을 확인해야 합니다.\n- 7단계 `a85d315`: 사용자가 이미 `ext_trans_bag`이라는 이름의 메서드를 갖고 있으면 엔진이 그것을 가로챕니다(재현됨). 이름을 바꾸거나 명시적 opt-in 표식을 두어야 합니다. 성능 효과는 없으므로 fan-in 모델용 기능으로만 내야 합니다.\n\n**opt-in으로만 출시.**\n- 8단계 `emit`/`SlimMessage`\n- 10단계 `scheduler='dense'`: 유휴 모델이 1000개면 heapset 대비 처리량이 0.11배로 떨어집니다. 이 trade-off를 문서화하고, 적응형 전환 없이는 기본값으로 쓰지 않아야 합니다.\n\n**출시하지 않음.**\n- 4단계(효과 없음, 되돌림)\n- 6단계(프로세스 전역 GC 조작은 사용자 프로그램에 부작용을 줌)\n\n**별도 수정.** 기존부터 있던 버그입니다. `SnapshotExecutor`에 `con_trans`가 없어서, 스냅샷 데코레이터가 붙은 confluent 모델은 `AttributeError`를 냅니다.\n\n**사용자에게 하는 공개 주장.** \"PythonPDEVS보다 빠르며, 기능을 덜어낸 minimal 벤치마크 커널 대비로는 약 0.8~0.97배\"가 정직한 표현입니다. 대형 모델에서의 우위는 주장하지 않아야 합니다.\n\n## 8. 한계\n\n- **측정 환경의 잡음이 큽니다.** 공유 머신(i7-12700, Windows 11, CPython 3.14.0)에서 측정했고, 프로세스 간 편차는 ±10~20 ns/tr입니다. 15 ns/tr보다 작은 차이(cancel 플래그, 개별 래퍼, GC)는 현장 측정으로 구분되지 않습니다.\n- **E-core 문제가 있습니다.** 고정하지 않은 프로세스는 시작 약 3초 뒤 E-core로 밀려 속도가 절반 가까이 떨어집니다. 하네스 자체는 고정되지 않으므로 비율로만 비교했습니다.\n- **원인 표는 성격이 다른 측정을 섞었습니다.** 마이크로벤치마크와 현장 phase 타이머를 함께 썼고, 잔차 행이 오차를 흡수합니다. 메커니즘 수준에서 설명되지 않는 부분이 HI 약 38 ns/tr, LI/HO 약 47~51 ns/tr 남습니다.\n- **full PythonPDEVS는 패치한 사본에서만 측정했습니다.** 측정 구간에 `simulate()` 내부 준비 시간이 포함됩니다.\n- **워크로드 범위가 좁습니다.** 평탄화한 DEVStone(fan-in 1)과 희소 생성기-싱크 구성뿐입니다. pypdevs의 스케줄링 우위는 밀집 순간에서 SchedulerML로 전환된 덕분이고, 희소한 대형 모델에서는 결과가 달라질 수 있습니다. 이 경우는 측정하지 않았습니다.\n- **측정하지 않은 항목이 있습니다.** 컴파일 커널(mypyc/Cython), 다른 인터프리터, 4절에 적은 미측정 수단은 측정하지 않았습니다. 그래서 그 효과는 모두 추정입니다."
+}
