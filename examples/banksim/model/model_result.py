@@ -96,3 +96,44 @@ class BankResult(BehaviorModel):
                 lines.clear()
         out.write("".join(lines))
         out.flush()
+
+
+class OrderedBankResult(BankResult):
+    """A :class:`BankResult` whose report does not depend on message order.
+
+    ``BankResult`` records served users in the order in which the engine
+    delivers the accountants' messages of an instant, which follows set
+    iteration and changes from process to process; so do the order of the
+    report and which messages of the last instant are counted before the
+    run ends at ``max_user``.  This variant collects the messages of an
+    instant in ``inbox``, moves to the zero-duration ``SORT`` state and
+    applies them in its internal transition with ``BankResult.ext_trans``,
+    sorted by port, accountant and user ID.  The seeded ``banksim_*.py``
+    runs use it together with
+    :class:`~examples.banksim.model.model_queue.OrderedBankQueue`.
+    """
+
+    def __init__(self, name, max_user):
+        BankResult.__init__(self, name, max_user)
+        self.insert_state("SORT", 0)
+        self.inbox = []
+
+    def ext_trans(self, port, msg):
+        self.inbox.append((port, msg))
+        self._cur_state = "SORT"
+
+    def int_trans(self):
+        if self._cur_state == "SORT":
+            inbox = sorted(self.inbox, key=_result_msg_key)
+            self.inbox = []
+            self._cur_state = "WAIT"
+            for port, msg in inbox:
+                BankResult.ext_trans(self, port, msg)
+
+
+def _result_msg_key(port_msg):
+    port, msg = port_msg
+    body = msg.retrieve()
+    if port == "process":
+        return (port, str(body[0]), str(body[1].get_id()))
+    return (port, "", ",".join(str(u.get_id()) for u in body[0]))

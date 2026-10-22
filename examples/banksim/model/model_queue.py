@@ -153,3 +153,55 @@ class BankQueue(BehaviorModel):
         self.usable_proc = []
         for i in range(proc_num) :
             self.usable_proc.append(f"proc{i}")
+
+
+class OrderedBankQueue(BankQueue):
+    """A :class:`BankQueue` whose behaviour does not depend on message order.
+
+    The engine hands a model the messages of one instant in the order in
+    which it processes the sending models, and that order follows set
+    iteration (object identity), so it changes from process to process.
+    ``BankQueue`` reacts to each message as it comes (which user is dropped
+    when the queue is full, the order of the queue, which accountant gets
+    the next user), so its run differs between processes even when every
+    generator draws from its own seeded stream.
+
+    This variant collects the messages of an instant in ``inbox`` and moves
+    to the zero-duration ``SORT`` state; its internal transition then
+    applies them with ``BankQueue.ext_trans`` sorted by port and by user ID
+    or accountant name.  Time-wise it behaves like ``BankQueue`` (one more
+    zero-time step per instant with input), and the outcome is the same in
+    every process.  The seeded ``banksim_*.py`` runs use it.
+    """
+
+    def __init__(self, name, queue_size, proc_num):
+        BankQueue.__init__(self, name, queue_size, proc_num)
+        self.insert_state("SORT", 0)
+        self.inbox = []
+
+    def ext_trans(self, port, msg):
+        self.inbox.append((port, msg))
+        self._cur_state = "SORT"
+
+    def output(self, msg_deliver):
+        if self._cur_state == "SORT":
+            return msg_deliver
+        return BankQueue.output(self, msg_deliver)
+
+    def int_trans(self):
+        if self._cur_state == "SORT":
+            inbox = sorted(self.inbox, key=_queue_msg_key)
+            self.inbox = []
+            self._cur_state = "SEND" if (self.usable_proc and self.user) else "WAIT"
+            for port, msg in inbox:
+                BankQueue.ext_trans(self, port, msg)
+            return
+        BankQueue.int_trans(self)
+
+
+def _queue_msg_key(port_msg):
+    port, msg = port_msg
+    item = msg.retrieve()[0]
+    if port == "user_in":
+        return (port, str(item.get_id()))
+    return (port, str(item))
