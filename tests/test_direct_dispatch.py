@@ -140,3 +140,73 @@ def test_forcing_wrappers_on_an_instance_is_seen():
                             BehaviorExecutor.output(ex, md))[1]
     ss.simulate(3, _tm=False)
     assert seen == [1, 2]
+
+
+class _Ticker(BehaviorModel):
+    """Emits on ``out`` every tick."""
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.insert_state("go", 1)
+        self.init_state("go")
+        self.insert_output_port("out")
+
+    def ext_trans(self, port, msg):
+        pass
+
+    def int_trans(self):
+        pass
+
+    def output(self, msg_deliver):
+        m = SysMessage(self.get_name(), "out")
+        m.insert(self.global_time)
+        msg_deliver.insert_message(m)
+
+
+class _VetoingCanceller(BehaviorModel):
+    """Asks for cancellation on every input but vetoes it in get_cancel_flag."""
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.insert_state("busy", 3)
+        self.init_state("busy")
+        self.insert_input_port("in")
+        self.ints = []
+
+    def ext_trans(self, port, msg):
+        self.cancel_rescheduling()
+
+    def int_trans(self):
+        self.ints.append(self.global_time)
+
+    def output(self, msg_deliver):
+        pass
+
+    def get_cancel_flag(self):
+        return False
+
+
+def test_overridden_get_cancel_flag_is_consulted():
+    # The direct path reads the cancel flag attribute, so a model that
+    # overrides get_cancel_flag must stay on the wrappers, which call it.
+    # Here the override vetoes every cancellation: each input restarts the
+    # 3-tick busy timer, and with an input every tick it never expires.
+    ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
+    src = _Ticker("src")
+    vetoer = _VetoingCanceller("vetoer")
+    ss.register_entity(src)
+    ss.register_entity(vetoer)
+    ss.coupling_relation(src, "out", vetoer, "in")
+    assert ss.get_entity("vetoer")[0]._model_fast is None
+    assert ss.get_entity("src")[0]._model_fast is src
+    ss.simulate(10, _tm=False)
+    assert vetoer.ints == []
+
+
+def test_duck_typed_model_without_get_cancel_flag_constructs():
+    class Duck:
+        def get_obj_id(self):
+            return 0
+
+    ex = BehaviorExecutor(0, Infinite, "default", Duck(), None)
+    assert ex._model_fast is None

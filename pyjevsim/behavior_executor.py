@@ -8,6 +8,7 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 This module contains a BehaviorExecutor, an object for executing a BehaviorModel.
 """
 
+from .behavior_model import BehaviorModel
 from .definition import Infinite
 from .executor import Executor
 
@@ -47,11 +48,17 @@ class BehaviorExecutor(Executor):
         # ``mock.patch.object``) or on an instance after this executor is
         # built is not seen by _run_instant. Subclass instead, or set
         # ``_model_fast = None`` on the executor to force the wrappers.
+        # The direct path reads the model's cancel flag attribute instead of
+        # calling get_cancel_flag(), so a model class that overrides
+        # get_cancel_flag keeps the wrappers, which call it. getattr keeps a
+        # duck-typed model without the method constructible.
         cls = type(self)
         if (cls.output is BehaviorExecutor.output
                 and cls.int_trans is BehaviorExecutor.int_trans
                 and cls.ext_trans is BehaviorExecutor.ext_trans
-                and cls.con_trans is BehaviorExecutor.con_trans):
+                and cls.con_trans is BehaviorExecutor.con_trans
+                and getattr(type(behavior_model), "get_cancel_flag", None)
+                    is BehaviorModel.get_cancel_flag):
             self._model_fast = behavior_model
 
     def __init_subclass__(cls, **kwargs):
@@ -121,8 +128,7 @@ class BehaviorExecutor(Executor):
         bm = self.behavior_model
         bm.ext_trans(port, msg)
 
-        # BehaviorModel.get_cancel_flag() returns this attribute.
-        if bm._cancel_reschedule_f:
+        if bm.get_cancel_flag():
             self._cancel_reschedule_f = True
 
     # Internal Transition
@@ -142,7 +148,7 @@ class BehaviorExecutor(Executor):
         bm = self.behavior_model
         bm.con_trans(port_msgs)
 
-        if bm._cancel_reschedule_f:
+        if bm.get_cancel_flag():
             self._cancel_reschedule_f = True
 
     # Output Function
