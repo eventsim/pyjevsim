@@ -211,9 +211,21 @@ The bank example's parity key is its model-level result, not executor
 transition counts: same-instant processing follows set iteration, so
 transition counts can differ between processes while the result counters
 stay put on a checkout. W7 needs ``SnapshotExecutor.con_trans``, which
-2.2.x does not have (the HI chain makes models confluent); on such
-checkouts the workload's factory adds a ``con_trans`` that forwards to the
-wrapped executor and reports ``con_trans_shim: true`` in the run info.
+2.2.x does not have, and the HI chain makes most transitions confluent: in
+a W7 run on 2.2.x, 32,400 of the 40,700 internal transitions (about 80%)
+are confluent. On such checkouts the workload's factory adds a
+``con_trans`` that mirrors the real ``int_trans``/``ext_trans`` wrappers:
+the internal pre and post conditions, plus the external pre and post
+conditions for each message of the bag, with a snapshot whenever one
+fires. A confluent transition therefore pays the same condition cost as
+the internal and external transitions it stands for, and every transition
+of W7 is measured with its condition checks. The run info reports
+``con_trans_shim: true`` and ``con_trans_calls`` (the number of confluent
+transitions that went through the shim; ``null`` when the checkout's own
+``SnapshotExecutor.con_trans`` is used). When that method lands (roadmap
+CORE-5), W7 measures it instead of the shim, so a W7 comparison across
+that change includes the difference between the two for about 80% of the
+transitions.
 
 Running it
 ~~~~~~~~~~

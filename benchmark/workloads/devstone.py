@@ -89,10 +89,17 @@ def snapshot_manager():
 
     Returns ``(manager, shimmed)``.  ``SnapshotExecutor`` has no
     ``con_trans`` up to at least 2.2.x (roadmap CORE-5), and the HI chain
-    makes models confluent, so on such checkouts the manager's factory
-    builds a subclass whose ``con_trans`` forwards to the wrapped
-    ``BehaviorExecutor`` (the same shape as its ``ext_trans``/``int_trans``
-    without condition checks).  ``shimmed`` is reported in ``info``.
+    makes models confluent (about 80% of W7's transitions on 2.2.x), so on
+    such checkouts the manager's factory builds a subclass whose
+    ``con_trans`` mirrors the real ``int_trans``/``ext_trans`` wrappers:
+    ``snapshot_pre_condition_int`` and ``snapshot_pre_condition_ext`` for
+    each ``(port, msg)`` of the bag before the wrapped
+    ``BehaviorExecutor.con_trans``, the matching post conditions after it,
+    and a snapshot whenever a check fires.  A confluent transition thus
+    pays the same condition cost as one internal transition plus one
+    external transition per message through the real wrappers.  The shim
+    counts its calls in ``_con_trans_calls``; ``shimmed`` is reported in
+    ``info``.
     """
     from pyjevsim.snapshot_executor import SnapshotExecutor
     from pyjevsim.snapshot_factory import SnapshotFactory
@@ -103,8 +110,24 @@ def snapshot_manager():
         return manager, False
 
     class ConfluentSnapshotExecutor(SnapshotExecutor):
+        _con_trans_calls = 0
+
         def con_trans(self, port_msgs):
+            self._con_trans_calls += 1
+            cond = self.condition
+            if cond.snapshot_pre_condition_int(self.get_cur_state()):
+                self.snapshot("int_before")
+            for port, msg in port_msgs:
+                if cond.snapshot_pre_condition_ext(port, msg,
+                                                   self.get_cur_state()):
+                    self.snapshot("ext_before")
             self.behavior_executor.con_trans(port_msgs)
+            if cond.snapshot_post_condition_int(self.get_cur_state()):
+                self.snapshot("int_after")
+            for port, msg in port_msgs:
+                if cond.snapshot_post_condition_ext(port, msg,
+                                                    self.get_cur_state()):
+                    self.snapshot("ext_after")
 
     class ConfluentSnapshotFactory(SnapshotFactory):
         def create_snapshot_executor(self, model):
@@ -131,6 +154,14 @@ def run_devstone_snapshot(params):
     if wrapped < result["parity"]["atomics"]:
         raise RuntimeError(
             f"only {wrapped} executors are SnapshotExecutor instances")
+    # Confluent transitions that went through the shim; None when the
+    # checkout's SnapshotExecutor has its own con_trans, which is not
+    # instrumented.  In the parity counts each one is one internal plus one
+    # external transition per message of its bag.
+    con_calls = (sum(getattr(e, "_con_trans_calls", 0)
+                     for e in ss.active_obj_map.values())
+                 if shimmed else None)
     result["info"].update({"snapshot_executors": wrapped,
-                           "con_trans_shim": shimmed})
+                           "con_trans_shim": shimmed,
+                           "con_trans_calls": con_calls})
     return result
