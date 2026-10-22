@@ -93,7 +93,7 @@ INLINE_LIMIT = 4000          # groups; larger traces go to the sidecar gz only
 HASHES_FORMAT = "pyjevsim-oracle-hashes"
 # The golden CI compares with. When a semantic change is accepted (see
 # LEDGER.md), its pull request adds a new golden and points this at it.
-GOLDEN = os.path.join(HERE, "golden", "v2.2.0.json")
+GOLDEN = os.path.join(HERE, "golden", "v2.3.0-dev.json")
 
 
 # --------------------------------------------------------------------------

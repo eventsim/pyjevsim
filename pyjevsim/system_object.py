@@ -10,14 +10,51 @@ This module contains SystemObject, the top-level class for all models.
 
 import itertools
 
-# Shared source of object IDs. It is advanced, never rebound: rebinding a
-# class attribute on every instantiation (the former
-# ``SystemObject.__GLOBAL_OBJECT_ID += 1``) invalidates the type version of
-# SystemObject and every subclass, and once CPython's per-type cap on version
-# reassignments is reached the interpreter stops specialising attribute access
-# on all models, executors and messages for the rest of the process.
-# SysMessage draws from it directly.
+# Shared source of object IDs. Creating an object advances it; it is a module
+# global, not a class attribute: rebinding a class attribute on every
+# instantiation (the former ``SystemObject.__GLOBAL_OBJECT_ID += 1``)
+# invalidates the type version of SystemObject and every subclass, and once
+# CPython's per-type cap on version reassignments is reached the interpreter
+# stops specialising attribute access on all models, executors and messages
+# for the rest of the process. SysMessage draws from it directly; only
+# reserve_object_ids rebinds it, in both modules.
 _next_object_id = itertools.count().__next__
+
+
+def peek_next_object_id():
+    """Return the ID the next object will get, without consuming it."""
+    # itertools.count has no accessor for its position; its repr is
+    # "count(<next value>)".
+    return int(repr(_next_object_id.__self__)[len("count("):-1])
+
+
+def reserve_object_ids(next_id):
+    """Make sure no object created from now on gets an ID below ``next_id``.
+
+    Objects restored from a snapshot keep the IDs they were given in the
+    process that took it; reserving past them stops new objects from
+    reusing those IDs. The counter never moves backwards.
+
+    Args:
+        next_id (int): Lowest ID the next object may get
+    """
+    global _next_object_id
+    if next_id <= peek_next_object_id():
+        return
+    _next_object_id = itertools.count(next_id).__next__
+    # SysMessage bound the counter when it was imported.
+    from . import system_message
+    system_message._next_object_id = _next_object_id
+
+
+def assign_new_object_id(obj):
+    """Give ``obj`` a fresh ID from the shared counter.
+
+    Args:
+        obj (SystemObject): Object to renumber, e.g. a model loaded from a
+            snapshot as a new instance
+    """
+    obj._SystemObject__object_id = _next_object_id()
 
 
 class SystemObject:

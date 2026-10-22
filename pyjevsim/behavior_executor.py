@@ -27,7 +27,6 @@ class BehaviorExecutor(Executor):
         super().__init__(itime, dtime, ename, behavior_model, parent)
 
         self._next_event_t = 0  # Next event time
-        self._cur_state = ""  # Current state of the behavior executor
         self.request_time = Infinite  # Request time initialized to infinity
 
         self.behavior_model = behavior_model #Behavior Model
@@ -104,7 +103,7 @@ class BehaviorExecutor(Executor):
 
     def __str__(self):
         """Returns a string representation of the executor"""
-        return f"[N]:{self.get_name()}, [S]:{self._cur_state}"
+        return f"[N]:{self.get_name()}, [S]:{self.behavior_model._cur_state}"
 
     def get_name(self):
         """Returns the name of the behavior model"""
@@ -132,12 +131,12 @@ class BehaviorExecutor(Executor):
 
     # State management
     def get_cur_state(self):
-        """Returns the current state of the executor"""
-        return self._cur_state
+        """Returns the current state of the behavior model"""
+        return self.behavior_model._cur_state
 
     def init_state(self, state):
-        """Initializes the state of the executor"""
-        self._cur_state = state
+        """Sets the current state of the behavior model"""
+        self.behavior_model.init_state(state)
 
     # External Transition
     def ext_trans(self, port, msg):

@@ -110,6 +110,14 @@ After restoring, recreate any top-level ports and events that the next part of
 the run needs. Reconnect resources outside pyjevsim, such as files, sockets, or
 RTI sessions, in application code as well.
 
+Restored models keep the object IDs they had when the snapshot was taken.
+``model_map.json`` also records the next free object ID, and ``get_engine()``
+moves the ID counter past it before building the executor, so models and
+messages created after the restore get new IDs. A model created before
+``get_engine()`` can still share an ID with a restored model; registering it
+with the restored executor then raises ``ValueError``, so create the models you
+add to a restored run after restoring it.
+
 Run the BankSim example
 -----------------------
 
@@ -180,7 +188,11 @@ name before registering that model with the executor:
 When the condition returns ``True``, pyjevsim writes
 ``snapshot/[time]Gen.simx``. Conditions are also available immediately before
 and after external transitions, internal transitions, and output calls; those
-files use prefixes such as ``[ext_before]`` and ``[output_after]``.
+files use prefixes such as ``[ext_before]`` and ``[output_after]``. Each hook
+receives the model's current state as ``cur_state``. When the model is
+imminent and receives input at the same instant (a confluent transition), the
+internal-transition hooks run before and after the whole transition and the
+external-transition hooks are not called.
 
 Restore one model
 -----------------
@@ -200,6 +212,9 @@ name argument lets you assign the restored model a new name for a branch run.
    restored_gen = snapshots.load_snapshot("GenBranch", payload)
 
    branch_sim.register_entity(restored_gen)
+
+The restored model is a new instance with a new object ID, so the same payload
+can be loaded several times and each copy registered with the same executor.
 
 A model snapshot does not include the rest of the executor or its couplings.
 Register the restored model with a new or existing executor, then add the

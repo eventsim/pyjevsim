@@ -76,6 +76,7 @@ class SysExecutor(CoreModel):
         # dictionary for waiting simulation objects
         self.waiting_obj_map = {}
         self._waiting_keys = []  # min-heap of creation times
+        self._waiting_ids = set()  # object IDs of the executors waiting
         # dictionary for active simulation objects
         self.active_obj_map = {}
 
@@ -146,7 +147,19 @@ class SysExecutor(CoreModel):
             inst_t (float, optional): Instance creation time
             dest_t (float, optional): Destruction time
             ename (str, optional): SysExecutor name
+
+        Raises:
+            ValueError: A model with the same object ID is already
+                registered and not destroyed.
         """
+        obj_id = entity.get_obj_id()
+        if obj_id in self.active_obj_map or obj_id in self._waiting_ids:
+            raise ValueError(
+                f"Cannot register {entity.get_name()!r}: object ID {obj_id} "
+                f"is already used by a model registered with this "
+                f"SysExecutor (the same model registered twice, or two "
+                f"copies of one model made with copy.deepcopy or dill)."
+            )
 
         sim_obj = self.exec_factory.create_executor(
             self.global_time, inst_t, self.global_time + dest_t, ename, entity, self
@@ -165,6 +178,7 @@ class SysExecutor(CoreModel):
             heapq.heappush(self._waiting_keys, create_t)
         else:
             waiting.append(sim_obj)
+        self._waiting_ids.add(obj_id)
 
         name = sim_obj.get_name()
         same_name = self.model_map.get(name)
@@ -221,7 +235,9 @@ class SysExecutor(CoreModel):
                 active_obj_map = self.active_obj_map
                 fel = self.min_schedule_item
                 global_time = self.global_time
+                waiting_ids = self._waiting_ids
                 for obj in self.waiting_obj_map.pop(key):
+                    waiting_ids.discard(obj._obj_id)
                     active_obj_map[obj._obj_id] = obj
                     obj.set_req_time(global_time)
                     fel.push(obj)
@@ -750,6 +766,7 @@ class SysExecutor(CoreModel):
 
         self.waiting_obj_map = {}
         self._waiting_keys = []
+        self._waiting_ids = set()
         self.active_obj_map = {}
         self.port_map = {}
 

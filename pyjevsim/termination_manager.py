@@ -10,28 +10,44 @@ This module contains the TerminatorManager, which manages the simulation termina
 
 import datetime
 import signal
+import threading
+import weakref
 
 class TerminationManager:
-    _executors = []
+    """Terminates registered SysExecutors on SIGINT or SIGTERM.
+
+    The handlers are installed from the main thread (Python only allows that
+    thread to set them), and only when they are not already in place, so
+    repeated runs do not call ``signal.signal`` again but a handler that was
+    reset in between (ipykernel resets SIGINT before every cell) is installed
+    again. Executors registered from another thread are still terminated
+    when a signal arrives, as long as the main thread has installed the
+    handlers. Executors are held weakly, so a finished executor that is no
+    longer referenced is released.
+    """
+    _executors = weakref.WeakSet()
 
     def __init__(self, executor=None):
         if executor:
-            TerminationManager._executors.append(executor)
+            TerminationManager._executors.add(executor)
         TerminationManager.__set_terminate_handler()
 
     @staticmethod
     def register_executor(executor):
         """Register a SysExecutor for graceful shutdown on signal."""
-        TerminationManager._executors.append(executor)
+        TerminationManager._executors.add(executor)
 
     @staticmethod
     def __set_terminate_handler():
-        signal.signal(signal.SIGTERM, TerminationManager.signal_handler)
-        signal.signal(signal.SIGINT, TerminationManager.signal_handler)
+        if threading.current_thread() is not threading.main_thread():
+            return
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            if signal.getsignal(sig) is not TerminationManager.signal_handler:
+                signal.signal(sig, TerminationManager.signal_handler)
 
     @staticmethod
     def signal_handler(sig, frame):
         print(f"{datetime.datetime.now()} Signal {sig} received, terminating simulation gracefully")
-        for executor in TerminationManager._executors:
+        for executor in list(TerminationManager._executors):
             executor.terminate_simulation()
         TerminationManager._executors.clear()

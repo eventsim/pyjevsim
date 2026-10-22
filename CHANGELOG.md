@@ -116,6 +116,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   0.3.7 on 3.11, 0.3.8 on 3.12, 0.3.9 on 3.13 and 0.4.1 on 3.14. A CI
   job runs the snapshot and restore tests against exactly these
   versions, and the test matrix now includes Windows and Python 3.14.
+- A model registered with a `SnapshotCondition` no longer raises
+  `AttributeError` when it is imminent and receiving input at the same
+  instant: `SnapshotExecutor` now has `con_trans`. The condition's
+  internal-transition hooks (`snapshot_pre_condition_int`/
+  `snapshot_post_condition_int`) run before and after the whole confluent
+  transition, and their snapshots are written as `[int_before]`/
+  `[int_after]`; the external-transition hooks are not called for the
+  messages consumed by a confluent transition.
+- `SnapshotExecutor.output` calls `snapshot_post_condition_out(msg, cur_state)`
+  in the argument order that `SnapshotCondition` declares. It used to pass
+  `(cur_state, msg)`; a condition written against the base-class signature
+  received the two swapped (harmless while `cur_state` was always `""`).
+- `SnapshotCondition` hooks receive the model's current state as
+  `cur_state`. They used to receive `""` every time, because
+  `BehaviorExecutor.get_cur_state()` returned a field of the executor that
+  was never updated; it now returns the model's state, and
+  `BehaviorExecutor.init_state()` sets it on the model.
+- `SysExecutor.simulate()` no longer reinstalls the SIGINT/SIGTERM handlers
+  on every call, and no longer keeps every executor it has run alive for
+  the rest of the process. `TerminationManager` installs its handlers from
+  the main thread only when they are not already in place, and holds
+  executors in a `WeakSet`. If something resets SIGINT or SIGTERM between
+  runs (ipykernel restores `default_int_handler` before every cell), the
+  next main-thread `simulate()` installs the handler again, as before.
+  `simulate()` on a worker thread no longer raises `ValueError` from
+  `signal.signal`; its executor is still terminated by a signal once the
+  main thread has installed the handlers (any `simulate()` or
+  `TerminationManager()` on the main thread does).
+- Models created after restoring a simulation snapshot in a new process no
+  longer reuse the object IDs of restored models. `SysExecutor` keys its
+  active models by object ID, so such a collision silently dropped one of
+  the two executors (the restored engine's own `dc` catcher already
+  collided with the restored `dc`). `snapshot_simulation` now records the
+  next free ID as `next_object_id` in `model_map.json`, and
+  `RestoreHandler` moves the ID counter past it, or past the highest
+  restored model ID for snapshots saved without it, before it builds the
+  executor. `RestoreHandler` therefore creates its `SysExecutor` in
+  `get_engine()`/`restore_engine()` instead of in its constructor
+  (`RestoreHandler.engine` is `None` until then), and each `get_engine()`
+  call builds a new executor instead of registering the models again in
+  the same one.
+- `SysExecutor.register_entity` raises `ValueError` when a model with the
+  same object ID is already registered and not destroyed (the same model
+  registered twice, or two `copy.deepcopy`/`dill` copies of one model),
+  instead of replacing the first model's executor.
+- `RestoreHandler.load_snapshot` (and `SnapshotManager.load_snapshot`) gives
+  the loaded model a new object ID, so one model snapshot can be loaded and
+  registered several times, as the BankSim what-if example does.
 
 ## [2.2.0] — 2026-08-29
 
