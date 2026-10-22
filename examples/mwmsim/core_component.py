@@ -1,12 +1,41 @@
 from abc import *
+import hashlib
+import itertools
 import random
-from datetime import datetime
+
+
+def stream_seed(seed, index):
+    """Seed of the ``index``-th :class:`Statistic` (0-based) created with ``seed``.
+
+    ``index`` numbers every ``Statistic`` the process creates, in creation
+    order, so two objects built with the same ``seed`` (``config.RANDOM_SEED``
+    for most of them) still get independent streams, and a run that creates
+    its objects in the same order draws the same numbers.
+    """
+    digest = hashlib.blake2b(f"mwmsim/{seed}/{index}".encode("utf-8"), digest_size=8).digest()
+    return int.from_bytes(digest, "big")
+
+
+_stream_index = itertools.count()
+
+
+def reset_streams():
+    """Restart the numbering used by :func:`stream_seed`.
+
+    Call it before building a second simulation in the same process to get
+    the streams of a fresh process.
+    """
+    global _stream_index
+    _stream_index = itertools.count()
+
 
 class Statistic(object):
     def __init__(self, seed, mean, stddev):
         self.mean = mean
         self.stddev = stddev
-        self.rseed = datetime.now().timestamp()
+        # Seeded from the seed argument and the creation index; it used to
+        # be datetime.now().timestamp(), so no two runs were alike.
+        self.rseed = stream_seed(seed, next(_stream_index))
         self.random = random.Random(self.rseed)
 
     def get_mean(self):

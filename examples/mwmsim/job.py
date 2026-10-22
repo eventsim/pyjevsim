@@ -9,7 +9,7 @@ from config import *
 class Housewife(HumanType):
     def __init__(self,_id):
         HumanType.__init__(self ,_id)
-        self.out_time = TimeStructContstraintToDay(13,00, Statistic(0, AVG_TIME, TIME_STDDEV))
+        self.out_time = TimeStructContstraintToDay(13,00, Statistic(RANDOM_SEED, AVG_TIME, TIME_STDDEV))
         self.trash = Statistic(RANDOM_SEED,0.9,TRASH_STDDEV)
         pass
     
@@ -59,7 +59,7 @@ class Housewife(HumanType):
 class Student(HumanType):
     def __init__(self,_id):
         HumanType.__init__(self ,_id)
-        self.out_time = TimeStructContstraintToDay(7,58, Statistic(0, AVG_TIME, TIME_STDDEV))
+        self.out_time = TimeStructContstraintToDay(7,58, Statistic(RANDOM_SEED, AVG_TIME, TIME_STDDEV))
         self.trash = Statistic(RANDOM_SEED+1,0.9,TRASH_STDDEV)
         pass
     
@@ -160,7 +160,7 @@ class StudentWithVacation(HumanType):
 class Blue_collar(HumanType):
     def __init__(self,_id):
         HumanType.__init__(self ,_id)
-        self.out_time = TimeStructContstraintToDay(6,22, Statistic(0, AVG_TIME, TIME_STDDEV))
+        self.out_time = TimeStructContstraintToDay(6,22, Statistic(RANDOM_SEED, AVG_TIME, TIME_STDDEV))
         self.trash = Statistic(RANDOM_SEED+2,0.9,TRASH_STDDEV)
         pass
     
@@ -213,7 +213,7 @@ class Self_employment(HumanType):
         return TimeStruct(23,54, Statistic(RANDOM_SEED, 0, 1))
   
     def get_out(self):
-        return TimeStructContstraintToDay(RANDOM_SEED,43, Statistic(0, AVG_TIME, TIME_STDDEV))
+        return TimeStructContstraintToDay(RANDOM_SEED,43, Statistic(RANDOM_SEED, AVG_TIME, TIME_STDDEV))
 
     def get_in(self):
         return TimeStruct(20,00, Statistic(RANDOM_SEED, 0, 1))

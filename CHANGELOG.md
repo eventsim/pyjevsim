@@ -98,6 +98,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   instance state are unchanged. Building a message is about 1.4x faster on
   CPython 3.14. Code that wraps or monkeypatches `SystemObject.__init__`
   (for example to count created objects) no longer sees messages.
+- Examples: the bank example (`examples/banksim`) can be seeded. The
+  `banksim_*.py` scripts take `--seed N` (or an optional `seed` key in
+  `scenario.yaml`), plus `--max-user` and `--config`. A seeded run gives
+  every generator its own `random.Random` derived from the seed and the
+  generator's name (`examples/banksim/seeding.py`) and uses
+  `OrderedBankQueue`/`OrderedBankResult`, which apply the messages of an
+  instant in a fixed order, so the same seed gives a byte-identical report
+  in every process. Without a seed nothing changes: the models draw from
+  the module-level `random` and the scripts use `BankQueue`/`BankResult`;
+  `BankUserGenerator(name, rng=None)` and `Banksim(name, seed=None)` keep
+  their defaults. The examples README lists which variants are the same
+  simulation.
+- Examples: the bank what-if change is applied by one function
+  (`examples/banksim/runner.py`) in `banksim_classic.py` and
+  `banksim_restore.py`. Fewer generators: `gen{wiq_gen_num}` ...
+  `gen{gen_num-1}` are stopped through their new `stop` port (before, the
+  scripts idled `wiq_gen_num` generators, different ones in each script,
+  and each still emitted the user it had scheduled). More generators: the
+  added ones are named `gen{gen_num}` ... and started on their own port
+  (before, `banksim_classic.py` named them `gen0` ... again, and both
+  scripts restarted every running generator once per added one).
+- Examples: the bank result report is written in chunks and flushed once
+  before `os._exit(0)`, instead of one flushed `print` per line; the text
+  is the same. For 500000 served and about as many dropped customers with
+  output to a file this takes 0.7 s instead of 19-38 s.
+- Examples: mwmsim's `Statistic` seeds its stream from its `seed` argument
+  and its creation index (`core_component.stream_seed`) instead of the
+  wall clock, so a scenario with the same `RANDOM_SEED` repeats exactly;
+  `job.py` and `check.py` pass `RANDOM_SEED` where they passed `0`. The
+  trace oracle's `mwmsim_433sbh` scenario pins the seeds through
+  `stream_seed` to the values its fake clock gave before; its hash is
+  unchanged.
 
 ### Fixed
 - `SystemObject` no longer rebinds a class attribute on every instantiation.
@@ -164,6 +196,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `RestoreHandler.load_snapshot` (and `SnapshotManager.load_snapshot`) gives
   the loaded model a new object ID, so one model snapshot can be loaded and
   registered several times, as the BankSim what-if example does.
+- Examples: `banksim_classic.py` tested the loop variable `i` left over from
+  building the models, so its what-if change never happened (or happened on
+  every step when `wiq_time` was `proc_num - 1`). It now counts `simulate(1)`
+  steps and applies the change once, after `wiq_time` steps, where
+  `banksim_snapshot.py` takes its snapshot.
+- Examples: `BankUserGenerator` declares the `stop` input port it handled,
+  and its handler sets `_cur_state` instead of the misspelt `_cur_satate`,
+  so a generator can be stopped.
+- Examples: `banksim_model_snapshot.py` registered every generator twice,
+  which `register_entity` now rejects with `ValueError` at start-up.
 
 ## [2.2.0] — 2026-08-29
 

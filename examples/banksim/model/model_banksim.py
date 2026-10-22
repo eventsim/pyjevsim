@@ -12,11 +12,21 @@ from pyjevsim.structural_model import StructuralModel
 from pyjevsim.definition import *
 
 from .model_accountant import BankAccountant
-from .model_queue import BankQueue
+from .model_queue import BankQueue, OrderedBankQueue
 from .model_user_gen import BankUserGenerator
+from ..seeding import model_rng
 
 class Banksim(StructuralModel):
-    def __init__(self, name):
+    def __init__(self, name, seed=None):
+        """
+        Args:
+            name (str): Name of Model
+            seed (int, optional): Run seed; each generator gets its own
+                stream (``examples.banksim.seeding.model_rng``) and the
+                queue is an ``OrderedBankQueue``.  ``None`` (the default)
+                leaves the generators on the module-level ``random`` and
+                uses ``BankQueue``, as before.
+        """
         StructuralModel.__init__(self, name)
         
         gen_num = 3            #Number of BankUserGenerators
@@ -26,11 +36,12 @@ class Banksim(StructuralModel):
         ## model set & register entity
         gen_list = []
         for i in range(gen_num) :
-            gen = BankUserGenerator(f'gen{i}')
+            gen = BankUserGenerator(f'gen{i}', rng=model_rng(seed, f'gen{i}'))
             gen_list.append(gen)    
             self.register_entity(gen)    
             
-        que = BankQueue('Queue', queue_size, proc_num)
+        queue_cls = BankQueue if seed is None else OrderedBankQueue
+        que = queue_cls('Queue', queue_size, proc_num)
         self.register_entity(que)
         
         

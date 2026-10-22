@@ -90,26 +90,53 @@ class BankUser:
 
 
 class BankUserGenerator(BehaviorModel):
-    """A Model representing a bank user generator."""
+    """A Model representing a bank user generator.
 
-    def __init__(self, name):
+    Input ports: ``start`` starts (or restarts) generation, ``stop`` stops it
+    (the generator passivates until the next ``start``).  Output port:
+    ``user_out``, one :class:`BankUser` per generation cycle.
+    """
+
+    # Random stream of an instance built without ``rng``: ``None`` means the
+    # module-level ``random`` functions, looked up at every draw, exactly as
+    # before the ``rng`` parameter existed.  It is a class attribute so that
+    # such an instance has no extra instance attribute (its state, pickles and
+    # snapshots are unchanged).
+    _rng = None
+
+    def __init__(self, name, rng=None):
         """
         Args:
             name (str): Name of Model
-            cycle (float): Generation cycle time
-            max_user (int): Maximum number of users to generate
-            proc_time (float): Processing time for each user
+            rng (random.Random, optional): Random stream for the cycle and
+                service times of this generator.  ``None`` (the default)
+                draws from the module-level ``random``, i.e. the global
+                stream shared by every unseeded generator.  Pass a
+                dedicated ``random.Random`` (for example from
+                ``examples.banksim.seeding.model_rng``) for a run that is
+                reproducible and independent of the order in which
+                same-time generators are processed.
         """
         BehaviorModel.__init__(self, name)
+        if rng is not None:
+            self._rng = rng
         self.init_state("WAIT")  # Initialize initial state
         self.insert_state("WAIT", Infinite)  # Add "WAIT" state
-        self.insert_state("GEN", random.randint(1,10))  # Add "GEN" state with cycle time
+        self.insert_state("GEN", self._randint(1,10))  # Add "GEN" state with cycle time
 
         self.insert_input_port("start")  # Add input port "start"
+        self.insert_input_port("stop")  # Add input port "stop"
         self.insert_output_port("user_out")  # Add output port "user_out"
 
         self.generated_user = 0  # Counter for generated users
-        
+
+    def _randint(self, a, b):
+        """``randint(a, b)`` from this generator's stream (see ``_rng``)."""
+        rng = self._rng
+        if rng is None:
+            return random.randint(a, b)
+        return rng.randint(a, b)
+
     def ext_trans(self, port, msg):
         """
         Handles external transitions based on the input port.
@@ -120,9 +147,9 @@ class BankUserGenerator(BehaviorModel):
         """
         if port == "start":
             self._cur_state = "GEN"  # Transition state to "GEN"        
-            self.update_state("GEN", random.randint(1,10))
+            self.update_state("GEN", self._randint(1,10))
         if port == "stop" :
-            self._cur_satate = "WAIT"
+            self._cur_state = "WAIT"
 
     def output(self, msg_deliver):
         """
@@ -135,7 +162,7 @@ class BankUserGenerator(BehaviorModel):
 
         msg = SysMessage(self.get_name(), "user_out")
 
-        bu = BankUser(f"{self.get_name()}-{self.generated_user}", random.randint(1, 10))
+        bu = BankUser(f"{self.get_name()}-{self.generated_user}", self._randint(1, 10))
         bu.set_arrival_time(_time)
         msg.insert(bu)  # Insert BankUser into message
 
@@ -146,11 +173,17 @@ class BankUserGenerator(BehaviorModel):
 
     def int_trans(self):
         """Handles internal transitions based on the current state."""
-        self.update_state("GEN", random.randint(1,10))  # Update "GEN" state with cycle time
+        self.update_state("GEN", self._randint(1,10))  # Update "GEN" state with cycle time
         
         
     def get_user(self) : 
         return self.generated_user
     
     def set_state_idle(self) :
+        """Set the state to WAIT from outside a transition.
+
+        The engine is not told: the generator still emits the user it has
+        scheduled and passivates after that internal transition.  Send an
+        event to the ``stop`` port to stop it at the current instant.
+        """
         self._cur_state = "WAIT"
