@@ -34,6 +34,9 @@ class Workload:
     # True for W6: the parent builds a bare "python -c" command instead of
     # running child.py.
     bare_process: bool = False
+    # True for W5: the child also checks that ``examples`` comes from the
+    # checkout under test.
+    uses_examples: bool = False
 
 
 WORKLOADS = {
@@ -61,7 +64,8 @@ WORKLOADS = {
               "seed 1, 3000 x simulate(1)",
         "bank", "run_bank",
         {"gen_num": 20, "queue_size": 10, "proc_num": 10,
-         "max_user": 500000, "seed": 1, "ticks": 3000}),
+         "max_user": 500000, "seed": 1, "ticks": 3000},
+        uses_examples=True),
     "W6": Workload(
         "W6", "Import time and start-up (import + SysExecutor(1)), "
               "bare process",

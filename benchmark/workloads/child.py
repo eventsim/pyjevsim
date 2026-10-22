@@ -8,7 +8,8 @@
 this file, under its own name, before ``--repo`` is put on ``sys.path``.  So
 base and candidate run identical harness code even when the checkout under
 test carries an older or newer ``benchmark/`` directory, and the child
-refuses to run if ``pyjevsim`` resolves anywhere but ``--repo``.
+refuses to run if ``pyjevsim`` (or, for a workload that uses it,
+``examples``) resolves anywhere but ``--repo``.
 
 The result is one stdout line ``@@SUITE@@ <json>``; anything else a
 workload prints is ignored by the parent.
@@ -37,6 +38,16 @@ def _load_harness():
     spec.loader.exec_module(mod)
 
 
+def _check_origin(package, repo):
+    """Return ``package.__file__``; exit unless it is ``<repo>/<name>/``."""
+    path = os.path.abspath(package.__file__ or "")
+    if os.path.normcase(os.path.dirname(os.path.dirname(path))) != \
+            os.path.normcase(repo):
+        raise SystemExit(f"{package.__name__} resolved to {path}, "
+                         f"not under {repo}")
+    return path
+
+
 def main(argv=None):
     # Running a script puts its directory first on sys.path; drop it so
     # nothing in benchmark/workloads/ shadows a top-level module.
@@ -61,14 +72,17 @@ def main(argv=None):
     params.update(json.loads(a.params))
 
     import pyjevsim
-    pj_file = os.path.abspath(pyjevsim.__file__)
-    if os.path.normcase(os.path.dirname(os.path.dirname(pj_file))) != \
-            os.path.normcase(repo):
-        raise SystemExit(f"pyjevsim resolved to {pj_file}, not under {repo}")
+    pj_file = _check_origin(pyjevsim, repo)
+    ex_file = None
+    if wl.uses_examples:
+        import examples
+        ex_file = _check_origin(examples, repo)
 
     module = importlib.import_module(f"benchmark.workloads.{wl.module}")
     result = getattr(module, wl.func)(params)
     result["pyjevsim_file"] = pj_file
+    if ex_file is not None:
+        result["examples_file"] = ex_file
     result["params"] = params
     sys.stdout.write(MARKER + json.dumps(result, sort_keys=True) + "\n")
     sys.stdout.flush()

@@ -216,9 +216,14 @@ def run_once(wid, repo, python=sys.executable, params=None, cpus=None,
             f"{wid} on {repo}: exit {proc.returncode}, no result\n{tail}")
     if wl.bare_process:
         payload = _startup.result_from(payload, wall)
-    pj = os.path.normcase(os.path.abspath(payload["pyjevsim_file"]))
-    if not pj.startswith(os.path.normcase(os.path.abspath(repo)) + os.sep):
-        raise ChildError(f"{wid}: pyjevsim came from {pj}, not {repo}")
+    root = os.path.normcase(os.path.abspath(repo)) + os.sep
+    for key in ("pyjevsim_file", "examples_file"):
+        if key not in payload:
+            continue
+        origin = os.path.normcase(os.path.abspath(payload[key]))
+        if not origin.startswith(root):
+            raise ChildError(f"{wid}: {key[:-5]} came from {origin}, "
+                             f"not {repo}")
     return payload
 
 

@@ -35,6 +35,24 @@ def test_registry_lists_w1_to_w7():
         resolve("W9")
 
 
+def test_child_checks_where_pyjevsim_and_examples_come_from(tmp_path):
+    import types
+
+    import examples
+    import pyjevsim
+    from benchmark.workloads import child
+
+    assert [w for w in WORKLOADS.values() if w.uses_examples] == [
+        WORKLOADS["W5"]]
+    assert child._check_origin(pyjevsim, REPO) == os.path.abspath(
+        pyjevsim.__file__)
+    assert child._check_origin(examples, REPO).startswith(REPO)
+    stray = types.ModuleType("examples")
+    stray.__file__ = str(tmp_path / "examples" / "__init__.py")
+    with pytest.raises(SystemExit, match="examples resolved to"):
+        child._check_origin(stray, REPO)
+
+
 def test_parity_must_match_within_and_across_sides():
     ok, _, key = suite.check_parity({
         "base": [_run({"t": 5}, 1.0), _run({"t": 5}, 1.1)],

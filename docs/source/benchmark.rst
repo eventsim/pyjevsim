@@ -252,7 +252,7 @@ The suite runs from the checkout that holds ``benchmark/suite.py``; each
 child process loads that checkout's ``benchmark`` package and imports
 ``pyjevsim`` (and ``examples``, for W5) from the checkout under test, so
 both sides always run identical harness code, and a child refuses to run
-if ``pyjevsim`` resolves anywhere else. ``--python`` selects the
+if ``pyjevsim`` (or ``examples``, for W5) resolves anywhere else. ``--python`` selects the
 interpreter for the children.
 
 ``--pin CPUS`` restricts the suite and every child to a CPU set given as a
@@ -278,10 +278,10 @@ How a comparison is made
   key. Otherwise the workload is reported as ``REFUSED`` with the
   differing keys, and the exit status is 3.
 * A workload whose child process fails or times out (or whose
-  ``pyjevsim`` resolves outside its checkout) is reported as ``FAILED``
-  and left out of the remaining rounds; the other workloads still run, are
-  reported and are written by ``--out`` (with the failed workload's runs
-  so far), and the exit status is 1.
+  ``pyjevsim`` or ``examples`` resolves outside its checkout) is reported
+  as ``FAILED`` and left out of the remaining rounds; the other workloads
+  still run, are reported and are written by ``--out`` (with the failed
+  workload's runs so far), and the exit status is 1.
 * For each metric the report gives the ratio of minimums
   ``min(cand) / min(base)`` (below 1.0 means the candidate is faster), the
   median of the per-round paired ratios with their min..max spread, each
