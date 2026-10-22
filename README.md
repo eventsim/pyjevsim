@@ -176,7 +176,8 @@ for structural models, snapshots, and HLA stepped execution.
 The [`examples/`](https://github.com/eventsim/pyjevsim/tree/main/examples) directory contains:
 
 - **`banksim/`** — bank queue simulation demonstrating BehaviorModel,
-  StructuralModel, and snapshot/restore.
+  StructuralModel, and snapshot/restore. `banksim_replications.py` runs
+  independent seeds with the replication runner.
 - **`atsim/`** — anti-torpedo simulator with self-propelled and
   stationary decoy models.
 - **`mwmsim/`** — municipal waste management agent-based model.
@@ -207,6 +208,39 @@ def ext_trans(self, port, msg):
 
 See [`benchmark/results/ALIASING.md`](https://github.com/eventsim/pyjevsim/blob/main/benchmark/results/ALIASING.md) for
 the test scope and usage notes.
+
+## Replications
+
+Independent replications of a stochastic model run in parallel processes
+with `run_replications`. `run(seed)` builds and simulates one replication
+and returns a picklable result; the runner calls it once per seed on a
+persistent `spawn` pool and returns the results in seed order:
+
+```python
+# my_study.py
+import random
+from pyjevsim import SysExecutor, run_replications, seed_sequence
+
+def run(seed):                       # top level: workers import it by name
+    random.seed(seed)
+    se = SysExecutor(1)
+    ...                              # build the model
+    se.simulate(1000, _tm=False)
+    return {"served": sink.count}
+
+if __name__ == "__main__":           # required under spawn
+    results = run_replications(run, seed_sequence(2026, 100), workers=8)
+```
+
+`ReplicationPool` keeps one pool for several batches, because starting a
+pool costs a noticeable fraction of a second on Windows. If any replication
+raises, `ReplicationError` is raised after all the others finish; it names
+every failing seed and keeps the successful results. Each replication gets
+its own seed and the results stay in seed order, but a given seed does not
+yet reproduce a run bit for bit. See the
+[replication guide](https://pyjevsim.readthedocs.io/en/latest/replication.html)
+for the spawn rules, chunking, start-up cost and measured speed-ups, and
+`examples/banksim/banksim_replications.py` for a runnable example.
 
 ## Benchmarks
 

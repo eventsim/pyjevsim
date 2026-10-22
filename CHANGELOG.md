@@ -8,6 +8,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- A replication runner, `pyjevsim.replication` (SC-6).
+  `run_replications(run, seeds, ...)` calls a picklable `run(seed)` once per
+  seed on a persistent process pool (spawn by default) and returns the
+  results in seed order. `ReplicationPool` reuses one pool across several
+  batches, and `seed_sequence(base_seed, n)` derives distinct,
+  platform-independent seeds. The runner sends seeds in chunks
+  (`max(1, n // (4 * workers))` by default) and keeps two chunks per worker
+  in flight. A batch with failing seeds raises one `ReplicationError` after
+  all replications finish; it names every failing seed and keeps the
+  successful results. A dead worker raises `BrokenReplicationPool` and a
+  `timeout` raises `ReplicationTimeoutError`; both list the unfinished
+  seeds. Options cover `progress`, an `initializer`, unordered results and
+  `max_tasks_per_child` (Python 3.11+). A call made inside a worker runs
+  sequentially, and `workers=0` runs in the calling process. Each
+  replication gets its own seed, but a run is not yet bit-reproducible
+  across processes. The guide, `docs/source/replication.rst`, covers usage
+  and spawn rules and records the start-up cost and speed-ups measured on
+  a shared machine. `examples/banksim/banksim_replications.py` compares
+  sequential and pooled runs of the bank example.
 - A standard performance suite, `python -m benchmark.suite`, with seven
   workloads: DEVStone HI and LI, a sparse generator, an idle-heavy model
   set, the bank example, import and start-up time, and DEVStone with every
