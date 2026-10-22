@@ -277,6 +277,11 @@ How a comparison is made
 * Runs are only compared when every run of both sides has the same parity
   key. Otherwise the workload is reported as ``REFUSED`` with the
   differing keys, and the exit status is 3.
+* A workload whose child process fails or times out (or whose
+  ``pyjevsim`` resolves outside its checkout) is reported as ``FAILED``
+  and left out of the remaining rounds; the other workloads still run, are
+  reported and are written by ``--out`` (with the failed workload's runs
+  so far), and the exit status is 1.
 * For each metric the report gives the ratio of minimums
   ``min(cand) / min(base)`` (below 1.0 means the candidate is faster), the
   median of the per-round paired ratios with their min..max spread, each

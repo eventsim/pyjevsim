@@ -29,6 +29,9 @@ Measurement rules (docs/source/benchmark.rst, "Standard Performance Suite"):
 * A run is only timed against another when their parity keys (transition
   counts or model-level result counters) are identical; otherwise the
   workload is reported as REFUSED and the exit status is 3.
+* A workload whose child run fails or times out is reported as FAILED and
+  dropped from the remaining rounds; the other workloads still run and are
+  reported (and written by ``--out``), and the exit status is 1.
 * Differences under the noise floor (default 5%) are reported as "noise",
   never as a speed-up or a regression.
 
@@ -328,21 +331,36 @@ def run_suite(sides, workloads, rounds=5, warmup=1, python=sys.executable,
                                     "metrics": list(wl.metrics),
                                     "runs": {lab: [] for lab in labels}}
 
+    def attempt(wid, lab):
+        """One child run; a ChildError marks ``wid`` failed, not the suite."""
+        try:
+            return run_once(wid, sides[lab], python, params.get(wid), cpus,
+                            timeout)
+        except ChildError as exc:
+            doc["workloads"][wid]["failed"] = f"{lab}: {exc}"
+            print(f"error: {wid} failed, skipping it: {exc}",
+                  file=sys.stderr, flush=True)
+            return None
+
     # Warm-up: untimed, one per (workload, side); compiles __pycache__ and
-    # fails fast on a broken checkout.
-    for wid in doc["workloads"]:
+    # drops a workload that cannot run on a checkout before any timing.
+    for wid, entry in doc["workloads"].items():
+        entry["failed"] = None
         for lab in labels:
             for _ in range(warmup):
-                _log(f"warm-up {wid} {lab}", quiet)
-                run_once(wid, sides[lab], python, params.get(wid), cpus,
-                         timeout)
+                if entry["failed"] is None:
+                    _log(f"warm-up {wid} {lab}", quiet)
+                    attempt(wid, lab)
 
     for r in range(rounds):
         order = labels if r % 2 == 0 else labels[::-1]
         for wid, entry in doc["workloads"].items():
             for lab in order:
-                res = run_once(wid, sides[lab], python, params.get(wid),
-                               cpus, timeout)
+                if entry["failed"] is not None:
+                    break
+                res = attempt(wid, lab)
+                if res is None:
+                    break
                 res["round"] = r
                 res["position"] = order.index(lab)
                 entry["runs"][lab].append(res)
@@ -352,13 +370,19 @@ def run_suite(sides, workloads, rounds=5, warmup=1, python=sys.executable,
 
     status = 0
     for wid, entry in doc["workloads"].items():
+        entry["summary"] = {}
+        if entry["failed"] is not None:
+            # Runs collected before the failure stay in "runs".
+            entry["parity_ok"], entry["parity"], entry["refused"] = (
+                False, None, None)
+            status = 1
+            continue
         ok, reason, key = check_parity(entry["runs"])
         entry["parity_ok"] = ok
         entry["parity"] = key
         entry["refused"] = None if ok else reason
-        entry["summary"] = {}
         if not ok:
-            status = 3
+            status = status or 3
             continue
         for metric in entry["metrics"]:
             vals = {lab: [run["metrics"][metric] for run in entry["runs"][lab]]
@@ -406,11 +430,21 @@ def format_report(doc, markdown=False):
             lines.append("| workload | metric | min ms | median ms | "
                          "max ms | spread |")
             lines.append("|---|---|---:|---:|---:|---:|")
+    ncols = 8 if ab else 6
     for wid, entry in doc["workloads"].items():
         if not entry["parity_ok"]:
-            msg = f"REFUSED: {entry['refused']}"
-            lines.append(f"| {wid} | - | {msg} |" if markdown
-                         else f"{wid:<3} {msg}")
+            failed = entry.get("failed")
+            word = "FAILED" if failed else "REFUSED"
+            reason = failed or entry["refused"]
+            msg = f"{word}: {reason}"
+            if markdown:
+                # One table row: first line of the reason, pipes escaped,
+                # and as many cells as the header.
+                text = reason.splitlines()[0].replace("|", r"\|")
+                cells = [wid, "-", text] + ["-"] * (ncols - 4) + [word]
+                lines.append("| " + " | ".join(cells) + " |")
+            else:
+                lines.append(f"{wid:<3} {msg}")
             continue
         for metric, s in entry["summary"].items():
             if ab:
@@ -438,8 +472,9 @@ def format_report(doc, markdown=False):
         lines.insert(0, "  ".join(f"{c:>12}" if i > 1 else f"{c:<10}"
                                   for i, c in enumerate(header)))
         lines.insert(1, "-" * len(lines[0]))
-        lines.insert(0, f"labels: {', '.join(labels)}; rounds {doc['rounds']}; "
-                        f"cand/base < 1 means the candidate is faster")
+        note = "; cand/base < 1 means the candidate is faster" if ab else ""
+        lines.insert(0, f"labels: {', '.join(labels)}; rounds "
+                        f"{doc['rounds']}{note}")
     return "\n".join(lines)
 
 
@@ -536,13 +571,9 @@ def main(argv=None):
         except (OSError, NotImplementedError, ValueError) as exc:
             print(f"error: cannot pin to {a.pin}: {exc}", file=sys.stderr)
             return 2
-    try:
-        doc = run_suite(sides, workloads, rounds=a.rounds, warmup=a.warmup,
-                        python=a.python, params=params, cpus=cpus,
-                        floor=a.noise_floor, timeout=a.timeout, quiet=a.quiet)
-    except ChildError as exc:
-        print(f"error: {exc}", file=sys.stderr)
-        return 1
+    doc = run_suite(sides, workloads, rounds=a.rounds, warmup=a.warmup,
+                    python=a.python, params=params, cpus=cpus,
+                    floor=a.noise_floor, timeout=a.timeout, quiet=a.quiet)
     print(format_report(doc, markdown=a.markdown))
     if a.out:
         os.makedirs(os.path.dirname(os.path.abspath(a.out)) or ".",
