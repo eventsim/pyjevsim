@@ -141,10 +141,14 @@ class ScheduleQueue:
                 break
             heapq.heappop(heap)
             del mapped[t]
+            # One dict operation in the common case: take the entry and put
+            # it back only when it points elsewhere (shared obj_id).
+            take = reverse.pop
             for executor in bucket:
                 obj_id = executor._obj_id
-                if reverse.get(obj_id) == t:
-                    del reverse[obj_id]
+                rt = take(obj_id, None)
+                if rt is not None and rt != t:
+                    reverse[obj_id] = rt
             out.extend(bucket)
 
     def peek_time(self, default: float | None = None):

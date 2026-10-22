@@ -520,6 +520,12 @@ class SysExecutor(CoreModel):
             for msg in msgs:
                 dsts = self.port_map.get((X, msg.get_dst()))
                 if dsts is None:
+                    # Uncoupled port: without track_uncaught, _destinations_for
+                    # would repeat this lookup and return no destinations, so the
+                    # message is dropped here. With track_uncaught it installs the
+                    # DefaultMessageCatcher fallback as before.
+                    if not self._track_uncaught:
+                        continue
                     dsts = self._destinations_for(X, msg.get_dst())
                 for dst_exec, dst_port in dsts:
                     if dst_exec is self:
