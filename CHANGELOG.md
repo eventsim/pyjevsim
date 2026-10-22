@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- `SysExecutor` calls a plain `BehaviorExecutor`'s model directly for
+  output and transitions instead of going through the executor's
+  forwarding wrappers, and skips the miss path for output ports with no
+  coupling. Results and same-time order are unchanged. The direct path is
+  chosen when the executor is built: executors whose class overrides
+  `output`/`int_trans`/`ext_trans`/`con_trans` (such as `HLAExecutor`),
+  models that override `get_cancel_flag`, and `SnapshotExecutor`/
+  `StructuralExecutor` keep the wrappers. Replacing those
+  `BehaviorExecutor` methods on the class, or assigning them on an
+  instance, after the executor is built is no longer seen; subclass it
+  instead, or set `_model_fast = None` on the executor. A `SysExecutor`
+  subclass that overrides the private `_destinations_for` is no longer
+  called for an uncoupled port when `track_uncaught` is off.
 - The engine's per-instant loop does less fixed work: phase A reuses one
   `MessageDeliverer` for every imminent model in an instant (each model's
   messages still travel in their own list), phase B looks couplings up in
