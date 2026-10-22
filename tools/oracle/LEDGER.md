@@ -25,6 +25,26 @@ and say in the entry which checkout, Python version and platform produced it.
 
 ---
 
+## 2026-10-23 — snapshot hooks see the real state; restore keeps IDs unique
+
+- **PR**: the pull request from branch `fix/snapshot-termination-ids`
+  (golden written from its tree on CPython 3.14.0, Windows 11 x86-64;
+  file `golden/v2.3.0-dev.json`, which becomes the 2.3.0 golden).
+- **Scenarios changed**:
+  `snapshot_restore`: c0ba53e6a30a… → b889add70990…
+- **Why**: `snapshot_restore` digests the `SnapshotCondition` hook
+  arguments and the snapshot's `model_map.json`. Two intended fixes move
+  it: the hooks now receive the model's real `cur_state` instead of `""`
+  (CHANGELOG [Unreleased] Fixed: `SnapshotCondition` hooks /
+  `SnapshotExecutor.con_trans`), and the snapshot records
+  `next_object_id` so a restore in a fresh process cannot reuse the IDs of
+  restored objects (CHANGELOG Fixed: object IDs across restore). With
+  those two fields normalised the traces are identical to v2.2.0; no other
+  scenario moved.
+- **Approved by**: pending maintainer review (Changbeom Choi).
+
+---
+
 ## 2026-10-23 — freeze the v2.2.0 golden
 
 - **PR**: the pull request that adds `tools/oracle/` (branch
