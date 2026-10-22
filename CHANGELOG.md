@@ -131,13 +131,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BehaviorExecutor.init_state()` sets it on the model.
 - `SysExecutor.simulate()` no longer reinstalls the SIGINT/SIGTERM handlers
   on every call, and no longer keeps every executor it has run alive for
-  the rest of the process. `TerminationManager` installs its handlers once,
-  from the main thread, and holds executors in a `WeakSet`. `simulate()` on
-  a worker thread no longer raises `ValueError` from `signal.signal`; its
-  executor is still terminated by a signal once the main thread has
-  installed the handlers (any `simulate()` or `TerminationManager()` on the
-  main thread does). A handler that other code installs after the first
-  `simulate()` is no longer overwritten by later runs.
+  the rest of the process. `TerminationManager` installs its handlers from
+  the main thread only when they are not already in place, and holds
+  executors in a `WeakSet`. If something resets SIGINT or SIGTERM between
+  runs (ipykernel restores `default_int_handler` before every cell), the
+  next main-thread `simulate()` installs the handler again, as before.
+  `simulate()` on a worker thread no longer raises `ValueError` from
+  `signal.signal`; its executor is still terminated by a signal once the
+  main thread has installed the handlers (any `simulate()` or
+  `TerminationManager()` on the main thread does).
 - Models created after restoring a simulation snapshot in a new process no
   longer reuse the object IDs of restored models. `SysExecutor` keys its
   active models by object ID, so such a collision silently dropped one of

@@ -1,4 +1,4 @@
-"""TerminationManager: one handler installation per process, weak registry.
+"""TerminationManager: handlers installed only when missing, weak registry.
 
 Every ``simulate()`` used to call ``signal.signal`` twice and append its
 executor to a module-level list that was only emptied by a signal, and
@@ -20,11 +20,12 @@ from pyjevsim.termination_manager import TerminationManager
 
 
 @pytest.fixture
-def fresh_handlers(monkeypatch):
-    """Let the next TerminationManager install its handlers again, and put
-    the process's SIGINT/SIGTERM handlers back afterwards."""
+def fresh_handlers():
+    """Start from Python's default SIGINT/SIGTERM handlers, and put the
+    process's handlers back afterwards."""
     saved = {sig: signal.getsignal(sig) for sig in (signal.SIGINT, signal.SIGTERM)}
-    monkeypatch.setattr(TerminationManager, "_handler_installed", False)
+    signal.signal(signal.SIGINT, signal.default_int_handler)
+    signal.signal(signal.SIGTERM, signal.SIG_DFL)
     yield
     for sig, handler in saved.items():
         signal.signal(sig, handler)
@@ -55,14 +56,16 @@ def test_finished_executors_are_released():
 
 
 def test_handlers_installed_once(fresh_handlers):
-    with mock.patch("pyjevsim.termination_manager.signal.signal") as set_handler:
+    with mock.patch("pyjevsim.termination_manager.signal.signal",
+                    wraps=signal.signal) as set_handler:
         for _ in range(3):
             _executor().simulate(1)
             TerminationManager()
 
     assert sorted(c.args[0] for c in set_handler.call_args_list) == sorted(
         [signal.SIGINT, signal.SIGTERM])
-    assert TerminationManager._handler_installed
+    assert signal.getsignal(signal.SIGINT) is TerminationManager.signal_handler
+    assert signal.getsignal(signal.SIGTERM) is TerminationManager.signal_handler
 
 
 def test_simulate_on_worker_thread_does_not_raise(fresh_handlers):
@@ -84,7 +87,7 @@ def test_simulate_on_worker_thread_does_not_raise(fresh_handlers):
     assert se.get_global_time() == 3
     # The worker registers its executor but cannot install the handlers.
     assert se in TerminationManager._executors
-    assert not TerminationManager._handler_installed
+    assert signal.getsignal(signal.SIGINT) is signal.default_int_handler
 
 
 @pytest.mark.parametrize("sig", [signal.SIGINT, signal.SIGTERM])
@@ -104,3 +107,21 @@ def test_signal_terminates_running_simulation(fresh_handlers, sig):
 
     assert not worker.is_alive()
     assert se.is_terminated()
+
+
+def test_handler_reinstalled_after_reset(fresh_handlers):
+    """ipykernel puts default_int_handler back before every cell; the next
+    main-thread simulate() must still end gracefully on SIGINT."""
+    for _ in range(2):
+        signal.signal(signal.SIGINT, signal.default_int_handler)
+        se = SysExecutor(0.01, ex_mode=ExecutionType.R_TIME, snapshot_manager=None)
+        timer = threading.Timer(0.3, signal.raise_signal, args=(signal.SIGINT,))
+        timer.start()
+        try:
+            se.simulate(Infinite)
+        except KeyboardInterrupt:
+            pytest.fail("SIGINT escaped simulate() instead of terminating it")
+        finally:
+            timer.cancel()
+
+        assert se.is_terminated()

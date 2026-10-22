@@ -16,14 +16,16 @@ import weakref
 class TerminationManager:
     """Terminates registered SysExecutors on SIGINT or SIGTERM.
 
-    The handlers are installed once per process, from the main thread (Python
-    only allows that thread to set them). Executors registered from another
-    thread are still terminated when a signal arrives, as long as the main
-    thread has installed the handlers. Executors are held weakly, so a
-    finished executor that is no longer referenced is released.
+    The handlers are installed from the main thread (Python only allows that
+    thread to set them), and only when they are not already in place, so
+    repeated runs do not call ``signal.signal`` again but a handler that was
+    reset in between (ipykernel resets SIGINT before every cell) is installed
+    again. Executors registered from another thread are still terminated
+    when a signal arrives, as long as the main thread has installed the
+    handlers. Executors are held weakly, so a finished executor that is no
+    longer referenced is released.
     """
     _executors = weakref.WeakSet()
-    _handler_installed = False
 
     def __init__(self, executor=None):
         if executor:
@@ -37,13 +39,11 @@ class TerminationManager:
 
     @staticmethod
     def __set_terminate_handler():
-        if TerminationManager._handler_installed:
-            return
         if threading.current_thread() is not threading.main_thread():
             return
-        signal.signal(signal.SIGTERM, TerminationManager.signal_handler)
-        signal.signal(signal.SIGINT, TerminationManager.signal_handler)
-        TerminationManager._handler_installed = True
+        for sig in (signal.SIGTERM, signal.SIGINT):
+            if signal.getsignal(sig) is not TerminationManager.signal_handler:
+                signal.signal(sig, TerminationManager.signal_handler)
 
     @staticmethod
     def signal_handler(sig, frame):
