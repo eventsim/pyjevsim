@@ -129,6 +129,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `BehaviorExecutor.get_cur_state()` returned a field of the executor that
   was never updated; it now returns the model's state, and
   `BehaviorExecutor.init_state()` sets it on the model.
+- `SysExecutor.simulate()` no longer reinstalls the SIGINT/SIGTERM handlers
+  on every call, and no longer keeps every executor it has run alive for
+  the rest of the process. `TerminationManager` installs its handlers once,
+  from the main thread, and holds executors in a `WeakSet`. `simulate()` on
+  a worker thread no longer raises `ValueError` from `signal.signal`; its
+  executor is still terminated by a signal once the main thread has
+  installed the handlers (any `simulate()` or `TerminationManager()` on the
+  main thread does). A handler that other code installs after the first
+  `simulate()` is no longer overwritten by later runs.
 
 ## [2.2.0] — 2026-08-29
 
