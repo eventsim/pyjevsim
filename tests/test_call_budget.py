@@ -52,8 +52,11 @@ from .model_bank_user_gen import BankUserGenerator
 # affected-model set, which follows object identity, so they spread by up
 # to 2.4% over 30 runs.  The C values below are the maximum of 30 runs, so
 # the C budget catches increases of more than about 3%, and the Python
-# budget is the sharp one.  Measured on Windows 11 (the counts do not
-# depend on the platform).  Python 3.10 has no recorded budget and skips.
+# budget is the sharp one.  Measured on Windows 11 with the patch releases
+# noted below.  Linux and later patch releases are expected to match (the
+# engine has no platform-specific path) but were not measured; CI checks
+# the latest 3.13 and 3.14 on Linux and the latest 3.14 on Windows.
+# Python 3.10 has no recorded budget and skips.
 BUDGET_COMMIT = "f7145e6"
 MARGIN = 1.03
 

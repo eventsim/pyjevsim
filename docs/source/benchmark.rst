@@ -314,9 +314,11 @@ performance roadmap; decide the reading rule before measuring.
 * Put both checkouts on the same file system: import time (W6) depends on
   where the files live (a checkout under the Windows temp directory imported
   about 30% slower than one on another drive for identical code).
-* Pin to the fast cores on a hybrid CPU where possible: unpinned runs
-  longer than about 3 s were seen to drop to half speed. On a busy machine
-  pinning also crowds the suite onto fewer cores (see below).
+* Pinning cuts both ways; decide it with an A/A run on the machine. On a
+  quiet hybrid CPU, pinning to the fast cores avoids a slowdown seen in
+  unpinned runs longer than about 3 s (they dropped to half speed). On a
+  busy machine pinning crowds the suite onto fewer cores, and in the A/A
+  runs below it made the floor worse than not pinning.
 * Per-workload engine shares need a sampling profiler; cProfile inflates
   the engine's share by 4.6-6.2x.
 
@@ -372,10 +374,15 @@ counts Python function starts and C calls made during ``simulate()`` for a
 DEVStone HI 6x8 run with 10 seeds and a small bank model, divides by the
 number of transitions and fails when either exceeds the value measured on
 main by more than 3%. Python-level counts are exact; C counts vary by up to
-about 2% between runs (the schedule-queue bucket cache hit rate follows set
-order), so the recorded C values are the maximum of 30 runs. When an engine
-change adds calls on purpose, update the recorded values in the same pull
-request; ``python -m tests.test_call_budget`` prints them.
+about 2.4% between runs (the schedule-queue bucket cache hit rate follows
+set order), so the recorded C values are the maximum of 30 runs. The values
+were recorded on Windows 11 with CPython 3.11.15, 3.12.13, 3.13.13 and
+3.14.0. CI checks them with the latest 3.13 and 3.14 on Linux and the
+latest 3.14 on Windows; that Linux and newer patch releases give the same
+counts is expected (the engine has no platform-specific path) but was not
+measured beforehand, and a version without recorded values (3.10) skips.
+When an engine change adds calls on purpose, update the recorded values in
+the same pull request; ``python -m tests.test_call_budget`` prints them.
 ``tests/test_system_object.py`` also checks that creating messages and
 models and running executors never rebinds a class attribute of the hot
 path classes (the regression fixed in #41).
