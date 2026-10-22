@@ -1,25 +1,40 @@
 #!/usr/bin/env python
 """Order-insensitive behavioural trace oracle for pyjevsim engine changes.
 
-Run all scenarios against a checkout and write a digest:
+``--repo`` defaults to the repository that contains this file.  Run all
+scenarios against a checkout and write a full digest (traces included, for
+local diffs):
 
-    python trace_oracle.py --repo <checkout> --out <digest.json> [--jobs 3]
-                           [--scenarios a,b,...] [--salt N]
+    python tools/oracle/trace_oracle.py [--repo <checkout>] --out <digest.json>
+                                        [--jobs 4] [--scenarios a,b,...]
+                                        [--skip a,b,...] [--no-slow] [--salt N]
 
-Compare two digests (exit 0 = every verdict scenario matches):
+Write only the per-scenario hashes (small enough to commit or to compare in
+CI), or compare a run with a committed golden file:
 
-    python trace_oracle.py --compare base.json cand.json [--max-lines 25]
+    python tools/oracle/trace_oracle.py --out <hashes.json> --hash-only
+    python tools/oracle/trace_oracle.py --golden tools/oracle/golden/v2.2.0.json
+    python tools/oracle/trace_oracle.py --golden <new.json> --write-golden
+
+Compare two digests or hash files (exit 0 = every verdict scenario matches):
+
+    python tools/oracle/trace_oracle.py --compare base.json cand.json [--max-lines 25]
 
 Check which scenarios are order-sensitive on one checkout (re-runs every
 scenario with the executor hash perturbed, i.e. a different same-time
 set-iteration order, and reports digests that move):
 
-    python trace_oracle.py --repo <checkout> --perturb-check <dir> [--salts 1,2,3]
+    python tools/oracle/trace_oracle.py --perturb-check <dir> [--salts 1,2,3]
+
+``order_check.py`` does the same without sorting inside an instant.
 
 How it works
 ------------
 Each scenario runs in a fresh ``python`` subprocess with ``<checkout>`` at
-``sys.path[0]`` (asserted).  Inside it the runner monkey-patches (never edits)
+``sys.path[0]`` (asserted), so this file can check any checkout or ``git
+archive`` export, including ones that predate it.  Scenario models that are
+not part of the checkout under test come from ``oracle_models.py`` next to
+this file.  Inside the subprocess the runner monkey-patches (never edits)
 the checkout:
 
 * ``SysExecutor._run_instant`` is wrapped so every call opens a *group*
@@ -43,10 +58,14 @@ the checkout:
   digest.
 
 A scenario marked ``informational`` is inherently order-sensitive (its
-outcome depends on set-iteration order, which this round must neither fix nor
-worsen); its mismatch is reported but does not fail ``--compare``.  The
-``strict`` section (raw dill bytes of snapshot files) is warn-only because it
-embeds object ids.
+outcome depends on set-iteration order, which the engine does not fix yet);
+its mismatch is reported but does not fail ``--compare``.  The ``strict``
+section (raw dill bytes of snapshot files) is warn-only because it embeds
+object ids.
+
+A scenario's hash covers its trace, its final summary and the first line of
+any error.  Model names, printed text and float reprs are part of it; object
+ids, memory addresses, paths and wall time are not.
 """
 
 import argparse
@@ -56,7 +75,9 @@ import hashlib
 import io
 import json
 import os
+import platform
 import random
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -66,8 +87,10 @@ import types
 
 ORACLE_VERSION = 1
 HERE = os.path.dirname(os.path.abspath(__file__))
+DEFAULT_REPO = os.path.dirname(os.path.dirname(HERE))
 FIXED_SALT = 7919           # used for informational (order-sensitive) scenarios
 INLINE_LIMIT = 4000          # groups; larger traces go to the sidecar gz only
+HASHES_FORMAT = "pyjevsim-oracle-hashes"
 
 
 # --------------------------------------------------------------------------
@@ -373,17 +396,23 @@ class Recorder:
         return self.mstack[-1][0] if self.mstack else None
 
     # ---- serialise
-    def canonical_lines(self):
+    def canonical_lines(self, raw_order=False):
+        """One JSON line per group or checkpoint.
+
+        Events, print lines and emits are sorted within a group unless
+        ``raw_order`` is set, in which case they keep the order in which
+        the engine produced them (used by ``order_check.py``)."""
         self.compute_labels()
+        order = list if raw_order else sorted
         out = []
         for rec in self.lines:
             if rec[0] == "C":
                 out.append(json.dumps(["CP", rec[1], rec[2]], ensure_ascii=False))
                 continue
             _, eng, t, mode, events, states, txt, emits = rec
-            ev = sorted("%s|%s|%s|gt=%s|%s" % (self.label(m), k, p, gt, pl) for m, k, p, gt, pl in events)
+            ev = order("%s|%s|%s|gt=%s|%s" % (self.label(m), k, p, gt, pl) for m, k, p, gt, pl in events)
             st = sorted("%s=%s" % (self.label(m), s) for m, s in states)
-            out.append(json.dumps([self.elabel(eng), repr(t), mode, ev, st, sorted(txt), sorted(emits)],
+            out.append(json.dumps([self.elabel(eng), repr(t), mode, ev, st, order(txt), order(emits)],
                                   ensure_ascii=False))
         return out
 
@@ -681,7 +710,6 @@ def sc_ring(repo):
 
 
 def _bank_common(repo, canonical):
-    sys.path.insert(1, HERE)
     import bank_driver
     if canonical:
         from examples.banksim.model import model_user_gen, model_queue, model_result
@@ -770,7 +798,7 @@ def _make_replay(cls, attrs):
 def sc_structural(repo):
     from pyjevsim.definition import ExecutionType
     from pyjevsim.system_executor import SysExecutor
-    from tests.model_stm import STM
+    from oracle_models import STM
     se = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
     gen = STM("Gen")
     se.register_entity(gen)
@@ -788,7 +816,7 @@ def sc_confluent(repo):
     from pyjevsim.definition import ExecutionType
     from pyjevsim.system_executor import SysExecutor
     from pyjevsim.system_message import SysMessage
-    from tests.test_confluent import _OneShotEmitter, _CounterAtomic
+    from oracle_models import CounterAtomic, OneShotEmitter
     REC.exclude.add("_log")       # shared append-log: order-sensitive by design
 
     class _TimedAtomic(BehaviorModel):   # replica of the local class in the test
@@ -822,7 +850,7 @@ def sc_confluent(repo):
     # 1) test_confluent_fires_when_both_imminent_and_receiving
     log = []
     ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
-    seed, a, b = _OneShotEmitter(), _CounterAtomic("A", log), _CounterAtomic("B", log)
+    seed, a, b = OneShotEmitter(), CounterAtomic("A", log), CounterAtomic("B", log)
     for m in (seed, a, b):
         ss.register_entity(m)
     ss.coupling_relation(seed, "out", a, "in")
@@ -846,7 +874,7 @@ def sc_confluent(repo):
     # 3) test_no_confluent_when_only_imminent
     log3 = []
     ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
-    a3 = _CounterAtomic("A3", log3)
+    a3 = CounterAtomic("A3", log3)
     ss.register_entity(a3)
     ss.insert_input_port("kick")
     ss.coupling_relation(None, "kick", a3, "in")
@@ -858,10 +886,10 @@ def sc_confluent(repo):
 
 
 def sc_cancel(repo):
-    from tests.test_cancel_rescheduling import _build
+    from oracle_models import build_cancel
     engines = []
     for use_cancel, n in ((True, 3), (False, 3), (True, 20)):
-        ss, log = _build(use_cancel=use_cancel, poke_count=n)
+        ss, log = build_cancel(use_cancel=use_cancel, poke_count=n)
         arm()
         ss.simulate(12, _tm=False)
         REC.checkpoint("cancel_%s_%d" % (use_cancel, n), {"log": log})
@@ -874,10 +902,10 @@ def sc_vtime(repo):
     from pyjevsim.definition import ExecutionType
     from pyjevsim.system_executor import SysExecutor
     from pyjevsim.system_message import SysMessage
-    from tests.test_v_time_jump import _build
+    from oracle_models import build_vtime
     engines = []
     for period, count, horizon in ((1, 5, 20), (1000, 3, 5000), (1000, 100, 120_000), (10, 10, 25)):
-        ss, gl, sl = _build(period=period, count=count)
+        ss, gl, sl = build_vtime(period=period, count=count)
         arm()
         ss.simulate(horizon, _tm=False)
         REC.checkpoint("vt_%s_%s_%s" % (period, count, horizon), {"gen": gl, "sink": sl})
@@ -925,11 +953,11 @@ def sc_destruction(repo):
     from pyjevsim.definition import ExecutionType, Infinite
     from pyjevsim.system_executor import SysExecutor
     from pyjevsim.system_message import SysMessage
-    from tests.test_entity_destruction import _build
+    from oracle_models import build_destruction
     engines = []
     # test_entities_destroyed_at_correct_time
     times = [50, 25, 75, 10, 100, 5, 30, 60, 15, 40]
-    ss = _build(times)
+    ss = build_destruction(times)
     arm()
     ss.simulate(1, _tm=False)
     REC.checkpoint("d0", {"active": active_labels(ss), "pending": ss._destructs_pending})
@@ -941,7 +969,7 @@ def sc_destruction(repo):
                                     "pending": ss._destructs_pending})
     engines.append(ss)
     # test_no_destruction_when_all_infinite
-    ss = _build([Infinite, Infinite])
+    ss = build_destruction([Infinite, Infinite])
     ss.simulate(1000, _tm=False)
     REC.checkpoint("dinf", {"active": active_labels(ss), "pending": ss._destructs_pending})
     engines.append(ss)
@@ -1161,8 +1189,7 @@ def sc_snapshot(repo):
     from pyjevsim.snapshot_condition import SnapshotCondition
     from pyjevsim.snapshot_manager import SnapshotManager
     from pyjevsim.restore_handler import RestoreHandler
-    from tests.model_peg import PEG
-    from tests.model_msg_recv import MsgRecv
+    from oracle_models import MsgRecv, PEG
 
     class RecCond(SnapshotCondition):
         @staticmethod
@@ -1387,13 +1414,16 @@ SCENARIOS = [
     ("mwmsim_433sbh", sc_mwmsim, True),
 ]
 SC_BY_NAME = {n: (f, inf) for n, f, inf in SCENARIOS}
+# Left out by --no-slow (about 15 s of one core on the machine that froze
+# the golden; every other scenario takes under 7 s).
+SLOW = {"mwmsim_433sbh"}
 
 
 # --------------------------------------------------------------------------
 # worker
 # --------------------------------------------------------------------------
 
-def worker(name, repo, part, salt):
+def worker(name, repo, part, salt, raw_order=False):
     repo = os.path.abspath(repo)
     # make sure THIS checkout is what gets imported
     sys.path[:] = [repo] + [p for p in sys.path if os.path.abspath(p or ".") not in (HERE, repo)]
@@ -1403,10 +1433,11 @@ def worker(name, repo, part, salt):
     import pyjevsim
     pj = os.path.abspath(pyjevsim.__file__)
     assert pj.startswith(repo + os.sep), "imported %s, expected under %s" % (pj, repo)
-    # short cwd (Windows MAX_PATH): snapshot files are written relative to it
-    wroot = os.path.join(HERE, "w")
-    os.makedirs(wroot, exist_ok=True)
-    work = tempfile.mkdtemp(prefix="", dir=wroot)
+    # oracle_models and bank_driver come from this directory, after the
+    # checkout so that they can never shadow it.
+    sys.path.insert(1, HERE)
+    # snapshot files are written relative to the cwd
+    work = tempfile.mkdtemp(prefix="oracle_")
     os.chdir(work)
     fn, informational = SC_BY_NAME[name]
     if salt is None and informational:
@@ -1442,15 +1473,12 @@ def worker(name, repo, part, salt):
         "info": json.loads(json.dumps(REC.info, default=str)),
         "elapsed_s": round(time.perf_counter() - t0, 3), "pyjevsim": pj, "salt": salt,
     }
+    if raw_order:
+        res["raw_lines"] = REC.canonical_lines(raw_order=True)
     with open(part, "w", encoding="utf-8") as f:
         json.dump(res, f)
-    # best-effort cleanup of the scratch cwd
     os.chdir(os.path.dirname(os.path.abspath(part)))
-    try:
-        import shutil
-        shutil.rmtree(work, ignore_errors=True)
-    except Exception:
-        pass
+    shutil.rmtree(work, ignore_errors=True)
     return 0
 
 
@@ -1464,91 +1492,133 @@ def git_info(repo):
             return subprocess.run(["git", "-C", repo] + list(a), capture_output=True, text=True).stdout.strip()
         except Exception:
             return ""
+    if not os.path.exists(os.path.join(repo, ".git")):
+        # a `git archive` export: do not report an enclosing repository
+        return {"head": "", "branch": "", "dirty_files": []}
     return {"head": g("rev-parse", "HEAD"), "branch": g("rev-parse", "--abbrev-ref", "HEAD"),
             "dirty_files": g("status", "--porcelain", "--", "pyjevsim").splitlines()}
 
 
-def run_all(repo, out, names, jobs, salt):
+def scenario_hash(lines, final, error):
+    """sha256 over the trace lines, the final summary and the error's first line."""
+    final_s = json.dumps(final, sort_keys=True, ensure_ascii=False)
+    h = hashlib.sha256()
+    for ln in lines:
+        h.update(ln.encode("utf-8"))
+        h.update(b"\n")
+    h.update(b"FINAL\n")
+    h.update(final_s.encode("utf-8"))
+    if error:
+        h.update(b"ERROR\n")
+        h.update(error.split("\n")[0].encode("utf-8"))
+    return h.hexdigest(), final_s
+
+
+def run_scenarios(repo, names, jobs, salt=None, raw_order=False):
+    """Run each scenario in a fresh subprocess; return ({name: result}, wall_s)."""
     repo = os.path.abspath(repo)
-    out = os.path.abspath(out)
-    side = out[:-5] + ".traces" if out.endswith(".json") else out + ".traces"
-    os.makedirs(side, exist_ok=True)
-    tmp = tempfile.mkdtemp(prefix="parts_", dir=side)
+    tmp = tempfile.mkdtemp(prefix="oracle_parts_")
     procs = {}
     pending = list(names)
     results = {}
     t0 = time.perf_counter()
     env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONHASHSEED="0")
-    while pending or procs:
-        while pending and len(procs) < jobs:
-            n = pending.pop(0)
-            part = os.path.join(tmp, n + ".json")
-            cmd = [sys.executable, os.path.abspath(__file__), "--worker", n, "--repo", repo, "--part", part]
-            if salt is not None:
-                cmd += ["--salt", str(salt)]
-            lf = open(os.path.join(tmp, n + ".log"), "w", encoding="utf-8")
-            procs[n] = (subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, env=env, cwd=tmp), part, lf,
-                        time.perf_counter())
-        time.sleep(0.05)
-        for n in list(procs):
-            p, part, lf, ts = procs[n]
-            if p.poll() is None:
-                if time.perf_counter() - ts > 1800:
-                    p.kill()
-                continue
+    try:
+        while pending or procs:
+            while pending and len(procs) < jobs:
+                n = pending.pop(0)
+                part = os.path.join(tmp, n + ".json")
+                cmd = [sys.executable, os.path.abspath(__file__), "--worker", n, "--repo", repo, "--part", part]
+                if salt is not None:
+                    cmd += ["--salt", str(salt)]
+                if raw_order:
+                    cmd.append("--raw-order")
+                lf = open(os.path.join(tmp, n + ".log"), "w", encoding="utf-8")
+                procs[n] = (subprocess.Popen(cmd, stdout=lf, stderr=subprocess.STDOUT, env=env, cwd=tmp), part,
+                            lf, time.perf_counter())
+            time.sleep(0.05)
+            for n in list(procs):
+                p, part, lf, ts = procs[n]
+                if p.poll() is None:
+                    if time.perf_counter() - ts > 1800:
+                        p.kill()
+                    continue
+                lf.close()
+                del procs[n]
+                if os.path.exists(part):
+                    with open(part, encoding="utf-8") as f:
+                        results[n] = json.load(f)
+                else:
+                    with open(os.path.join(tmp, n + ".log"), encoding="utf-8", errors="replace") as f:
+                        results[n] = {"name": n,
+                                      "error": "worker crashed rc=%s\n%s" % (p.returncode, f.read()[-4000:]),
+                                      "lines": [], "final": None, "strict": {}, "info": {},
+                                      "informational": SC_BY_NAME[n][1], "grouping": "?"}
+    finally:
+        for p, _, lf, _ in procs.values():
+            p.kill()
             lf.close()
-            del procs[n]
-            if os.path.exists(part):
-                with open(part, encoding="utf-8") as f:
-                    results[n] = json.load(f)
-            else:
-                with open(os.path.join(tmp, n + ".log"), encoding="utf-8", errors="replace") as f:
-                    results[n] = {"name": n, "error": "worker crashed rc=%s\n%s" % (p.returncode, f.read()[-4000:]),
-                                  "lines": [], "final": None, "strict": {}, "info": {},
-                                  "informational": SC_BY_NAME[n][1], "grouping": "?"}
-    digest = {"oracle_version": ORACLE_VERSION, "repo": repo, "git": git_info(repo), "salt": salt,
-              "python": sys.version, "created": time.strftime("%Y-%m-%d %H:%M:%S"),
-              "wall_s": round(time.perf_counter() - t0, 1), "scenarios": {}}
+        shutil.rmtree(tmp, ignore_errors=True)
+    return results, round(time.perf_counter() - t0, 1)
+
+
+def run_all(repo, out, names, jobs, salt, hash_only=False, skipped=(), label=None):
+    """Run ``names`` and write a full digest, or only the hashes if ``hash_only``."""
+    repo = os.path.abspath(repo)
+    out = os.path.abspath(out)
+    if label is None:
+        label = os.path.basename(repo)
+    results, wall = run_scenarios(repo, names, jobs, salt)
+    digest = {"oracle_version": ORACLE_VERSION, "label": label, "git": git_info(repo), "salt": salt,
+              "python": platform.python_version(), "implementation": platform.python_implementation(),
+              "platform": "%s-%s" % (platform.system(), platform.machine()),
+              "created": time.strftime("%Y-%m-%d %H:%M:%S"), "wall_s": wall,
+              "skipped": sorted(skipped), "scenarios": {}}
+    if hash_only:
+        digest = dict({"format": HASHES_FORMAT}, **digest)
+    else:
+        digest["repo"] = repo
+        side = out[:-5] + ".traces" if out.endswith(".json") else out + ".traces"
+        os.makedirs(side, exist_ok=True)
     for n in names:
         r = results[n]
         lines = r.get("lines") or []
-        final_s = json.dumps(r.get("final"), sort_keys=True, ensure_ascii=False)
-        h = hashlib.sha256()
-        for ln in lines:
-            h.update(ln.encode("utf-8"))
-            h.update(b"\n")
-        h.update(b"FINAL\n")
-        h.update(final_s.encode("utf-8"))
-        if r.get("error"):
-            h.update(b"ERROR\n")
-            h.update(r["error"].split("\n")[0].encode("utf-8"))
-        trace_path = os.path.join(side, n + ".jsonl.gz")
-        with gzip.open(trace_path, "wt", encoding="utf-8") as f:
-            for ln in lines:
-                f.write(ln + "\n")
-        idx = []
-        for i, ln in enumerate(lines):
-            head = json.loads(ln)
-            idx.append([head[0], head[1], hashlib.sha256(ln.encode("utf-8")).hexdigest()[:16]])
+        h, final_s = scenario_hash(lines, r.get("final"), r.get("error"))
         n_events = 0
         for ln in lines:
             o = json.loads(ln)
             if o[0] != "CP":
                 n_events += len(o[3])
+        strict = r.get("strict") or {}
+        if hash_only:
+            digest["scenarios"][n] = {
+                "sha256": h, "final_sha256": sha(final_s), "informational": r.get("informational"),
+                "grouping": r.get("grouping"), "n_groups": len(lines), "n_events": n_events,
+                "error": (r.get("error") or "").split("\n")[0] or None,
+                "strict_sha256": sha(json.dumps(strict, sort_keys=True)) if strict else None,
+            }
+            continue
+        trace_path = os.path.join(side, n + ".jsonl.gz")
+        with gzip.open(trace_path, "wt", encoding="utf-8") as f:
+            for ln in lines:
+                f.write(ln + "\n")
+        idx = []
+        for ln in lines:
+            head = json.loads(ln)
+            idx.append([head[0], head[1], hashlib.sha256(ln.encode("utf-8")).hexdigest()[:16]])
         entry = {
-            "sha256": h.hexdigest(), "informational": r.get("informational"), "grouping": r.get("grouping"),
+            "sha256": h, "informational": r.get("informational"), "grouping": r.get("grouping"),
             "error": r.get("error"), "n_groups": len(lines), "n_events": n_events,
-            "final": r.get("final"), "final_sha256": sha(final_s), "strict": r.get("strict"),
+            "final": r.get("final"), "final_sha256": sha(final_s), "strict": strict,
             "info": r.get("info"), "elapsed_s": r.get("elapsed_s"), "pyjevsim": r.get("pyjevsim"),
             "index": idx, "trace_file": trace_path,
         }
         if len(lines) <= INLINE_LIMIT:
             entry["trace"] = lines
         digest["scenarios"][n] = entry
-    with open(out, "w", encoding="utf-8") as f:
+    with open(out, "w", encoding="utf-8", newline="\n") as f:
         json.dump(digest, f, indent=1, ensure_ascii=False)
-    import shutil
-    shutil.rmtree(tmp, ignore_errors=True)
+        f.write("\n")
     bad = 0
     for n in names:
         e = digest["scenarios"][n]
@@ -1556,11 +1626,13 @@ def run_all(repo, out, names, jobs, salt):
         if e["error"]:
             bad += 1
         print("%-28s %-5s groups=%-6d events=%-7d %6.1fs sha=%s%s" % (
-            n, status, e["n_groups"], e["n_events"], e["elapsed_s"] or 0, e["sha256"][:16],
+            n, status, e["n_groups"], e["n_events"], results[n].get("elapsed_s") or 0, e["sha256"][:16],
             "  (informational)" if e["informational"] else ""))
         if e["error"]:
             print("    " + e["error"].strip().split("\n")[0])
-    print("wrote", out, "(traces in %s)" % side)
+    if skipped:
+        print("not run: " + ", ".join(skipped))
+    print("wrote %s (%.1f s)%s" % (out, wall, "" if hash_only else " (traces in %s)" % side))
     return 1 if bad else 0
 
 
@@ -1623,21 +1695,41 @@ def _diff_obj(a, b, path="final", out=None, limit=20):
     return out
 
 
+def _describe(d):
+    src = d.get("label") or d.get("repo") or "?"
+    head = (d.get("git") or {}).get("head", "")[:10]
+    return "%s %s (Python %s, %s)" % (src, head, d.get("python", "?").split()[0], d.get("platform", "?"))
+
+
+def _strict_of(e):
+    if "strict_sha256" in e:
+        return e["strict_sha256"]
+    s = e.get("strict") or {}
+    return sha(json.dumps(s, sort_keys=True)) if s else None
+
+
 def compare(pa, pb, max_lines):
+    """Compare two digests or hash files; return 0 when every verdict scenario matches."""
     with open(pa, encoding="utf-8") as f:
         A = json.load(f)
     with open(pb, encoding="utf-8") as f:
         B = json.load(f)
     fails = 0
     warns = 0
-    print("base: %s  %s" % (A.get("repo"), A.get("git", {}).get("head", "")[:10]))
-    print("cand: %s  %s" % (B.get("repo"), B.get("git", {}).get("head", "")[:10]))
+    print("base: " + _describe(A))
+    print("cand: " + _describe(B))
+    if A.get("platform") and B.get("platform") and (A["python"], A["platform"]) != (B["python"], B["platform"]):
+        print("NOTE      base and candidate ran on different Python versions or platforms")
+    skipped = set(A.get("skipped") or ()) | set(B.get("skipped") or ())
     names = list(A["scenarios"]) + [n for n in B["scenarios"] if n not in A["scenarios"]]
     for n in names:
         ea, eb = A["scenarios"].get(n), B["scenarios"].get(n)
         if ea is None or eb is None:
-            print("MISSING   %s (only in %s)" % (n, "base" if eb is None else "candidate"))
-            fails += 1
+            if n in skipped:
+                print("SKIPPED   %s" % n)
+            else:
+                print("MISSING   %s (only in %s)" % (n, "base" if eb is None else "candidate"))
+                fails += 1
             continue
         informational = bool(ea.get("informational"))
         tag = "INFO-" if informational else ""
@@ -1658,7 +1750,12 @@ def compare(pa, pb, max_lines):
                 fails += 1
             print("%sDIFF  %-28s groups %d vs %d, events %d vs %d" % (
                 tag, n, ea["n_groups"], eb["n_groups"], ea["n_events"], eb["n_events"]))
-            ia, ib = ea["index"], eb["index"]
+            ia, ib = ea.get("index"), eb.get("index")
+            if ia is None or ib is None:
+                print("  %s; run both checkouts with --out (full digest) to see the first differing group"
+                      % ("final summary differs too" if ea.get("final_sha256") != eb.get("final_sha256")
+                         else "final summary matches, trace differs"))
+                continue
             first = None
             for i in range(min(len(ia), len(ib))):
                 if ia[i][2] != ib[i][2]:
@@ -1682,11 +1779,13 @@ def compare(pa, pb, max_lines):
                 print("  trace identical; final summary differs:")
                 for ln in _diff_obj(ea.get("final"), eb.get("final")):
                     print(ln)
-        sa, sb = ea.get("strict") or {}, eb.get("strict") or {}
+        sa, sb = _strict_of(ea), _strict_of(eb)
         if sa != sb:
             warns += 1
-            ks = sorted(k for k in set(sa) | set(sb) if sa.get(k) != sb.get(k))
-            print("WARN      %s strict (raw dill bytes) differ: %s" % (n, ", ".join(ks[:6])))
+            ka = set((ea.get("strict") or {}).items())
+            kb = set((eb.get("strict") or {}).items())
+            ks = sorted({k for k, _ in ka ^ kb})
+            print("WARN      %s strict (raw dill bytes) differ%s" % (n, (": " + ", ".join(ks[:6])) if ks else ""))
     print("RESULT: %s (%d failing, %d warnings)" % ("PASS" if fails == 0 else "FAIL", fails, warns))
     return 0 if fails == 0 else 1
 
@@ -1708,41 +1807,76 @@ def perturb_check(repo, outdir, salts, names, jobs):
     return 0
 
 
+def select(scenarios, skip, no_slow):
+    """Scenario names to run, and the remaining ones (reported as skipped)."""
+    wanted = [n for n in scenarios.split(",") if n] or [n for n, _, _ in SCENARIOS]
+    drop = {n for n in skip.split(",") if n}
+    if no_slow:
+        drop |= SLOW
+    for n in wanted + sorted(drop):
+        if n not in SC_BY_NAME:
+            raise ValueError("unknown scenario %s" % n)
+    run = [n for n in wanted if n not in drop]
+    return run, [n for n, _, _ in SCENARIOS if n not in run]
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description="pyjevsim order-insensitive trace oracle")
-    ap.add_argument("--repo")
-    ap.add_argument("--out")
-    ap.add_argument("--scenarios", default="")
-    ap.add_argument("--jobs", type=int, default=3)
+    ap.add_argument("--repo", default=DEFAULT_REPO,
+                    help="checkout or export to run (default: the repository containing this tool)")
+    ap.add_argument("--out", help="write a full digest (or, with --hash-only, a hash file) here")
+    ap.add_argument("--hash-only", action="store_true", help="write per-scenario hashes only, no traces")
+    ap.add_argument("--golden", metavar="JSON",
+                    help="compare a hash-only run with this golden file (or write it with --write-golden)")
+    ap.add_argument("--write-golden", action="store_true")
+    ap.add_argument("--label", help="free-text name of the checkout, recorded in the output")
+    ap.add_argument("--scenarios", default="", help="comma-separated subset (default: all)")
+    ap.add_argument("--skip", default="", help="comma-separated scenarios to leave out")
+    ap.add_argument("--no-slow", action="store_true", help="leave out " + ", ".join(sorted(SLOW)))
+    ap.add_argument("--jobs", type=int, default=min(4, os.cpu_count() or 1))
     ap.add_argument("--salt", type=int, default=None,
                     help="perturb executor hashing (set-iteration order) with this salt")
     ap.add_argument("--compare", nargs=2, metavar=("BASE", "CAND"))
     ap.add_argument("--max-lines", type=int, default=25)
     ap.add_argument("--perturb-check", metavar="DIR")
     ap.add_argument("--salts", default="1,2,3")
-    ap.add_argument("--worker")
-    ap.add_argument("--part")
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--worker", help=argparse.SUPPRESS)
+    ap.add_argument("--part", help=argparse.SUPPRESS)
+    ap.add_argument("--raw-order", action="store_true", help=argparse.SUPPRESS)
     a = ap.parse_args(argv)
     if a.list:
         for n, _, inf in SCENARIOS:
-            print(n, "(informational)" if inf else "")
+            print(" ".join([n] + ["(informational)"] * inf + ["(slow)"] * (n in SLOW)))
         return 0
     if a.compare:
         return compare(a.compare[0], a.compare[1], a.max_lines)
     if a.worker:
-        return worker(a.worker, a.repo, a.part, a.salt)
-    if not a.repo:
-        ap.error("--repo is required")
-    names = [n for n in a.scenarios.split(",") if n] or [n for n, _, _ in SCENARIOS]
-    for n in names:
-        if n not in SC_BY_NAME:
-            ap.error("unknown scenario %s" % n)
+        return worker(a.worker, a.repo, a.part, a.salt, a.raw_order)
+    try:
+        names, skipped = select(a.scenarios, a.skip, a.no_slow)
+    except ValueError as e:
+        ap.error(str(e))
     if a.perturb_check:
         return perturb_check(a.repo, a.perturb_check, [int(x) for x in a.salts.split(",") if x], names, a.jobs)
+    if a.golden and a.write_golden:
+        return run_all(a.repo, a.golden, names, a.jobs, a.salt, True, skipped, a.label)
+    if a.golden:
+        out = a.out
+        tmp = None
+        if not out:
+            tmp = tempfile.mkdtemp(prefix="oracle_golden_")
+            out = os.path.join(tmp, "candidate.json")
+        try:
+            rc = run_all(a.repo, out, names, a.jobs, a.salt, True, skipped, a.label)
+            print()
+            return compare(a.golden, out, a.max_lines) or rc
+        finally:
+            if tmp:
+                shutil.rmtree(tmp, ignore_errors=True)
     if not a.out:
-        ap.error("--out is required")
-    return run_all(a.repo, a.out, names, a.jobs, a.salt)
+        ap.error("--out, --golden, --compare, --perturb-check or --list is required")
+    return run_all(a.repo, a.out, names, a.jobs, a.salt, a.hash_only, skipped, a.label)
 
 
 if __name__ == "__main__":

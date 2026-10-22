@@ -10,7 +10,7 @@ by an exception so a run can never kill the process.
 
 Usage (benchmark, run from anywhere):
 
-    python bank_driver.py --repo <checkout> [--ticks 3000] [--seed 1] [--count-transitions]
+    python tools/oracle/bank_driver.py --repo <checkout> [--ticks 3000] [--seed 1] [--count-transitions]
 
 It prints one JSON line on stdout: elapsed wall time of the simulate loop
 plus outcome counters (users generated / processed / dropped, queue length,
