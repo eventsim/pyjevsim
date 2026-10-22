@@ -113,6 +113,7 @@ Quick Start Guides
 
    pyjevsim_quick_start
    snapshot_quick_start
+   replication
    pyjevsim_hla
 
 Reference

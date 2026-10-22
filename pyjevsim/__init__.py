@@ -21,7 +21,8 @@ __all__ = [
     "system_message",
     "system_object",
     "termination_manager",
-    "snapshot_manager"
+    "snapshot_manager",
+    "replication",
 ]
 
 from .definition import (
@@ -39,3 +40,11 @@ from .behavior_model import BehaviorModel
 from .structural_model import StructuralModel
 from .snapshot_manager import SnapshotManager
 from .restore_handler import RestoreHandler
+from .replication import (
+    BrokenReplicationPool,
+    ReplicationError,
+    ReplicationPool,
+    ReplicationTimeoutError,
+    run_replications,
+    seed_sequence,
+)
