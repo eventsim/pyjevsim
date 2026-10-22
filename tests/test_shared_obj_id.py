@@ -7,9 +7,13 @@ https://github.com/eventsim/pyjevsim/blob/main/LICENSE
 
 Regression test: two executors that share an obj_id (one model snapshot
 restored twice) must not stall V_TIME advancement when one is removed.
+register_entity now refuses the second model, so the test builds that
+state past the check.
 """
 import copy
 import threading
+
+import pytest
 
 from pyjevsim.behavior_model import BehaviorModel
 from pyjevsim.definition import ExecutionType, Infinite
@@ -43,6 +47,9 @@ def test_removed_duplicate_obj_id_does_not_stall_time():
     b.set_name("b")
     assert a.get_obj_id() == b.get_obj_id()
     ss.register_entity(a)
+    with pytest.raises(ValueError, match="object ID"):
+        ss.register_entity(b, dest_t=1)
+    ss._waiting_ids.clear()
     ss.register_entity(b, dest_t=1)
     ss.create_entity()
     ss.remove_entity("dc")

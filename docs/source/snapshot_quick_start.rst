@@ -110,6 +110,14 @@ After restoring, recreate any top-level ports and events that the next part of
 the run needs. Reconnect resources outside pyjevsim, such as files, sockets, or
 RTI sessions, in application code as well.
 
+Restored models keep the object IDs they had when the snapshot was taken.
+``model_map.json`` also records the next free object ID, and ``get_engine()``
+moves the ID counter past it before building the executor, so models and
+messages created after the restore get new IDs. A model created before
+``get_engine()`` can still share an ID with a restored model; registering it
+with the restored executor then raises ``ValueError``, so create the models you
+add to a restored run after restoring it.
+
 Run the BankSim example
 -----------------------
 
@@ -204,6 +212,9 @@ name argument lets you assign the restored model a new name for a branch run.
    restored_gen = snapshots.load_snapshot("GenBranch", payload)
 
    branch_sim.register_entity(restored_gen)
+
+The restored model is a new instance with a new object ID, so the same payload
+can be loaded several times and each copy registered with the same executor.
 
 A model snapshot does not include the rest of the executor or its couplings.
 Register the restored model with a new or existing executor, then add the

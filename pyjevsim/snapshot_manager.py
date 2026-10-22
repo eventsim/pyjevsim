@@ -12,6 +12,7 @@ BehaviorModel instances.
 import os
 
 from .snapshot_factory import SnapshotFactory
+from .system_object import peek_next_object_id
 
 class SnapshotManager:
     """SnapshotManager performs snapshots or restores snapshotted data.
@@ -113,6 +114,9 @@ class SnapshotManager:
         with open(f"{path}/model_map.json", "w") as f:
             dump_model["model_name"] = list(model_map.keys())
             #dump_model["model_name"].remove('dc')
+            # RestoreHandler reserves IDs up to here so that objects created
+            # after a restore do not reuse the IDs of restored ones.
+            dump_model["next_object_id"] = peek_next_object_id()
             json.dump(dump_model, f)
             
         for key, value in model_map.items():

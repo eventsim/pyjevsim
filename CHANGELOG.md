@@ -138,6 +138,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   installed the handlers (any `simulate()` or `TerminationManager()` on the
   main thread does). A handler that other code installs after the first
   `simulate()` is no longer overwritten by later runs.
+- Models created after restoring a simulation snapshot in a new process no
+  longer reuse the object IDs of restored models. `SysExecutor` keys its
+  active models by object ID, so such a collision silently dropped one of
+  the two executors (the restored engine's own `dc` catcher already
+  collided with the restored `dc`). `snapshot_simulation` now records the
+  next free ID as `next_object_id` in `model_map.json`, and
+  `RestoreHandler` moves the ID counter past it, or past the highest
+  restored model ID for snapshots saved without it, before it builds the
+  executor. `RestoreHandler` therefore creates its `SysExecutor` in
+  `get_engine()`/`restore_engine()` instead of in its constructor
+  (`RestoreHandler.engine` is `None` until then), and each `get_engine()`
+  call builds a new executor instead of registering the models again in
+  the same one.
+- `SysExecutor.register_entity` raises `ValueError` when a model with the
+  same object ID is already registered and not destroyed (the same model
+  registered twice, or two `copy.deepcopy`/`dill` copies of one model),
+  instead of replacing the first model's executor.
+- `RestoreHandler.load_snapshot` (and `SnapshotManager.load_snapshot`) gives
+  the loaded model a new object ID, so one model snapshot can be loaded and
+  registered several times, as the BankSim what-if example does.
 
 ## [2.2.0] — 2026-08-29
 
