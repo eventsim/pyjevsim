@@ -210,3 +210,106 @@ def test_duck_typed_model_without_get_cancel_flag_constructs():
 
     ex = BehaviorExecutor(0, Infinite, "default", Duck(), None)
     assert ex._model_fast is None
+
+
+class _Canceller(BehaviorModel):
+    """Restarts a 3-tick busy timer on input unless it cancels rescheduling."""
+
+    def __init__(self, name):
+        super().__init__(name)
+        self.insert_state("busy", 3)
+        self.init_state("busy")
+        self.insert_input_port("in")
+        self.ints = []
+
+    def ext_trans(self, port, msg):
+        self.cancel_rescheduling()
+
+    def int_trans(self):
+        self.ints.append(self.global_time)
+
+    def output(self, msg_deliver):
+        pass
+
+
+def test_instance_get_cancel_flag_set_before_construction_is_consulted():
+    # Same veto as above, but assigned on the instance before the executor
+    # is built. BehaviorExecutor sees it in the model's __dict__ and keeps
+    # the wrappers, which call it, so the timer never expires (as on main).
+    ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
+    src = _Ticker("src")
+    canceller = _Canceller("canceller")
+    canceller.get_cancel_flag = lambda: False
+    ss.register_entity(src)
+    ss.register_entity(canceller)
+    ss.coupling_relation(src, "out", canceller, "in")
+    assert ss.get_entity("canceller")[0]._model_fast is None
+    ss.simulate(10, _tm=False)
+    assert canceller.ints == []
+
+
+def test_cancel_without_override_keeps_the_timer():
+    # Control for the test above: honoured cancellation keeps the 3-tick
+    # cadence on the direct path.
+    ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
+    src = _Ticker("src")
+    canceller = _Canceller("canceller")
+    ss.register_entity(src)
+    ss.register_entity(canceller)
+    ss.coupling_relation(src, "out", canceller, "in")
+    assert ss.get_entity("canceller")[0]._model_fast is canceller
+    ss.simulate(10, _tm=False)
+    assert canceller.ints
+
+
+class _Recorder(BehaviorModel):
+    """Logs (name, time) for every input; passive between inputs."""
+
+    def __init__(self, name, log):
+        super().__init__(name)
+        self.insert_state("idle", Infinite)
+        self.init_state("idle")
+        self.insert_input_port("in")
+        self._log = log
+
+    def ext_trans(self, port, msg):
+        self._log.append((self.get_name(), msg.retrieve()[0]))
+
+    def int_trans(self):
+        pass
+
+    def output(self, msg_deliver):
+        pass
+
+
+def test_reassigning_behavior_model_with_model_fast_is_seen():
+    # _model_fast binds the model at construction. Code that swaps
+    # ``executor.behavior_model`` must update _model_fast as well (here to
+    # None, which routes dispatch through the wrappers and so through the
+    # new model).
+    log = []
+    ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
+    src = _Ticker("src")
+    old = _Recorder("k", log)
+    ss.register_entity(src)
+    ss.register_entity(old)
+    ss.coupling_relation(src, "out", old, "in")
+    ex = ss.get_entity("k")[0]
+    assert ex._model_fast is old
+    ss.simulate(1.5, _tm=False)
+    before = len(log)
+    ex.behavior_model = _Recorder("k_new", log)
+    ex._model_fast = None
+    ss.simulate(2, _tm=False)
+    assert before and {name for name, _ in log[:before]} == {"k"}
+    assert len(log) > before and {name for name, _ in log[before:]} == {"k_new"}
+
+
+def test_instance_bound_method_of_another_model_keeps_the_wrappers():
+    # A get_cancel_flag borrowed from another model is the base method but
+    # reports that model's flag, so it must stay on the wrappers too.
+    other = _Canceller("other")
+    m = _Canceller("m")
+    m.get_cancel_flag = other.get_cancel_flag
+    ex = BehaviorExecutor(0, Infinite, "default", m, None)
+    assert ex._model_fast is None

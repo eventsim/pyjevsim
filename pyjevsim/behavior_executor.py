@@ -48,17 +48,38 @@ class BehaviorExecutor(Executor):
         # ``mock.patch.object``) or on an instance after this executor is
         # built is not seen by _run_instant. Subclass instead, or set
         # ``_model_fast = None`` on the executor to force the wrappers.
+        #
+        # ``_model_fast`` binds the model object passed here. Reassigning
+        # ``self.behavior_model`` afterwards, including a subclass that
+        # replaces it with a wrapper or proxy after ``super().__init__()``,
+        # is not seen by output/transition dispatch, while time advance and
+        # rescheduling read the new model. Code that reassigns it must also
+        # set ``self._model_fast``: to the new model, or to None to use the
+        # wrappers (which read ``self.behavior_model``).
+        #
         # The direct path reads the model's cancel flag attribute instead of
-        # calling get_cancel_flag(), so a model class that overrides
-        # get_cancel_flag keeps the wrappers, which call it. getattr keeps a
-        # duck-typed model without the method constructible.
+        # calling get_cancel_flag(), so a model whose class overrides
+        # get_cancel_flag, or that has get_cancel_flag assigned on the
+        # instance before this executor is built, keeps the wrappers, which
+        # call it. An instance-level get_cancel_flag assigned after the
+        # executor is built is not seen; set ``_model_fast = None`` too.
+        # Both cases are caught by resolving the attribute on the model and
+        # checking that it is BehaviorModel.get_cancel_flag bound to it.
+        # Do not test ``"get_cancel_flag" in behavior_model.__dict__``
+        # instead: reading ``__dict__`` materialises the instance dict, and
+        # on CPython 3.13+ that takes the model off inline attribute storage
+        # and slows every later attribute access on it (about 10% on
+        # DEVStone). getattr keeps a duck-typed model without the method
+        # constructible.
         cls = type(self)
+        cancel_flag = getattr(behavior_model, "get_cancel_flag", None)
         if (cls.output is BehaviorExecutor.output
                 and cls.int_trans is BehaviorExecutor.int_trans
                 and cls.ext_trans is BehaviorExecutor.ext_trans
                 and cls.con_trans is BehaviorExecutor.con_trans
-                and getattr(type(behavior_model), "get_cancel_flag", None)
-                    is BehaviorModel.get_cancel_flag):
+                and getattr(cancel_flag, "__func__", None)
+                    is BehaviorModel.get_cancel_flag
+                and getattr(cancel_flag, "__self__", None) is behavior_model):
             self._model_fast = behavior_model
 
     def __init_subclass__(cls, **kwargs):
