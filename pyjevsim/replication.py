@@ -54,6 +54,9 @@ _IN_WORKER = False
 
 _MISSING = object()
 
+# Chunks kept in flight per worker; the rest are submitted as chunks finish.
+_WINDOW_PER_WORKER = 2
+
 
 def in_replication_worker():
     """Return True when called inside a worker process of a replication pool."""
@@ -425,7 +428,12 @@ class ReplicationPool:
             process-global state between replications (module-level caches,
             the global ``random`` stream if a model draws from it without
             reseeding, class-level counters, memory growth).  Each
-            replacement costs a process start-up.
+            replacement costs a process start-up.  Note that
+            ``SysExecutor.simulate()`` with the default ``_tm=True`` adds
+            the executor to the process-global
+            ``TerminationManager._executors`` list on every call, so no
+            replication is ever freed; call ``simulate(..., _tm=False)``
+            inside ``run``.
     """
 
     def __init__(self, workers=None, *, mp_context="spawn", initializer=None,
@@ -605,14 +613,34 @@ class ReplicationPool:
         executor = self._get_executor()
         collector = _Collector(seeds, ordered, progress)
         indexed = list(enumerate(seeds))
+        chunks = iter([indexed[start:start + chunksize]
+                       for start in range(0, len(indexed), chunksize)])
         futures = {}
-        for start in range(0, len(indexed), chunksize):
-            chunk = indexed[start:start + chunksize]
-            futures[executor.submit(_run_chunk, run, chunk)] = chunk
+        pending = set()
+        broken = None
+
+        def submit_next():
+            # Keep at most _WINDOW_PER_WORKER chunks per worker in flight:
+            # wait() re-arms a waiter on every pending future, so submitting
+            # thousands of chunks up front makes collection quadratic
+            # (measured 570 us per no-op task with 2000 submitted at once
+            # versus 140 us with a window of 16 on 8 workers).
+            nonlocal broken
+            chunk = next(chunks, None)
+            if chunk is None or broken is not None:
+                return
+            try:
+                fut = executor.submit(_run_chunk, run, chunk)
+            except BrokenProcessPool as exc:
+                broken = exc
+                return
+            futures[fut] = chunk
+            pending.add(fut)
+
+        for _ in range(_WINDOW_PER_WORKER * self._workers):
+            submit_next()
 
         deadline = None if timeout is None else time.monotonic() + timeout
-        pending = set(futures)
-        broken = None
         while pending:
             remaining = None
             if deadline is not None:
@@ -626,10 +654,12 @@ class ReplicationPool:
                         f"{_format_seeds(unfinished)}",
                         sorted(collector.failures, key=lambda f: f.index),
                         unfinished, collector.partial())
-            done, pending = wait(pending, timeout=remaining,
-                                 return_when=FIRST_COMPLETED)
+            done, _ = wait(pending, timeout=remaining,
+                           return_when=FIRST_COMPLETED)
+            pending.difference_update(done)
             for fut in done:
-                chunk = futures[fut]
+                chunk = futures.pop(fut)
+                submit_next()
                 try:
                     out = fut.result()
                 except BrokenProcessPool as exc:
