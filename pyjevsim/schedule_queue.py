@@ -162,12 +162,15 @@ class ScheduleQueue:
             heapq.heappop(heap)
             del mapped[t]
             # One dict operation in the common case: take the entry and put
-            # it back only when it points elsewhere (shared obj_id).
-            take = reverse.pop
+            # it back only when it points elsewhere (shared obj_id). The
+            # default ``t`` makes a missing entry a no-op, so the check is a
+            # single float comparison. The method is looked up inline: a
+            # bound-method local would be rebuilt per bucket, which costs
+            # more than it saves when a bucket holds one or two executors.
             for executor in bucket:
                 obj_id = executor._obj_id
-                rt = take(obj_id, None)
-                if rt is not None and rt != t:
+                rt = reverse.pop(obj_id, t)
+                if rt != t:
                     reverse[obj_id] = rt
             out.extend(bucket)
 

@@ -201,3 +201,29 @@ def test_pop_due_keeps_shared_obj_id_scheduled_elsewhere():
         queue.pop_due(5, rest)
         assert rest == [late]
         assert not queue
+
+
+def test_pop_due_shared_obj_id_in_one_bucket_leaves_queue_empty():
+    # Both executors sharing an obj_id sit in the same bucket: the second
+    # one finds the reverse entry already taken, which must stay a no-op
+    # (no entry is re-created, so len()/bool() report an empty queue).
+    import copy
+
+    proto = Timed("p", 2)
+    a = BehaviorExecutor(0, Infinite, "default", copy.deepcopy(proto), None)
+    b = BehaviorExecutor(0, Infinite, "default", copy.deepcopy(proto), None)
+    assert a.get_obj_id() == b.get_obj_id()
+
+    for queue_pop in ("pop_due", "pop_all_at"):
+        queue = ScheduleQueue()
+        for ex in (a, b):
+            ex.set_req_time(0)
+            queue.push(ex)
+        if queue_pop == "pop_due":
+            got = []
+            queue.pop_due(2, got)
+        else:
+            got = queue.pop_all_at(2)
+        assert sorted(map(id, got)) == sorted(map(id, (a, b)))
+        assert len(queue) == 0 and not queue
+        assert queue._reverse == {}
