@@ -13,33 +13,40 @@ The User Generator Model generates a Bank User periodically.
 The Bank Accountatnt handles the Bank User's operations,
 Bank Queue stores the Bank User's data and passes the Bank User's information to the Bank Accountant when no Bank Accountant is available. 
 
-Usage:
-In a terminal in the parent directory, run the following command.
+Restoring generators re-assembles a new simulation from model snapshots
+(new accountants, every generator restarted), so it is not the same run as
+banksim_classic.py.  Generators beyond the snapshotted ones are copies of
+gen0; with --seed each copy gets its own stream (unseeded, all generators
+share the module-level random as before).
 
-   pytest -s ./test_banksim/banksim_model_restore.py 
+Usage:
+From examples/banksim, run
+
+   python banksim_model_restore.py <wiq_time> <wiq_gen_num> [--seed N]
 """
-import sys
 import contexts
-import yaml
 from pyjevsim.definition import *
 from pyjevsim.system_executor import SysExecutor
 from pyjevsim.snapshot_manager import SnapshotManager
 from pyjevsim.restore_handler import RestoreHandler
 
 from examples.banksim.model.model_accountant import BankAccountant
+from examples.banksim.runner import parse_args, load_config
+from examples.banksim.seeding import model_rng
 
-with open("scenario.yaml", "r") as f:
-    config = yaml.safe_load(f)
+args = parse_args('Bank simulation: build a new run from the model snapshots.')
+config = load_config(args)
 
-gen_num, queue_size, proc_num, max_user, max_simtime = (
+gen_num, queue_size, proc_num, max_user, max_simtime, seed = (
     config["gen_num"],
     config["queue_size"],
     config["proc_num"],
     config["max_user"],
     config["max_simtime"],
+    config["seed"],
 )
-wiq_time = int(sys.argv[1])
-wiq_gen_num = int(sys.argv[2])
+wiq_time = args.wiq_time
+wiq_gen_num = args.wiq_gen_num
 
 snapshot_manager = SnapshotManager(restore_handler=RestoreHandler()) 
 ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
@@ -53,6 +60,9 @@ for i in range(wiq_gen_num) :
     if i >= gen_num :
         with open(f"./snapshot/[time]gen0.simx", "rb") as f :
             gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model
+        if seed is not None :
+            # a copy of gen0 would repeat gen0's stream: give it its own
+            gen._rng = model_rng(seed, f"gen{i}")
     else : 
         with open(f"./snapshot/[time]gen{i}.simx", "rb") as f :
             gen = snapshot_manager.load_snapshot(f"gen{i}", f.read()) #restore model

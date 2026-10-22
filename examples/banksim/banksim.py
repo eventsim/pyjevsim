@@ -8,7 +8,9 @@ import sys
 name_list = ["classic", "model_snapshot", "model_restore",
         "snapshot", "restore"]
 
+# usage: python banksim.py <wiq_time> [--seed N]   (without --seed: unseeded runs, as before)
 wiq_time = int(sys.argv[1])
+seed_args = sys.argv[2:4] if sys.argv[2:3] == ["--seed"] else []
 gen_num = ["20", "10", "30"] ## case1, case2, case3
 
 # 실행 횟수
@@ -36,7 +38,7 @@ for i in range(iterations) :
 
             with open(f'{file_path}/output/{wiq_time}_{file_name}_{i}.log', 'w', encoding='utf-8') as log_file:
                 start_time = time.time()
-                subprocess.run(['python3', f'{python_name}.py', str(wiq_time), str(gen_num[j])], stdout=log_file, stderr=subprocess.STDOUT)
+                subprocess.run([sys.executable, f'{python_name}.py', str(wiq_time), str(gen_num[j])] + seed_args, stdout=log_file, stderr=subprocess.STDOUT)
                 end_time = time.time()  # 종료 시간 기록
             
             run_time = end_time - start_time  # 실행 시간 계산
