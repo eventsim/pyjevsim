@@ -55,6 +55,45 @@ implemented feature.
   directories, or local validation logs.
 - Confirm that the commands in the test section pass before requesting review.
 
+## Performance and semantics changes
+
+The trace oracle in [`tools/oracle/`](tools/oracle/README.md) runs on every
+pull request. It compares what the simulation does on 18 scenarios at the
+merge base and at the head of the pull request, and compares the head with
+the committed golden, currently v2.2.0. The observable behaviour it checks
+is described in [`docs/source/semantics.rst`](docs/source/semantics.rst).
+
+- Never mix performance-only and semantics-changing changes in one pull
+  request. A performance change must leave every verdict scenario of the
+  oracle unchanged; if it cannot, split out the part that changes
+  behaviour.
+- A pull request that changes observable behaviour on purpose (an engine
+  semantics fix, a fix to an example that a scenario runs, a change to the
+  oracle's scenarios) carries the `semantic-change` label, which only a
+  maintainer applies, and says in its description which scenarios change
+  and why.
+- Ledger rule: such a pull request adds an entry to
+  [`tools/oracle/LEDGER.md`](tools/oracle/LEDGER.md) (date, pull request,
+  scenarios changed, why, who approved) and a new golden produced from its
+  own tree, and points `GOLDEN` in `tools/oracle/trace_oracle.py` at it, as
+  described in the oracle README. Every golden change (a golden file or
+  the `GOLDEN` pointer) needs a ledger entry in the same pull request.
+- The oracle job must pass. A verdict-scenario difference from the merge
+  base fails it unless the pull request changes both the ledger and the
+  golden. `HEAD` must always match the golden that `GOLDEN` names; a
+  ledger entry does not excuse a mismatch there.
+
+Run the oracle locally before opening a pull request that touches the
+engine:
+
+```bash
+python tools/oracle/trace_oracle.py --golden
+```
+
+For performance claims, state the workload, the commits compared, the
+Python version and the platform, and keep the raw results (see
+[`benchmark/evidence/`](benchmark/evidence/2026-10/README.md)).
+
 By contributing, you agree that your contribution is licensed under the
 project's [MIT License](LICENSE).
 

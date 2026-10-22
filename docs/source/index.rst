@@ -115,6 +115,14 @@ Quick Start Guides
    snapshot_quick_start
    pyjevsim_hla
 
+Reference
+---------
+
+.. toctree::
+   :maxdepth: 1
+
+   semantics
+
 Developer and Maintainer Guides
 -------------------------------
 
