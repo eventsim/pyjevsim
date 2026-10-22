@@ -32,6 +32,10 @@ _PROCESS_TOKEN = secrets.token_hex(8)
 
 
 def pid(seed):
+    return os.getpid()
+
+
+def pid_token(seed):
     return os.getpid(), _PROCESS_TOKEN
 
 

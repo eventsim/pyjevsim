@@ -151,6 +151,6 @@ def test_timeout_kills_workers_and_names_unfinished_seeds():
 @pytest.mark.skipif(sys.version_info < (3, 11),
                     reason="max_tasks_per_child needs Python 3.11+")
 def test_max_tasks_per_child_gives_fresh_workers():
-    pids = run_replications(rf.pid, range(3), workers=1, chunksize=1,
+    pids = run_replications(rf.pid_token, range(3), workers=1, chunksize=1,
                             max_tasks_per_child=1)
     assert len(set(pids)) == 3
