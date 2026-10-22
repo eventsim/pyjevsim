@@ -94,8 +94,9 @@ pip install -e .
 ## Dependencies
 
 - Python >= 3.10
-- `dill >= 0.3.6` (installed automatically) — used for model
-  serialization and restoration.
+- `dill` (installed automatically) — used for model serialization and
+  restoration. The minimum follows the Python version: 0.3.6 on 3.10,
+  0.3.7 on 3.11, 0.3.8 on 3.12, 0.3.9 on 3.13 and 0.4.1 on 3.14.
 
 `pytest` is required only to run the test suite and is declared under
 the `dev` extra:

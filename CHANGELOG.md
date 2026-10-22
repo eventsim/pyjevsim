@@ -75,6 +75,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `itertools.count`; they stay unique and increasing, so ordering is
   unchanged. On CPython 3.14 the DEVStone HI benchmark runs about 1.8x
   faster and the bank example about 1.4x faster.
+- The dill requirement now follows the Python version. `dill>=0.3.6`
+  allowed releases that predate support for the Python in use (0.3.6
+  was released before Python 3.12 existed); the minimum is now the
+  first release with formal support for that Python: 0.3.6 on 3.10,
+  0.3.7 on 3.11, 0.3.8 on 3.12, 0.3.9 on 3.13 and 0.4.1 on 3.14. A CI
+  job runs the snapshot and restore tests against exactly these
+  versions, and the test matrix now includes Windows and Python 3.14.
 
 ## [2.2.0] — 2026-08-29
 

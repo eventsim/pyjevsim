@@ -19,12 +19,22 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Operating System :: OS Independent",
     "Topic :: Scientific/Engineering",
     "Intended Audience :: Science/Research",
 ]
 keywords = ["DEVS", "simulation", "discrete-event", "modeling", "HLA", "IEEE 1516"]
-dependencies = ["dill>=0.3.6"]
+# Lowest dill with formal support for each Python (dill release notes and
+# PyPI classifiers): 3.11 since 0.3.7, 3.12 since 0.3.8, 3.13 since 0.3.9,
+# 3.14 since 0.4.1. The CI min-deps job tests exactly these versions.
+dependencies = [
+    "dill>=0.3.6; python_version < '3.11'",
+    "dill>=0.3.7; python_version == '3.11'",
+    "dill>=0.3.8; python_version == '3.12'",
+    "dill>=0.3.9; python_version == '3.13'",
+    "dill>=0.4.1; python_version >= '3.14'",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
