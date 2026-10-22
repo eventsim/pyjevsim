@@ -116,6 +116,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   0.3.7 on 3.11, 0.3.8 on 3.12, 0.3.9 on 3.13 and 0.4.1 on 3.14. A CI
   job runs the snapshot and restore tests against exactly these
   versions, and the test matrix now includes Windows and Python 3.14.
+- A model registered with a `SnapshotCondition` no longer raises
+  `AttributeError` when it is imminent and receiving input at the same
+  instant: `SnapshotExecutor` now has `con_trans`. The condition's
+  internal-transition hooks (`snapshot_pre_condition_int`/
+  `snapshot_post_condition_int`) run before and after the whole confluent
+  transition, and their snapshots are written as `[int_before]`/
+  `[int_after]`; the external-transition hooks are not called for the
+  messages consumed by a confluent transition.
+- `SnapshotCondition` hooks receive the model's current state as
+  `cur_state`. They used to receive `""` every time, because
+  `BehaviorExecutor.get_cur_state()` returned a field of the executor that
+  was never updated; it now returns the model's state, and
+  `BehaviorExecutor.init_state()` sets it on the model.
 
 ## [2.2.0] — 2026-08-29
 

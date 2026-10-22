@@ -146,6 +146,27 @@ class SnapshotExecutor(Executor):
             self.snapshot("int_after")
         #Conditions generated after int_trans function
 
+    # Confluent Transition
+    def con_trans(self, port_msgs):
+        """Handles the confluent transition.
+
+        The internal-transition hooks bracket the whole confluent
+        transition, since BehaviorModel.con_trans runs the internal
+        transition first. The external-transition hooks are not called for
+        the messages consumed here: the model's con_trans decides the order
+        of its transitions, so there is no point between them at which a
+        hook would see the state that transition saw.
+
+        Args:
+            port_msgs (Iterable[tuple[str, SysMessage]]): bag of messages
+                with their input ports.
+        """
+        if self.condition.snapshot_pre_condition_int(self.get_cur_state()):
+            self.snapshot("int_before")
+        self.behavior_executor.con_trans(port_msgs)
+        if self.condition.snapshot_post_condition_int(self.get_cur_state()):
+            self.snapshot("int_after")
+
     # Output Function
     def output(self, msg_deliver):
         """Handles the output function.

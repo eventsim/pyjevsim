@@ -180,7 +180,11 @@ name before registering that model with the executor:
 When the condition returns ``True``, pyjevsim writes
 ``snapshot/[time]Gen.simx``. Conditions are also available immediately before
 and after external transitions, internal transitions, and output calls; those
-files use prefixes such as ``[ext_before]`` and ``[output_after]``.
+files use prefixes such as ``[ext_before]`` and ``[output_after]``. Each hook
+receives the model's current state as ``cur_state``. When the model is
+imminent and receives input at the same instant (a confluent transition), the
+internal-transition hooks run before and after the whole transition and the
+external-transition hooks are not called.
 
 Restore one model
 -----------------
