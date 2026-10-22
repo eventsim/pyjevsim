@@ -103,7 +103,7 @@ class OrderedBankResult(BankResult):
 
     ``BankResult`` records served users in the order in which the engine
     delivers the accountants' messages of an instant, which follows set
-    iteration and changes from process to process; so do the order of the
+    iteration and can change between processes; so can the order of the
     report and which messages of the last instant are counted before the
     run ends at ``max_user``.  This variant collects the messages of an
     instant in ``inbox``, moves to the zero-duration ``SORT`` state and

@@ -160,11 +160,12 @@ class OrderedBankQueue(BankQueue):
 
     The engine hands a model the messages of one instant in the order in
     which it processes the sending models, and that order follows set
-    iteration (object identity), so it changes from process to process.
+    iteration (object identity), so it can change between processes and
+    between two simulations built in one process.
     ``BankQueue`` reacts to each message as it comes (which user is dropped
     when the queue is full, the order of the queue, which accountant gets
-    the next user), so its run differs between processes even when every
-    generator draws from its own seeded stream.
+    the next user), so its run can differ even when every generator draws
+    from its own seeded stream.
 
     This variant collects the messages of an instant in ``inbox`` and moves
     to the zero-duration ``SORT`` state; its internal transition then
