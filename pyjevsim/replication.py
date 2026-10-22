@@ -397,8 +397,9 @@ def _run_sequential(run, seeds, initializer, initargs, timeout, ordered,
 class ReplicationPool:
     """A persistent pool of worker processes for several replication batches.
 
-    Starting a ``spawn`` pool costs about 0.75-1.0 s on Windows plus
-    0.2-0.3 s of imports per worker process, so a study that runs several
+    Starting a ``spawn`` pool is not free (measured on one Windows machine:
+    about 0.2 s for one worker and about 0.6 s for 12-20, see the
+    replication guide for the figures), so a study that runs several
     batches (several scenarios, a design of experiments) should pay it once::
 
         with ReplicationPool(workers=8) as pool:

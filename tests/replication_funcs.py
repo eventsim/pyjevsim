@@ -12,6 +12,7 @@ that defines ``run`` by name; keeping it free of pytest keeps the per-worker
 import cost low.
 """
 import os
+import secrets
 import random
 import time
 
@@ -25,8 +26,13 @@ def echo_slow(seed):
     return {"seed": seed, "draw": rng.random()}
 
 
+# A per-process token: Windows can hand a new worker the PID of one that
+# has just exited, so a PID alone does not prove the worker was fresh.
+_PROCESS_TOKEN = secrets.token_hex(8)
+
+
 def pid(seed):
-    return os.getpid()
+    return os.getpid(), _PROCESS_TOKEN
 
 
 def fail_on_3_and_5(seed):
