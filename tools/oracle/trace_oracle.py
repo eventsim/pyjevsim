@@ -1374,6 +1374,14 @@ def sc_mwmsim(repo):
             return _FakeNow()
 
     core_component.datetime = _FakeDT
+    # Since the mwmsim seed fix, Statistic seeds its stream with
+    # core_component.stream_seed(seed, index) (index: creation order from 0)
+    # instead of datetime.now().timestamp(). Pin it to the values the fake
+    # clock gives an older checkout (1e9 + 1, 1e9 + 2, ...) so that the hash
+    # stays comparable across the change.
+    if hasattr(core_component, "stream_seed"):
+        core_component.stream_seed = lambda seed, index: 1.0e9 + index + 1
+        core_component.reset_streams()
     old = os.getcwd()
     os.chdir(d)
     argv = sys.argv

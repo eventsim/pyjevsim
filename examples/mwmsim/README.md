@@ -29,8 +29,16 @@ python experiment.py
 ```
 
 Simulation duration, bin and vehicle capacity, random seed, and output options
-are defined in `config.py`. The `exp_snapshot.py` and `exp_restore.py` scripts
-provide the snapshot examples.
+are defined in `config.py`. Every random quantity comes from a `Statistic`
+whose stream is seeded from `RANDOM_SEED` and the order in which the
+`Statistic` objects are created (`core_component.stream_seed`), so the same
+scenario and seed give the same run; change `RANDOM_SEED` for a different
+one. (Before, each stream was seeded from the wall clock and no two runs
+were alike.) Streams are numbered per process: `exp_restore.py` numbers the
+objects it creates after a restore from zero again.
+
+The `exp_snapshot.py` and `exp_restore.py` scripts provide the snapshot
+examples.
 
 ## Scope
 

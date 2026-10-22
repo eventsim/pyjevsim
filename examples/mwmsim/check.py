@@ -20,7 +20,7 @@ class Check(BehaviorModel):
         self.insert_output_port("check") # to garbage can
         self.insert_output_port("gov_report")
 
-        self.stat=Statistic(0,20,4)
+        self.stat=Statistic(RANDOM_SEED,20,4)
         self.htype = htype
 
     def get_satis(self, trash):

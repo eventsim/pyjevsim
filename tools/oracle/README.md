@@ -54,7 +54,7 @@ and a difference is reported as `INFO-DIFF` without failing.
 | `hla_atsim_rows` | verdict | AT/SIM standalone and two-federate application rows |
 | `hla_atsim_trace` | informational | the same AT/SIM runs with the full model trace |
 | `hla_verify_equivalence` | verdict | `examples/hla_atsim/verify_equivalence.py`: exit code and output |
-| `mwmsim_433sbh` | informational, slow | `examples/mwmsim` scenario `433sbh_N100_seed0` with a fake clock (about 15 s) |
+| `mwmsim_433sbh` | informational, slow | `examples/mwmsim` scenario `433sbh_N100_seed0` with the `Statistic` seeds pinned to 1e9 + 1, 1e9 + 2, ... in creation order: through `core_component.stream_seed` since the mwmsim seed fix, through a fake clock before it, so the hash is the same on both sides (about 15 s) |
 
 A scenario's hash covers its trace, its final summary and the first line of
 any error. Model names, printed text and float reprs are part of it; object
