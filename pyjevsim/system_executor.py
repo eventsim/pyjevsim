@@ -504,7 +504,11 @@ class SysExecutor(CoreModel):
         outputs = []
         md = MessageDeliverer()
         for X in imminent:
-            X.output(md)
+            bm = X._model_fast
+            if bm is None:
+                X.output(md)
+            else:
+                bm.output(md)
             if md.data_list:
                 outputs.append((X, md.data_list))
                 md.data_list = []
@@ -538,16 +542,33 @@ class SysExecutor(CoreModel):
         affected = imminent_set | set(influenced_inputs)
 
         # Phase C: apply a transition to every affected model.
+        # A plain BehaviorExecutor (``_model_fast`` set) is bypassed: the
+        # model is called directly and the executor's cancel flag is copied
+        # from the model exactly as BehaviorExecutor.ext_trans/con_trans do.
         for M in affected:
             bag = bag_of(M)
-            if M in imminent_set:
-                if bag:
-                    M.con_trans(bag)
+            bm = M._model_fast
+            if bm is None:
+                if M in imminent_set:
+                    if bag:
+                        M.con_trans(bag)
+                    else:
+                        M.int_trans()
                 else:
-                    M.int_trans()
+                    for port, msg in bag:
+                        M.ext_trans(port, msg)
+            elif M in imminent_set:
+                if bag:
+                    bm.con_trans(bag)
+                    if bm._cancel_reschedule_f:
+                        M._cancel_reschedule_f = True
+                else:
+                    bm.int_trans()
             else:
                 for port, msg in bag:
-                    M.ext_trans(port, msg)
+                    bm.ext_trans(port, msg)
+                    if bm._cancel_reschedule_f:
+                        M._cancel_reschedule_f = True
 
         # Phase D: record each affected model's new request time.
         self.min_schedule_item.reschedule_all(affected, instant)

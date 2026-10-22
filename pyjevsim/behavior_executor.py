@@ -36,6 +36,24 @@ class BehaviorExecutor(Executor):
         self._cached_destruct_time = dtime
         self._obj_id = behavior_model.get_obj_id()
 
+        # SysExecutor._run_instant calls the model directly (one Python frame
+        # less per output/transition) when this executor's wrappers are the
+        # plain forwarding ones defined below. The model's methods are still
+        # looked up at call time, so patching the model class keeps working.
+        # A subclass that overrides any wrapper (HLAExecutor.output, for
+        # example) keeps ``_model_fast = None`` and is called as before.
+        # The check runs once, here: replacing BehaviorExecutor.output/
+        # int_trans/ext_trans/con_trans on the class (monkeypatching,
+        # ``mock.patch.object``) or on an instance after this executor is
+        # built is not seen by _run_instant. Subclass instead, or set
+        # ``_model_fast = None`` on the executor to force the wrappers.
+        cls = type(self)
+        if (cls.output is BehaviorExecutor.output
+                and cls.int_trans is BehaviorExecutor.int_trans
+                and cls.ext_trans is BehaviorExecutor.ext_trans
+                and cls.con_trans is BehaviorExecutor.con_trans):
+            self._model_fast = behavior_model
+
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
         # The fused _reschedule below would bypass an overridden
@@ -100,9 +118,11 @@ class BehaviorExecutor(Executor):
         Read the cancellation flag after the model transition because
         ``cancel_rescheduling`` may set it during this call.
         """
-        self.behavior_model.ext_trans(port, msg)
+        bm = self.behavior_model
+        bm.ext_trans(port, msg)
 
-        if self.behavior_model.get_cancel_flag():
+        # BehaviorModel.get_cancel_flag() returns this attribute.
+        if bm._cancel_reschedule_f:
             self._cancel_reschedule_f = True
 
     # Internal Transition
@@ -119,9 +139,10 @@ class BehaviorExecutor(Executor):
             port_msgs (Iterable[tuple[str, SysMessage]]): bag of messages
                 with their input ports.
         """
-        self.behavior_model.con_trans(port_msgs)
+        bm = self.behavior_model
+        bm.con_trans(port_msgs)
 
-        if self.behavior_model.get_cancel_flag():
+        if bm._cancel_reschedule_f:
             self._cancel_reschedule_f = True
 
     # Output Function
