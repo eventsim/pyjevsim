@@ -104,7 +104,7 @@ class _RecordingCondition(SnapshotCondition):
     def snapshot_pre_condition_out(self, cur_state):
         return self._hook("pre_out", cur_state)
 
-    def snapshot_post_condition_out(self, cur_state, msg):
+    def snapshot_post_condition_out(self, msg, cur_state):
         return self._hook("post_out", cur_state)
 
 

@@ -124,6 +124,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   transition, and their snapshots are written as `[int_before]`/
   `[int_after]`; the external-transition hooks are not called for the
   messages consumed by a confluent transition.
+- `SnapshotExecutor.output` calls `snapshot_post_condition_out(msg, cur_state)`
+  in the argument order that `SnapshotCondition` declares. It used to pass
+  `(cur_state, msg)`; a condition written against the base-class signature
+  received the two swapped (harmless while `cur_state` was always `""`).
 - `SnapshotCondition` hooks receive the model's current state as
   `cur_state`. They used to receive `""` every time, because
   `BehaviorExecutor.get_cur_state()` returned a field of the executor that

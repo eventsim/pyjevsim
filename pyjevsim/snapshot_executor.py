@@ -178,7 +178,7 @@ class SnapshotExecutor(Executor):
             self.snapshot("output_before")
         #Conditions created before output function 
         out_msg = self.behavior_executor.output(msg_deliver)
-        if self.condition.snapshot_post_condition_out(self.get_cur_state(), out_msg):
+        if self.condition.snapshot_post_condition_out(out_msg, self.get_cur_state()):
             self.snapshot("output_after")
         #Conditions generated after output function
         
