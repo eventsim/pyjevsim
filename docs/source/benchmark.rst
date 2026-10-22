@@ -258,9 +258,13 @@ interpreter for the children.
 ``--pin CPUS`` restricts the suite and every child to a CPU set given as a
 mask (``0xFFFF``) or a list (``0-15``, ``0,2,4``):
 ``SetProcessAffinityMask`` on Windows, ``os.sched_setaffinity`` on Linux.
-There is no default, because which logical CPUs are the fast cores is
-machine specific (on the i7-12700 used for the 2026-10 records, the P-core
-threads are ``0-15``).
+A bare integer is a mask, as with ``taskset``: ``--pin 5`` selects CPUs 0
+and 2, and ``--pin 5-5`` selects CPU 5. A CPU index at or above
+``os.cpu_count()``, or above 63 on Windows (where the call covers one
+processor group), is rejected with exit status 2, as is a set the platform
+refuses to pin to; pinning is not available on macOS. There is no default,
+because which logical CPUs are the fast cores is machine specific (on the
+i7-12700 used for the 2026-10 records, the P-core threads are ``0-15``).
 
 How a comparison is made
 ~~~~~~~~~~~~~~~~~~~~~~~~

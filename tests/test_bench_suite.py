@@ -12,6 +12,7 @@ set parsing) plus one tiny end-to-end run; the timings themselves are not.
 """
 
 import os
+import sys
 
 import pytest
 
@@ -78,6 +79,54 @@ def test_parse_cpu_set_rejects_empty_sets():
         suite.parse_cpu_set("0x0")
     with pytest.raises(ValueError):
         suite.parse_cpu_set("3-1")
+
+
+def test_parse_cpu_set_rejects_out_of_range_indices():
+    assert suite.parse_cpu_set("0-3", limit=4) == [0, 1, 2, 3]
+    with pytest.raises(ValueError, match="CPU index 4 is out of range"):
+        suite.parse_cpu_set("0-4", limit=4)
+    # CPU 64 does not fit a 64-bit Windows affinity mask; it used to be
+    # truncated away silently, pinning to CPU 1 alone.
+    with pytest.raises(ValueError, match="CPU index 64"):
+        suite.parse_cpu_set("0x10000000000000002", limit=64)
+    with pytest.raises(ValueError):
+        suite.parse_cpu_set("0-99", limit=8)
+
+
+def test_cpu_limit_matches_the_platform():
+    limit = suite.cpu_limit()
+    assert 1 <= limit <= (os.cpu_count() or 1)
+    if sys.platform == "win32":
+        assert limit <= 64
+
+
+def test_set_affinity_rejects_an_out_of_range_cpu_before_pinning():
+    # Raised before any platform call, so this process is not pinned.
+    with pytest.raises(ValueError):
+        suite.set_affinity([0, suite.cpu_limit()])
+
+
+def test_main_rejects_an_out_of_range_pin(capsys):
+    bad = str(suite.cpu_limit())
+    assert suite.main(["--pin", f"0,{bad}", "--workloads", "W3"]) == 2
+    assert f"CPU index {bad} is out of range" in capsys.readouterr().err
+    assert suite.main(["--pin", "0x10000000000000002"]) == 2
+
+
+@pytest.mark.parametrize("exc", [OSError(87, "The parameter is incorrect"),
+                                 NotImplementedError("no affinity API")])
+def test_main_reports_a_failed_pin_without_a_traceback(monkeypatch, capsys,
+                                                       exc):
+    def fail(cpus, process=None):
+        raise exc
+
+    def never(*args, **kwargs):
+        raise AssertionError("the suite ran after a failed pin")
+
+    monkeypatch.setattr(suite, "set_affinity", fail)
+    monkeypatch.setattr(suite, "run_suite", never)
+    assert suite.main(["--pin", "0x1", "--workloads", "W3"]) == 2
+    assert "error: cannot pin to 0x1" in capsys.readouterr().err
 
 
 def test_param_overrides_are_parsed_per_workload():

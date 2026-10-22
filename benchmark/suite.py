@@ -33,8 +33,9 @@ Measurement rules (docs/source/benchmark.rst, "Standard Performance Suite"):
   never as a speed-up or a regression.
 
 ``--pin`` restricts the suite and every child to a CPU set (a mask such as
-``0xFFFF`` or a list such as ``0-15`` or ``0,2,4``): SetProcessAffinityMask
-on Windows, ``os.sched_setaffinity`` on Linux.  There is no default mask,
+``0xFFFF``, a list such as ``0-15`` or ``0,2,4``; a bare integer is a mask,
+so ``5`` means CPUs 0 and 2): SetProcessAffinityMask on Windows (CPUs 0-63
+only, one processor group), ``os.sched_setaffinity`` on Linux.  There is no default mask,
 because which cores are the fast ones is machine specific (on the
 i7-12700 used for the 2026-10 records the P-core threads are 0-15).
 """
@@ -45,6 +46,7 @@ import json
 import os
 import platform
 import statistics
+import struct
 import subprocess
 import sys
 import time
@@ -69,10 +71,39 @@ class ChildError(RuntimeError):
 # CPU affinity
 # --------------------------------------------------------------------------
 
-def parse_cpu_set(text):
+def cpu_limit():
+    """How many CPU indices ``--pin`` may name on this machine.
+
+    ``os.cpu_count()``, and on Windows at most the width of a pointer (64
+    on 64-bit Python): ``SetProcessAffinityMask`` takes one processor
+    group's mask as a pointer-sized integer, so a higher index would be
+    silently cut off the mask instead of rejected.
+    """
+    limit = os.cpu_count() or 1
+    if sys.platform == "win32":
+        limit = min(limit, 8 * struct.calcsize("P"))
+    return limit
+
+
+def check_cpus(cpus, limit=None):
+    """Raise ``ValueError`` unless every index is in ``0 .. limit - 1``."""
+    limit = cpu_limit() if limit is None else limit
+    bad = sorted(c for c in cpus if not 0 <= c < limit)
+    if bad:
+        why = (" (SetProcessAffinityMask covers one processor group)"
+               if sys.platform == "win32" and bad[-1] >= 64 else "")
+        raise ValueError(f"CPU index {bad[-1]} is out of range: this machine "
+                         f"accepts 0-{limit - 1}{why}")
+    return cpus
+
+
+def parse_cpu_set(text, limit=None):
     """``0xFFFF`` / ``65535`` (a mask) or ``0-15`` / ``0,2,4-7`` (a list).
 
-    Returns a sorted list of CPU indices.
+    A bare integer is a mask, as in ``taskset``: ``5`` selects CPUs 0 and
+    2, not CPU 5 (write ``5-5`` for that).  Returns a sorted list of CPU
+    indices; with ``limit``, raises ``ValueError`` for an index at or above
+    it (see ``cpu_limit``).
     """
     text = text.strip()
     if not text:
@@ -98,6 +129,8 @@ def parse_cpu_set(text):
         cpus = [i for i in range(mask.bit_length()) if mask >> i & 1]
     if not cpus:
         raise ValueError(f"CPU set {text!r} selects no CPU")
+    if limit is not None:
+        check_cpus(cpus, limit)
     return cpus
 
 
@@ -111,9 +144,11 @@ def _cpus_to_mask(cpus):
 def set_affinity(cpus, process=None):
     """Pin this process (``process=None``) or a ``subprocess.Popen`` child.
 
-    Raises ``OSError`` when the platform call fails and
+    Raises ``ValueError`` for an index outside ``cpu_limit()`` (before any
+    platform call), ``OSError`` when the platform call fails and
     ``NotImplementedError`` on platforms without an affinity API (macOS).
     """
+    check_cpus(cpus)
     if sys.platform == "win32":
         import ctypes
         from ctypes import wintypes
@@ -448,8 +483,9 @@ def parse_args(argv=None):
     p.add_argument("--python", default=sys.executable,
                    help="interpreter for the child processes")
     p.add_argument("--pin", default=None, metavar="CPUS",
-                   help="CPU mask (0xFFFF) or list (0-15, 0,2,4) for the "
-                        "suite and every child; no default")
+                   help="CPU mask (0xFFFF; a bare integer is a mask too, "
+                        "so 5 means CPUs 0 and 2) or list (0-15, 0,2,4) "
+                        "for the suite and every child; no default")
     p.add_argument("--noise-floor", type=float, default=DEFAULT_NOISE_FLOOR)
     p.add_argument("--timeout", type=int, default=900,
                    help="seconds per child run")
@@ -481,7 +517,7 @@ def main(argv=None):
         workloads = [resolve(w.strip()).wid for w in a.workloads.split(",")
                      if w.strip()]
         params = _parse_params(a.param)
-        cpus = parse_cpu_set(a.pin) if a.pin else None
+        cpus = parse_cpu_set(a.pin, cpu_limit()) if a.pin else None
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
@@ -495,7 +531,11 @@ def main(argv=None):
                   file=sys.stderr)
             return 2
     if cpus is not None:
-        set_affinity(cpus)
+        try:
+            set_affinity(cpus)
+        except (OSError, NotImplementedError, ValueError) as exc:
+            print(f"error: cannot pin to {a.pin}: {exc}", file=sys.stderr)
+            return 2
     try:
         doc = run_suite(sides, workloads, rounds=a.rounds, warmup=a.warmup,
                         python=a.python, params=params, cpus=cpus,
