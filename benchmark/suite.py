@@ -15,7 +15,7 @@ file)::
 
     python -m benchmark.suite --repo <checkout> --rounds 5
 
-Measurement rules (docs/source/benchmark.rst, "Standard suite"):
+Measurement rules (docs/source/benchmark.rst, "Standard Performance Suite"):
 
 * Every timed run is a fresh process.  Never compare before/after inside
   one process: the effect of the SystemObject class-attribute fix (#41)
