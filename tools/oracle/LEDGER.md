@@ -1,9 +1,10 @@
 # Golden-change ledger
 
-Every change to a trace-oracle golden, and every merged pull request that
-makes a verdict scenario differ from the committed golden, gets an entry
-here, newest first, in the same pull request. The CI job fails a golden
-mismatch, or a changed golden file, unless this file changed too.
+Every change to a trace-oracle golden, and so every merged pull request
+that changes a verdict scenario, gets an entry here, newest first, in the
+same pull request. The CI job accepts a verdict difference from the merge
+base only when this file and the golden both changed, and fails a changed
+golden (a file, or `GOLDEN` in `trace_oracle.py`) without a change here.
 
 An entry records:
 

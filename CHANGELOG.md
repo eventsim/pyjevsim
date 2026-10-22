@@ -31,8 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `order_check.py` reports whether the unsorted same-time order is
   reproducible across executor-hash salts.
 - A CI job (`.github/workflows/oracle.yml`) that fails a pull request when a
-  verdict scenario differs from the merge base, or differs from the golden
-  without an entry in `tools/oracle/LEDGER.md`.
+  verdict scenario differs from the golden, or differs from the merge base
+  without both an entry in `tools/oracle/LEDGER.md` and a new golden.
 - `docs/source/semantics.rst`, describing the simulation semantics that
   models can currently observe, and a "Performance and semantics changes"
   section in `CONTRIBUTING.md`: performance-only and semantics-changing

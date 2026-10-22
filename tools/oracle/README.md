@@ -107,13 +107,20 @@ script:
 
 1. finds the merge base of `HEAD` and `origin/main` (on a push, the commit
    that was pushed over), exports it with `git archive`, and runs the oracle
-   in hash mode on the export and on the checkout. Any verdict-scenario
-   difference fails the job; informational differences and the `strict`
-   section become warnings.
-2. compares `HEAD` with the current golden (`GOLDEN` in `trace_oracle.py`).
-   A mismatch fails the job unless `tools/oracle/LEDGER.md` changed between
-   the merge base and `HEAD`. A changed golden file without a ledger change
-   fails too.
+   in hash mode on the export and on the checkout. A verdict-scenario
+   difference fails the job unless both `tools/oracle/LEDGER.md` and the
+   golden changed between the merge base and `HEAD`; then it is a warning.
+   A golden change is a new or modified file under `tools/oracle/golden/`
+   or a different `GOLDEN` line in `trace_oracle.py`. Informational
+   differences and the `strict` section are always warnings.
+2. compares `HEAD` with the golden that `GOLDEN` names. Any verdict
+   difference fails the job, ledger or not: a golden that was not produced
+   from the change's own tree, or not pointed at, fails here. A changed
+   golden without a ledger change fails too.
+
+A semantic change that follows the procedure below therefore passes with
+step-1 warnings, and so does the push to `main` that merges it; later pull
+requests compare with the new golden and pass without warnings.
 
 The job passes `--no-slow`, so `mwmsim_433sbh` is reported as skipped. With
 it, the two oracle runs would take about 45 s of wall time on the machine
@@ -148,6 +155,46 @@ oracle's canonical form) goes in its own pull request with the
 
 If the oracle's canonical form itself changes, also bump `ORACLE_VERSION`;
 `--compare` notes when two files come from different versions.
+
+A behaviour change can make a verdict scenario depend on same-time order.
+The first change tried for the simulation below did that to
+`same_instant_external`: its hash depended on how the oracle process was
+started, so a golden written from a shell did not match the gate's run of
+the same tree. If a new golden does not reproduce, run `order_check.py` on
+the scenarios that moved before accepting it.
+
+### Checks of the gate
+
+Run in Git Bash on Windows, CPython 3.14.0, `ORACLE_ARGS=--no-slow`.
+Checks (a) to (c) ran on the branch that adds the oracle; (b) and (c) pass
+a copy of the golden with the `tests_confluent` hash altered as
+`ORACLE_GOLDEN`.
+
+| Check | Setup | Exit |
+|---|---|---|
+| (a) | `ORACLE_BASE=HEAD~1`, nothing changed | 0 |
+| (b) | `ORACLE_BASE=HEAD~1`, altered golden, ledger unchanged | 1: golden `DIFF tests_confluent` |
+| (c) | `ORACLE_BASE=f7145e6`, altered golden, ledger changed since the base | 1: golden `DIFF tests_confluent` |
+
+Under the first version of the gate (c) passed with a warning, because a
+ledger change excused a golden mismatch. That is what the strict step 2
+removes.
+
+Checks (d) to (h) ran in a scratch clone, each branch against its parent.
+The simulated semantic change makes `cancel_rescheduling()` keep the new
+time instead of the earlier one (the `cancel` branch of
+`BehaviorExecutor._reschedule`); `tests_cancel_rescheduling` and
+`same_instant_external` move.
+
+| Check | Setup | Exit |
+|---|---|---|
+| (d) | change, ledger entry, `golden/v2.3.0.json` written from the tree with `--write-golden`, `GOLDEN` re-pointed | 0: both differences are step-1 warnings, golden matches |
+| (d) push | the push to `main` that merges (d) (`ORACLE_BASE` = the commit before) | 0, the same warnings |
+| (d) next | a later pull request on top of (d) | 0, no warnings |
+| (e) | (d) without the ledger entry | 1: step 1 errors; golden changed without a ledger entry |
+| (f) | (d), but the new golden is a copy of the merge base's (it does not match `HEAD`) | 1: step 1 warnings; golden `DIFF` on both scenarios |
+| (g) | change and ledger entry only, golden untouched | 1: step 1 errors; golden `DIFF` on both scenarios |
+| (h) | no engine change; `GOLDEN` re-pointed at another committed golden, no ledger entry | 1: golden changed without a ledger entry |
 
 ## The v2.2.0 golden
 

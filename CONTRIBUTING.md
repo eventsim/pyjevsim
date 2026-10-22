@@ -74,13 +74,14 @@ is described in [`docs/source/semantics.rst`](docs/source/semantics.rst).
   and why.
 - Ledger rule: such a pull request adds an entry to
   [`tools/oracle/LEDGER.md`](tools/oracle/LEDGER.md) (date, pull request,
-  scenarios changed, why, who approved) and a new golden for the changed
-  behaviour, as described in the oracle README. Every changed golden file
-  needs a ledger entry in the same pull request.
-- The oracle job must pass, or the ledger must explain the difference. The
-  job fails on any verdict-scenario difference from the merge base, and on
-  a difference from the golden unless the ledger changed in the same pull
-  request.
+  scenarios changed, why, who approved) and a new golden produced from its
+  own tree, and points `GOLDEN` in `tools/oracle/trace_oracle.py` at it, as
+  described in the oracle README. Every golden change (a golden file or
+  the `GOLDEN` pointer) needs a ledger entry in the same pull request.
+- The oracle job must pass. A verdict-scenario difference from the merge
+  base fails it unless the pull request changes both the ledger and the
+  golden. `HEAD` must always match the golden that `GOLDEN` names; a
+  ledger entry does not excuse a mismatch there.
 
 Run the oracle locally before opening a pull request that touches the
 engine:
