@@ -15,6 +15,12 @@ class Executor:
     methods on executor instances.
     """
 
+    # The model SysExecutor._run_instant may call directly instead of this
+    # executor's output/int_trans/ext_trans/con_trans wrappers. ``None``
+    # (the default) means "call the executor". BehaviorExecutor sets it
+    # when its wrappers only forward to the model.
+    _model_fast = None
+
     def __init__(self, itime, dtime, ename, model, parent):
         """
         Args:

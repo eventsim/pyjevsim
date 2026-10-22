@@ -129,3 +129,101 @@ def test_pop_due_matches_peek_and_pop_all_at_loop():
     assert sorted(e.get_name() for e in got) == sorted(e.get_name() for e in expected)
     assert _state(q_ref, ex_ref) == _state(q_new, ex_new)
     assert q_new.peek_time() == 5
+
+
+def test_reschedule_all_matches_push_over_many_instants():
+    # reschedule_all caches the last bucket looked up on each side; drive
+    # it through many instants where executors keep moving between a few
+    # shared timestamps, popping due buckets in between.
+    import random
+
+    rng = random.Random(7)
+    choices = [1, 2, 3, Infinite]
+    deadlines = [rng.choice(choices) for _ in range(40)]
+    q_ref, ex_ref = _build(deadlines)
+    q_new, ex_new = _build(deadlines)
+    index = {id(e): i for i, e in enumerate(ex_ref + ex_new)}
+
+    for now in range(1, 40):
+        due_ref, due_new = [], []
+        q_ref.pop_due(now, due_ref)
+        q_new.pop_due(now, due_new)
+        popped = sorted(index[id(e)] for e in due_ref)
+        assert popped == sorted(index[id(e)] - len(ex_ref) for e in due_new)
+
+        chosen = sorted(set(popped) | set(rng.sample(range(40), 8)))
+        rng.shuffle(chosen)
+        for i in chosen:
+            d = rng.choice(choices)
+            cancel = rng.random() < 0.2
+            for ex in (ex_ref[i], ex_new[i]):
+                ex.behavior_model.update_state("wait", d)
+                if cancel:
+                    ex.behavior_model.cancel_rescheduling()
+                    ex._cancel_reschedule_f = True
+        for i in chosen:
+            ex_ref[i].set_req_time(now)
+            q_ref.push(ex_ref[i])
+        q_new.reschedule_all([ex_new[i] for i in chosen], now)
+
+        assert _state(q_ref, ex_ref) == _state(q_new, ex_new)
+        assert len(q_ref) == len(q_new)
+        assert q_ref.peek_time(default=Infinite) == q_new.peek_time(default=Infinite)
+    assert [_executor_state(e) for e in ex_ref] == [_executor_state(e) for e in ex_new]
+
+
+def test_pop_due_keeps_shared_obj_id_scheduled_elsewhere():
+    # Two executors sharing an obj_id (a model restored twice): popping
+    # the earlier one must leave the reverse entry of the later one, or
+    # the queue reports empty and the later executor is never popped.
+    import copy
+
+    proto = Timed("p", 1)
+    early = BehaviorExecutor(0, Infinite, "default", copy.deepcopy(proto), None)
+    late_model = copy.deepcopy(proto)
+    late_model.update_state("wait", 5)
+    late = BehaviorExecutor(0, Infinite, "default", late_model, None)
+    assert early.get_obj_id() == late.get_obj_id()
+
+    for queue_pop in ("pop_due", "pop_all_at"):
+        queue = ScheduleQueue()
+        for ex in (early, late):
+            ex.set_req_time(0)
+            queue.push(ex)
+        if queue_pop == "pop_due":
+            got = []
+            queue.pop_due(1, got)
+        else:
+            got = queue.pop_all_at(1)
+        assert got == [early]
+        assert len(queue) == 1 and queue
+        rest = []
+        queue.pop_due(5, rest)
+        assert rest == [late]
+        assert not queue
+
+
+def test_pop_due_shared_obj_id_in_one_bucket_leaves_queue_empty():
+    # Both executors sharing an obj_id sit in the same bucket: the second
+    # one finds the reverse entry already taken, which must stay a no-op
+    # (no entry is re-created, so len()/bool() report an empty queue).
+    import copy
+
+    proto = Timed("p", 2)
+    a = BehaviorExecutor(0, Infinite, "default", copy.deepcopy(proto), None)
+    b = BehaviorExecutor(0, Infinite, "default", copy.deepcopy(proto), None)
+    assert a.get_obj_id() == b.get_obj_id()
+
+    for queue_pop in ("pop_due", "pop_all_at"):
+        queue = ScheduleQueue()
+        for ex in (a, b):
+            ex.set_req_time(0)
+            queue.push(ex)
+        if queue_pop == "pop_due":
+            got = []
+            queue.pop_due(2, got)
+        else:
+            got = queue.pop_all_at(2)
+        assert sorted(map(id, got)) == sorted(map(id, (a, b)))
+        assert len(queue) == 0 and not queue
+        assert queue._reverse == {}

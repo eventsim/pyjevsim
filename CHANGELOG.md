@@ -8,6 +8,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+- `SysExecutor` calls a plain `BehaviorExecutor`'s model directly for
+  output and transitions instead of going through the executor's
+  forwarding wrappers, and skips the miss path for output ports with no
+  coupling. Results and the same-time ordering rule are unchanged. As
+  before, the order among models transitioning in the same instant follows
+  set iteration (object identity), so it is not guaranteed to match
+  between versions. The direct path is chosen when the executor is built:
+  executors whose class overrides `output`/`int_trans`/`ext_trans`/
+  `con_trans` (such as `HLAExecutor`), models whose class overrides
+  `get_cancel_flag` or that have `get_cancel_flag` assigned on the
+  instance before the executor is built, and `SnapshotExecutor`/
+  `StructuralExecutor` keep the wrappers. Replacing those
+  `BehaviorExecutor` methods on the class, or assigning them (or the
+  model's `get_cancel_flag`) on an instance, after the executor is built
+  is no longer seen; subclass it instead, or set `_model_fast = None` on
+  the executor. The direct path also binds the model object when the
+  executor is built: reassigning `executor.behavior_model` afterwards,
+  including a `BehaviorExecutor` subclass that replaces it with a wrapper
+  or proxy after `super().__init__()`, is not seen by output/transition
+  dispatch (time advance and rescheduling do read the new model). Such
+  code must also set `executor._model_fast`, to the new model or to `None`
+  to use the wrappers. A `SysExecutor` subclass that overrides the private
+  `_destinations_for` is no longer called for an uncoupled port when
+  `track_uncaught` is off.
 - The engine's per-instant loop does less fixed work: phase A reuses one
   `MessageDeliverer` for every imminent model in an instant (each model's
   messages still travel in their own list), phase B looks couplings up in

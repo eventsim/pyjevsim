@@ -79,3 +79,17 @@ def test_track_uncaught_routes_to_dmc():
     port, msg = received[0]
     assert port == "uncaught"
     assert msg.retrieve() == [42]
+
+
+def test_uncoupled_emit_installs_fallback_only_when_tracking():
+    # _run_instant drops an uncoupled emit without calling
+    # _destinations_for when tracking is off; neither path may change
+    # the coupling table then, and tracking still installs the fallback.
+    for track in (False, True):
+        ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME,
+                         snapshot_manager=None, track_uncaught=track)
+        ss.register_entity(_Emitter())
+        ss.simulate(2, _tm=False)
+        emitter = ss.get_entity("emitter")[0]
+        dangling = [k for k in ss.port_map if k == (emitter, "dangling")]
+        assert len(dangling) == (1 if track else 0)

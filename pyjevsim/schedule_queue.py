@@ -9,6 +9,10 @@ reach the head of the heap.
 import heapq
 
 
+# Sentinel that compares unequal to every request time (NaN != NaN).
+_NO_TIME = float("nan")
+
+
 class ScheduleQueue:
     """Heapset-backed priority queue for executor scheduling."""
 
@@ -59,24 +63,48 @@ class ScheduleQueue:
         heap = self._heap
         mapped = self._mapped
         reverse = self._reverse
+        # Executors of one instant mostly share a few timestamps (the
+        # instant itself, Infinite), so the last bucket looked up on each
+        # side is kept: a float comparison replaces the dict lookup. Buckets
+        # are only deleted by peek_time/pop/pop_all_at/pop_due, never in
+        # this loop, so a cached bucket stays the one mapped at its time.
+        #
+        # The bookkeeping is kept to what a miss already pays for, because
+        # sparse instants reschedule one or two executors and never hit:
+        # a miss costs one comparison and one store over the uncached loop
+        # (add_bucket is the lookup's own target). The NaN sentinel never
+        # compares equal, so add_bucket/del_bucket are always assigned
+        # before they are read and need no initial value.
+        add_t = del_t = _NO_TIME
         for executor in executors:
             new_t = executor._reschedule(global_time)
             obj_id = executor._obj_id
 
             old_t = reverse.get(obj_id)
-            if old_t != new_t:
-                if old_t is not None:
-                    old_bucket = mapped.get(old_t)
-                    if old_bucket is not None:
-                        old_bucket.discard(executor)
+            if old_t is None:
+                # Not queued (popped this instant, or new): nothing to remove.
+                # Testing ``is None`` first also keeps the comparison below
+                # float-only.
+                reverse[obj_id] = new_t
+            elif old_t != new_t:
+                if old_t != del_t:
+                    del_t = old_t
+                    del_bucket = mapped.get(old_t)
+                if del_bucket is not None:
+                    del_bucket.discard(executor)
                 reverse[obj_id] = new_t
 
-            bucket = mapped.get(new_t)
-            if bucket is None:
-                mapped[new_t] = {executor}
-                heapq.heappush(heap, new_t)
-            else:
-                bucket.add(executor)
+            if new_t != add_t:
+                add_t = new_t
+                add_bucket = mapped.get(new_t)
+                if add_bucket is None:
+                    mapped[new_t] = add_bucket = {executor}
+                    heapq.heappush(heap, new_t)
+                    if new_t == del_t:
+                        # Keep the removal cache pointing at the mapped bucket.
+                        del_bucket = add_bucket
+                    continue
+            add_bucket.add(executor)
 
     def pop(self):
         """Remove and return one executor with the smallest ``req_time``.
@@ -141,10 +169,17 @@ class ScheduleQueue:
                 break
             heapq.heappop(heap)
             del mapped[t]
+            # One dict operation in the common case: take the entry and put
+            # it back only when it points elsewhere (shared obj_id). The
+            # default ``t`` makes a missing entry a no-op, so the check is a
+            # single float comparison. The method is looked up inline: a
+            # bound-method local would be rebuilt per bucket, which costs
+            # more than it saves when a bucket holds one or two executors.
             for executor in bucket:
                 obj_id = executor._obj_id
-                if reverse.get(obj_id) == t:
-                    del reverse[obj_id]
+                rt = reverse.pop(obj_id, t)
+                if rt != t:
+                    reverse[obj_id] = rt
             out.extend(bucket)
 
     def peek_time(self, default: float | None = None):
