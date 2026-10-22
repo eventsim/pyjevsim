@@ -9,6 +9,10 @@ reach the head of the heap.
 import heapq
 
 
+# Sentinel that compares unequal to every request time (NaN != NaN).
+_NO_TIME = float("nan")
+
+
 class ScheduleQueue:
     """Heapset-backed priority queue for executor scheduling."""
 
@@ -59,6 +63,13 @@ class ScheduleQueue:
         heap = self._heap
         mapped = self._mapped
         reverse = self._reverse
+        # Executors of one instant mostly share a few timestamps (the
+        # instant itself, Infinite), so the last bucket looked up on each
+        # side is kept: a float comparison replaces the dict lookup. Buckets
+        # are only deleted by peek_time/pop/pop_all_at/pop_due, never in
+        # this loop, so a cached bucket stays the one mapped at its time.
+        add_t = del_t = _NO_TIME
+        add_bucket = del_bucket = None
         for executor in executors:
             new_t = executor._reschedule(global_time)
             obj_id = executor._obj_id
@@ -66,17 +77,26 @@ class ScheduleQueue:
             old_t = reverse.get(obj_id)
             if old_t != new_t:
                 if old_t is not None:
-                    old_bucket = mapped.get(old_t)
-                    if old_bucket is not None:
-                        old_bucket.discard(executor)
+                    if old_t != del_t:
+                        del_t = old_t
+                        del_bucket = mapped.get(old_t)
+                    if del_bucket is not None:
+                        del_bucket.discard(executor)
                 reverse[obj_id] = new_t
 
+            if new_t == add_t:
+                add_bucket.add(executor)
+                continue
             bucket = mapped.get(new_t)
             if bucket is None:
-                mapped[new_t] = {executor}
+                mapped[new_t] = bucket = {executor}
                 heapq.heappush(heap, new_t)
+                if new_t == del_t:
+                    del_bucket = bucket
             else:
                 bucket.add(executor)
+            add_t = new_t
+            add_bucket = bucket
 
     def pop(self):
         """Remove and return one executor with the smallest ``req_time``.
