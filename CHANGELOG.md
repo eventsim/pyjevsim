@@ -23,6 +23,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The `SystemObject` class-attribute regression test now also checks that
   creating messages and models and running executors and the schedule
   queue never rebinds a class attribute of those hot-path classes.
+- A behavioural trace oracle in `tools/oracle/`. It runs 18 scenarios
+  (DEVStone, a 1000-model ring, the bank, HLA and mwmsim examples, and
+  focused engine cases) against any checkout and reduces each to a sha256
+  that ignores the order of same-time events. `tools/oracle/golden/v2.2.0.json`
+  freezes v2.2.0; the current `main` matches it in every scenario.
+  `order_check.py` reports whether the unsorted same-time order is
+  reproducible across executor-hash salts.
+- A CI job (`.github/workflows/oracle.yml`) that fails a pull request when a
+  verdict scenario differs from the merge base, or differs from the golden
+  without an entry in `tools/oracle/LEDGER.md`.
+- `docs/source/semantics.rst`, describing the simulation semantics that
+  models can currently observe, and a "Performance and semantics changes"
+  section in `CONTRIBUTING.md`: performance-only and semantics-changing
+  work go in separate pull requests, and every golden change is recorded
+  in the ledger.
+- The raw measurement records of the October 2026 performance work in
+  `benchmark/evidence/2026-10/`.
 
 ### Changed
 - `SysExecutor` calls a plain `BehaviorExecutor`'s model directly for
