@@ -1517,7 +1517,7 @@ def scenario_hash(lines, final, error):
     return h.hexdigest(), final_s
 
 
-def run_scenarios(repo, names, jobs, salt=None, raw_order=False):
+def run_scenarios(repo, names, jobs, salt=None, raw_order=False, hashseed="0"):
     """Run each scenario in a fresh subprocess; return ({name: result}, wall_s)."""
     repo = os.path.abspath(repo)
     tmp = tempfile.mkdtemp(prefix="oracle_parts_")
@@ -1525,7 +1525,7 @@ def run_scenarios(repo, names, jobs, salt=None, raw_order=False):
     pending = list(names)
     results = {}
     t0 = time.perf_counter()
-    env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONHASHSEED="0")
+    env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONHASHSEED=hashseed)
     try:
         while pending or procs:
             while pending and len(procs) < jobs:
