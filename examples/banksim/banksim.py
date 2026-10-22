@@ -8,9 +8,17 @@ import sys
 name_list = ["classic", "model_snapshot", "model_restore",
         "snapshot", "restore"]
 
+import argparse
+
 # usage: python banksim.py <wiq_time> [--seed N]   (without --seed: unseeded runs, as before)
-wiq_time = int(sys.argv[1])
-seed_args = sys.argv[2:4] if sys.argv[2:3] == ["--seed"] else []
+_parser = argparse.ArgumentParser()
+_parser.add_argument("wiq_time", type=int)
+_parser.add_argument("--seed", type=int, default=None)
+_args = _parser.parse_args()
+wiq_time = _args.wiq_time
+seed_args = ["--seed", str(_args.seed)] if _args.seed is not None else []
+# Seeded and unseeded runs go to separate output directories.
+run_tag = f"{wiq_time}_seed{_args.seed}" if _args.seed is not None else str(wiq_time)
 gen_num = ["20", "10", "30"] ## case1, case2, case3
 
 # 실행 횟수
@@ -22,7 +30,7 @@ for i in range(iterations) :
             file_name = f"banksim_{name}_case{j+1}"
             python_name = f"banksim_{name}"
 
-            file_path = f"./output/{wiq_time}"
+            file_path = f"./output/{run_tag}"
             csv_file = f'{file_path}/csv/{file_name}.csv'
                 
             if not os.path.exists(f"{file_path}/csv"):
