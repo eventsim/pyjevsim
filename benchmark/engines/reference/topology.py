@@ -46,22 +46,38 @@ class DEVStoneAtomic(Atomic):
 
 
 class Seeder(Atomic):
-    __slots__ = ()
+    """Seed generator: fires at t=0, then every `period` until `events` sent.
+
+    events=1 is the original one-shot seeder. Not a counted atomic.
+    """
+
+    __slots__ = ("remaining", "period")
+
+    def __init__(self, name: str, events: int = 1, period: float = 1.0):
+        super().__init__(name)
+        self.remaining = events
+        self.period = period
 
     def initialize(self):
         self.sigma = 0
         self.phase = "active"
 
     def deltint(self):
-        self.sigma = INFINITY
-        self.phase = "passive"
+        self.remaining -= 1
+        if self.remaining > 0:
+            self.sigma = self.period
+            self.phase = "wait"
+        else:
+            self.sigma = INFINITY
+            self.phase = "passive"
 
     def lambdaf(self):
         return [0]
 
 
 def build(variant: str, depth: int, width: int,
-          int_cycles: int = 0, ext_cycles: int = 0):
+          int_cycles: int = 0, ext_cycles: int = 0,
+          events: int = 1, period: float = 1.0):
     variant = variant.upper()
     if variant not in ("LI", "HI", "HO"):
         raise ValueError(f"variant {variant} not supported")
@@ -69,7 +85,7 @@ def build(variant: str, depth: int, width: int,
         raise ValueError("depth and width must be >= 1")
 
     eng = Engine()
-    seeder = eng.add(Seeder("seeder"))
+    seeder = eng.add(Seeder("seeder", events=events, period=period))
 
     # 1 atomic at the innermost level + (width-1) atomics per outer level.
     counts = [1] + [width - 1] * (depth - 1)

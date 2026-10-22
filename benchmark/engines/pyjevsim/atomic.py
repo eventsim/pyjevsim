@@ -60,24 +60,35 @@ class DEVStoneAtomic(BehaviorModel):
 
 
 class Seeder(BehaviorModel):
-    """One-shot generator: fires a single event at t=0 then passivates."""
+    """Seed generator: fires at t=0, then every `period` until `events` sent.
 
-    def __init__(self, name: str = "seeder"):
+    With the default events=1 it is the original one-shot seeder (fires a
+    single event at t=0 then passivates); the "wait" state is only added in
+    multi-event mode. The seeder is not part of the counted atomics, so its
+    own transitions never enter the transition totals.
+    """
+
+    def __init__(self, name: str = "seeder", events: int = 1,
+                 period: float = 1.0):
         super().__init__(name)
         self.insert_state("active", 0)
         self.insert_state("done")
+        if events > 1:
+            self.insert_state("wait", period)
         self.init_state("active")
         self.insert_output_port("out")
+        self._remaining = events
 
     def ext_trans(self, port, msg):
         pass
 
     def int_trans(self):
-        if self._cur_state == "active":
-            self._cur_state = "done"
+        if self._cur_state in ("active", "wait"):
+            self._remaining -= 1
+            self._cur_state = "wait" if self._remaining > 0 else "done"
 
     def output(self, msg_deliver):
-        if self._cur_state == "active":
+        if self._cur_state in ("active", "wait"):
             sys_msg = SysMessage(self.get_name(), "out")
             sys_msg.insert(0)
             msg_deliver.insert_message(sys_msg)

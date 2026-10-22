@@ -70,19 +70,31 @@ class DEVStoneAtomic(AtomicDEVS):
 
 
 class Seeder(AtomicDEVS):
-    """One-shot generator: fires once at t=0 then passivates."""
+    """Seed generator: fires at t=0, then every `period` until `events` sent.
 
-    def __init__(self, name: str = "seeder"):
+    events=1 is the original one-shot generator (fires once at t=0 then
+    passivates). Not a counted atomic.
+    """
+
+    def __init__(self, name: str = "seeder", events: int = 1,
+                 period: float = 1.0):
         super().__init__(name)
         self.out_port = self.addOutPort("out")
         self.state = "active"
         self.elapsed = 0.0
+        self.remaining = events
+        self.period = period
 
     def timeAdvance(self):
-        return 0.0 if self.state == "active" else INFINITY
+        if self.state == "active":
+            return 0.0
+        if self.state == "wait":
+            return self.period
+        return INFINITY
 
     def intTransition(self):
-        return "done"
+        self.remaining -= 1
+        return "wait" if self.remaining > 0 else "done"
 
     def outputFnc(self):
         return {self.out_port: [0]}
@@ -90,13 +102,15 @@ class Seeder(AtomicDEVS):
 
 class DEVStoneRoot(CoupledDEVS):
     def __init__(self, variant: str, depth: int, width: int,
-                 int_cycles: int = 0, ext_cycles: int = 0):
+                 int_cycles: int = 0, ext_cycles: int = 0,
+                 events: int = 1, period: float = 1.0):
         super().__init__(f"{variant}_root")
         variant = variant.upper()
         if variant not in ("LI", "HI", "HO"):
             raise ValueError(f"variant {variant} not supported")
 
-        self.seeder = self.addSubModel(Seeder("seeder"))
+        self.seeder = self.addSubModel(
+            Seeder("seeder", events=events, period=period))
 
         counts = [1] + [width - 1] * (depth - 1)
         self.levels: list[list[DEVStoneAtomic]] = []

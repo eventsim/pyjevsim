@@ -35,6 +35,17 @@ class RunResult:
 
     error: str = ""
 
+    # Multi-event mode: `events` seed events injected into the root input at
+    # simulated times 0, period, 2*period, ... (events == 1 is the original
+    # single-seed cascade). The seed generator's own transitions are never
+    # counted in n_internals / n_externals.
+    events: int = 1
+    period: float = 1.0
+    # How the seeds reach the root input: "generator" (a seed atomic inside
+    # the simulated model; pyjevsim, pypdevs, reference, and xdevs with
+    # events > 1) or "inject" (xdevs' historical Coordinator.inject path).
+    seed: str = ""
+
     @property
     def transitions(self) -> int:
         return self.n_internals + self.n_externals
@@ -44,10 +55,40 @@ class RunResult:
         return self.transitions / self.sim_s if self.sim_s else 0.0
 
     def as_dict(self) -> dict:
+        # Column order: the original columns first (unchanged), then the
+        # multi-event columns appended at the end so older CSV readers that
+        # index by position keep working.
         d = asdict(self)
+        events = d.pop("events")
+        period = d.pop("period")
+        seed = d.pop("seed")
         d["transitions"] = self.transitions
         d["transitions_per_s"] = round(self.transitions_per_s, 2)
+        d["events"] = events
+        d["period"] = period
+        d["seed"] = seed
         return d
+
+
+def check_events(events: int, period: float):
+    """Validate multi-event arguments shared by every adapter."""
+    if int(events) != events or events < 1:
+        raise ValueError(f"events must be an integer >= 1, got {events!r}")
+    if not period > 0:
+        raise ValueError(f"period must be > 0, got {period!r}")
+
+
+def seed_horizon(depth: int, width: int, events: int = 1,
+                 period: float = 1.0):
+    """Simulated horizon that lets every seed's zero-delay cascade drain.
+
+    events == 1 returns exactly the historical bound `max(8, d*w + 4)` (an
+    int), so the single-event path is unchanged.
+    """
+    base = max(8, depth * width + 4)
+    if events == 1:
+        return base
+    return (events - 1) * period + base
 
 
 def expected_atomic_count(variant: str, depth: int, width: int) -> int:

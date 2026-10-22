@@ -125,6 +125,37 @@ Restrict to specific engines or a single configuration:
    $ python -m benchmark.run_compare --engines pyjevsim xdevs \
        --variant HI --depth 5 --width 4
 
+By default each adapter injects a single seed event at t = 0 and drains the
+resulting cascade. Such runs are short (well under 2 ms even at
+``--depth 10 --width 10``), so timer resolution and per-call overhead weigh
+heavily. ``--events N`` injects N seed events into the root input at
+simulated times 0, P, 2P, ..., (N - 1)P, where ``--period P`` (default 1.0,
+must be greater than 0) sets the spacing. Every cascade has zero delay, so
+each finishes before the next seed arrives and the transition count is N
+times the single-seed count:
+
+.. code-block:: console
+
+   $ python -m benchmark.run_compare --variant HI --depth 10 --width 10 \
+       --repeat 3 --events 100 --period 1.0 \
+       --output benchmark/results/events100.csv
+
+The seed generator sits outside the counted atomics in every engine. With
+``--events 1`` xdevs keeps its historical ``Coordinator.inject`` path, which
+runs the first wave of external transitions before the timer starts and
+loses work on HO. ``--xdevs-seed generator`` makes xdevs use the same
+generator seeding as the other engines for single-seed runs. When N > 1 the
+table and CSV gain ``events``, ``period`` and ``seed`` columns, appended
+after the original ones. PythonPDEVS needs the scheduler heap-sentinel edit
+documented in ``BASELINE.md`` for multi-event runs, because simulated time
+advances.
+
 ``benchmark/results/BASELINE.md`` contains one historical capture and its
-limitations. Retain the generated CSV and environment details for any new
-comparison.
+limitations. ``benchmark/results/COMPARE-2026-10-22.md`` records a
+reproducible comparison of pyjevsim ``8135542`` and ``9a2b0d2`` with
+xdevs.py, PythonPDEVS and the reference engine in both single-seed and
+100-seed modes, with the environment, the exact invocations, the CSVs
+(``compare-2026-10-22-single-event.csv`` and
+``compare-2026-10-22-events100.csv``) and the caveats that limit how the
+ratios can be read. Retain the generated CSV and environment details for
+any new comparison, and compare transition counts as well as throughput.

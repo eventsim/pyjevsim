@@ -2,7 +2,8 @@
 
 The graph mirrors the *flattened* shape of the canonical xdevs DEVStone:
 
-  - Seeder fires exactly one event at t=0 then passivates.
+  - Seeder fires exactly one event at t=0 then passivates (events=1), or
+    `events` events at t = 0, period, 2*period, ... in multi-event mode.
   - LI(d, w) has 1 + (d-1) * (w-1) atomics. Seeder feeds every atomic.
   - HI adds an internal chain inside every non-innermost level:
         atomic[i].out -> atomic[i+1].in
@@ -18,6 +19,7 @@ import time
 from pyjevsim.definition import ExecutionType
 from pyjevsim.system_executor import SysExecutor
 
+from benchmark.engines.common import seed_horizon
 from .atomic import DEVStoneAtomic, Seeder
 
 
@@ -27,7 +29,8 @@ def _atomics_per_level(depth: int, width: int) -> list[int]:
 
 
 def build(variant: str, depth: int, width: int,
-          int_cycles: int = 0, ext_cycles: int = 0):
+          int_cycles: int = 0, ext_cycles: int = 0,
+          events: int = 1, period: float = 1.0):
     variant = variant.upper()
     if variant not in ("LI", "HI", "HO"):
         raise ValueError(f"variant {variant} not supported")
@@ -36,7 +39,7 @@ def build(variant: str, depth: int, width: int,
 
     ss = SysExecutor(1, ex_mode=ExecutionType.V_TIME, snapshot_manager=None)
 
-    seeder = Seeder("seeder")
+    seeder = Seeder("seeder", events=events, period=period)
     ss.register_entity(seeder)
 
     levels: list[list[DEVStoneAtomic]] = []
@@ -71,11 +74,13 @@ def build(variant: str, depth: int, width: int,
     return ss, atomics, levels
 
 
-def simulate(ss, depth: int, width: int):
+def simulate(ss, depth: int, width: int, events: int = 1,
+             period: float = 1.0):
     """Simulate until the FEL drains.
 
     All transitions in this adapter use deadline 0. The calculated horizon
-    allows the simulator to drain its future-event list.
+    allows the simulator to drain its future-event list (after the last
+    seed at (events - 1) * period in multi-event mode).
     """
-    horizon = max(8, depth * width + 4)
+    horizon = seed_horizon(depth, width, events, period)
     ss.simulate(horizon, _tm=False)
