@@ -187,12 +187,11 @@ from one replication to the next in the same worker. Examples:
 - Module-level caches, class-level counters and registries.
 - The global ``random`` stream if a model draws from it without ``run``
   reseeding it.
-- ``SysExecutor.simulate()`` with the default ``_tm=True`` registers the
-  executor in the process-global ``TerminationManager._executors`` list on
-  *every call* and never removes it. No replication's models are ever
-  freed, and a process that runs many replications slows down as the heap
-  grows. Pass ``_tm=False`` inside ``run``; replications do not need the
-  SIGINT/SIGTERM handler.
+- ``SysExecutor.simulate()`` with the default ``_tm=True`` installs
+  pyjevsim's SIGINT/SIGTERM handler in the worker. A Ctrl+C then ends each
+  running replication early, and ``run`` returns its partial result as if
+  it had finished, instead of stopping the batch. Pass ``_tm=False`` inside
+  ``run``; a replication does not need that handler.
 
 ``max_tasks_per_child=k`` (Python 3.11+) replaces a worker with a fresh
 process after ``k`` tasks. A task is one chunk, so ``chunksize=1,

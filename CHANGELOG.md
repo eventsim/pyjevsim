@@ -150,6 +150,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `stream_seed` to the values its fake clock gave before; its hash is
   unchanged.
 
+- `SysExecutor.simulate()` registers its executor through the new
+  `TerminationManager.attach()` instead of building a `TerminationManager`
+  on every call, and no longer sets the unused `SysExecutor.tm` attribute.
+  Registration stays weak and idempotent, and the handlers are still
+  reinstalled when something has reset them. The replication guide, the
+  runner docstring and `banksim_replications.py` no longer describe the
+  registry leak that was fixed earlier in this release; they recommend
+  `simulate(..., _tm=False)` inside a replication because the handler
+  would turn a Ctrl+C into silently truncated results.
+
 ### Fixed
 - `SystemObject` no longer rebinds a class attribute on every instantiation.
   The former global ID counter (`SystemObject.__GLOBAL_OBJECT_ID += 1`)

@@ -429,12 +429,7 @@ class ReplicationPool:
             process-global state between replications (module-level caches,
             the global ``random`` stream if a model draws from it without
             reseeding, class-level counters, memory growth).  Each
-            replacement costs a process start-up.  Note that
-            ``SysExecutor.simulate()`` with the default ``_tm=True`` adds
-            the executor to the process-global
-            ``TerminationManager._executors`` list on every call, so no
-            replication is ever freed; call ``simulate(..., _tm=False)``
-            inside ``run``.
+            replacement costs a process start-up.
     """
 
     def __init__(self, workers=None, *, mp_context="spawn", initializer=None,

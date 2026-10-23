@@ -30,7 +30,7 @@ class TerminationManager:
     def __init__(self, executor=None):
         if executor:
             TerminationManager._executors.add(executor)
-        TerminationManager.__set_terminate_handler()
+        TerminationManager.install_handlers()
 
     @staticmethod
     def register_executor(executor):
@@ -38,7 +38,22 @@ class TerminationManager:
         TerminationManager._executors.add(executor)
 
     @staticmethod
-    def __set_terminate_handler():
+    def attach(executor):
+        """Register ``executor`` and make sure the handlers are installed.
+
+        ``SysExecutor.simulate()`` calls this on every run, so it does what
+        the constructor does without building a ``TerminationManager``.
+        Registering an executor that is already registered is a no-op.
+        """
+        TerminationManager._executors.add(executor)
+        TerminationManager.install_handlers()
+
+    @staticmethod
+    def install_handlers():
+        """Install the SIGTERM/SIGINT handlers if they are not in place.
+
+        Does nothing off the main thread, where Python does not allow it.
+        """
         if threading.current_thread() is not threading.main_thread():
             return
         for sig in (signal.SIGTERM, signal.SIGINT):
