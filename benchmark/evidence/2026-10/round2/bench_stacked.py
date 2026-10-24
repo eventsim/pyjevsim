@@ -1,6 +1,6 @@
 import subprocess, csv, io, sys, json
-BASE = "D:/development/pyjevsim/.claude/worktrees/kind-bardeen-27583d"      # b447f6f
-STK  = "D:/development/pyjevsim/.claude/worktrees/perf2-stacked"            # fb9bf10
+BASE = "<worktree:kind-bardeen-27583d>"      # b447f6f
+STK  = "<worktree:perf2-stacked>"            # fb9bf10
 cfgs = [("hi", 10, 10), ("hi", 6, 8), ("li", 48, 1)]
 REPS = 7
 def run(cwd, v, d, w):

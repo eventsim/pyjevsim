@@ -3,9 +3,10 @@
 Raw records behind the October 2026 engine work (#41, #42, #44) and the
 PythonPDEVS ceiling study, kept so that the figures quoted in those pull
 requests, in `CHANGELOG.md` and in `benchmark/results/COMPARE-2026-10-22.md`
-can be traced back to data. The files are copied unchanged from the working
-directories they were produced in; the drivers still name those directories
-(`D:/development/pyjevsim/.claude/worktrees/...` and a scratch `S` argument)
+can be traced back to data. The files are copied from the working
+directories they were produced in, with only their absolute paths replaced
+(see the end of this file); the drivers still name those directories
+(`<worktree:NAME>` paths and a scratch `S` argument)
 and will not run as they stand.
 
 All runs: Windows 11, CPython 3.14.0, Intel i7-12700. No other Python
