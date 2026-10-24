@@ -5,11 +5,15 @@ abstract: >-
   pyjevsim is a Python framework for Discrete Event System Specification
   (DEVS) modeling and simulation. It provides journaling, virtual- and
   real-time execution, and HLA federate integration through pluggable RTI
-  backends. Version 2.2.0 adds a Portico backend, AT/SIM reference traces and
-  application-state comparison commands for Pitch and Portico, and an
-  experimental GORTI adapter that requires a source-installed SDK and a
-  separately built service. GORTI observations are scoped functional checks,
-  not complete HLA Object Management or formal IEEE 1516 conformance.
+  backends. Version 2.3.0 runs simulations about 1.4-2.6x faster than 2.2.0
+  on the project's benchmark suite (CPython 3.10 to 3.14 on Windows), adds a
+  replication runner that runs a model once per seed on a process pool, and
+  fixes snapshot, restore and signal-handler defects. Its HLA adapters are
+  unchanged from 2.2.0: Pitch pRTI and Portico backends with AT/SIM reference
+  traces and application-state comparison commands, and an experimental
+  GORTI adapter that requires a source-installed SDK and a separately built
+  service. GORTI observations are scoped functional checks, not complete HLA
+  Object Management or formal IEEE 1516 conformance.
 type: software
 authors:
   - family-names: Choi
@@ -20,7 +24,7 @@ authors:
 repository-code: "https://github.com/eventsim/pyjevsim"
 url: "https://pyjevsim.readthedocs.io/"
 license: MIT
-version: 2.2.0
+version: 2.3.0
 date-released: "2026-08-29"
 keywords:
   - DEVS

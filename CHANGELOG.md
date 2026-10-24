@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.3.0] — UNRELEASED (date set at tagging)
+
+### Highlights
+
+2.3.0 is a performance and correctness release. The simulation engine is
+faster on every measured interpreter, `import pyjevsim` no longer loads
+`dill`, a replication runner (`pyjevsim.replication`) runs a model once per
+seed on a process pool, and several snapshot, restore and signal-handling
+defects are fixed. The HLA adapters are unchanged from 2.2.0. Code that
+replaces executor methods at run time, keeps the message deliverer passed to
+`output()`, or supplies a custom `ExecutorFactory` should read the Changed
+section.
+
+Performance. We compared the 2.3.0 release candidate's engine (`cba37cc`)
+with 2.2.0 (`9a2b0d2`) using the standard suite (`benchmark/suite.py`, at
+the revision in PR #51, which adds the Windows power-throttling opt-out).
+The numbers below are 2.2.0 time divided by 2.3.0 time, from the minimum of
+10 interleaved, parity-checked rounds, each run in a fresh process. W1 is
+DEVStone HI 10x10, W2 DEVStone LI 10x10, W3 a sparse generator-to-sink
+model, W4 an idle-heavy model (10,000 passive models), W5 the bank example,
+and W7 W1 run through the `SnapshotExecutor` wrapper. On CPython 3.10.20,
+2.3.0 is 1.6x faster on W1, W2 and W3, 1.4x on W4, 1.5x on W5 and 1.4x on
+W7. On CPython 3.11.15: 1.9x on W1, 1.8x on W2, 1.9x on W3, 1.6x on W4,
+1.5x on W5 and 1.6x on W7. On CPython 3.12.13: 1.9x on W1, 1.8x on W2,
+1.9x on W3, 1.5x on W4, 1.6x on W5 and 1.6x on W7. On CPython 3.13.13:
+2.4x on W1, 2.6x on W2, 2.2x on W3, 2.0x on W4, 1.7x on W5 and 2.1x on W7.
+On CPython 3.14.0: 2.3x on W1, 2.5x on W2, 2.1x on W3, 1.9x on W4, 1.8x on
+W5 and 2.0x on W7.
+
+Most of the gain comes from the `SystemObject` counter fix (#41) and the
+later engine work (#42, #44). Measured alone on W1, W3 and W5, #41 accounts
+for about 30-50% of the gain on 3.10 and for more than half on 3.12 and
+3.14, where 2.2.0 had become slower than on 3.12. For W7, the 2.2.0 side
+used a compatibility shim for `SnapshotExecutor.con_trans`, so its ratio
+also includes the #47 correctness change and is not a pure engine
+comparison. Separately, `import pyjevsim` (W6) is about 4.5-7x faster on
+every interpreter. This is mainly because 2.3.0 loads `dill` only when
+snapshots are used, not because the engine changed.
+
+Method and limits: all runs were on one Windows 11 desktop with an Intel
+Core i7-12700 (20 logical CPUs, 64 GB RAM, no CPU pinning, Windows power
+throttling turned off for the benchmark processes). The machine was shared
+with other work and ran at about 20-35% background CPU load. The
+interpreter builds differ (3.10-3.13 uv-managed, 3.14.0 from python.org),
+so compare ratios across interpreters, not absolute times. We treat
+differences under 5% as noise and do not report them, so read these
+figures as approximate. An independent 5-round rerun of W1 and W5 on 3.10
+and 3.14 agreed with them to within 3%. `cba37cc` is the engine as of
+measurement; the changes merged after it (#51 and the release commit) do
+not touch the engine. Linux and macOS were not measured. The full record is
+in `benchmark/results/RELEASE-2.3.0-perf.md`, with the raw JSON in
+`benchmark/results/release-2.3.0/` and the rerun in its `rerun/`
+subdirectory.
+
 ### Added
 - A replication runner, `pyjevsim.replication` (SC-6).
   `run_replications(run, seeds, ...)` calls a picklable `run(seed)` once per
@@ -46,9 +100,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   (DEVStone, a 1000-model ring, the bank, HLA and mwmsim examples, and
   focused engine cases) against any checkout and reduces each to a sha256
   that ignores the order of same-time events. `tools/oracle/golden/v2.2.0.json`
-  freezes v2.2.0; the current `main` matches it in every scenario.
-  `order_check.py` reports whether the unsorted same-time order is
-  reproducible across executor-hash salts.
+  freezes v2.2.0. `tools/oracle/golden/v2.3.0.json`, the golden CI
+  compares with, differs from it only in `snapshot_restore`, which the
+  snapshot fixes listed under Fixed change on purpose (recorded in
+  `tools/oracle/LEDGER.md`). `order_check.py` reports whether the unsorted
+  same-time order is reproducible across executor-hash salts.
 - A CI job (`.github/workflows/oracle.yml`) that fails a pull request when a
   verdict scenario differs from the golden, or differs from the merge base
   without both an entry in `tools/oracle/LEDGER.md` and a new golden.
@@ -57,10 +113,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   section in `CONTRIBUTING.md`: performance-only and semantics-changing
   work go in separate pull requests, and every golden change is recorded
   in the ledger.
+- A multi-event mode in the cross-engine DEVStone runner
+  (`benchmark/run_compare.py`): `--events N` feeds N seed events into the
+  root input at simulated times 0, P, 2P, ... (`--period P`), so every
+  engine does exactly N times the single-seed transition work.
+  `--events 1`, the default, keeps the single-seed path and its output
+  layout. The 2026-10-22 comparison with xdevs.py, PythonPDEVS and the
+  reference engine is recorded in `benchmark/results/COMPARE-2026-10-22.md`.
 - The raw measurement records of the October 2026 performance work in
   `benchmark/evidence/2026-10/`.
 
 ### Changed
+- `benchmark.suite` opts itself and every child process out of Windows
+  power throttling (EcoQoS), which slowed a process that had been busy for
+  about 3 s by 4-5x and distorted long sequential measurements;
+  `--allow-throttling` turns this off. The trace-oracle CI job compares a
+  pull request with the branch it targets rather than always with `main`.
+  Absolute local paths in `benchmark/evidence/2026-10/` are replaced with
+  placeholders.
 - `SysExecutor` calls a plain `BehaviorExecutor`'s model directly for
   output and transitions instead of going through the executor's
   forwarding wrappers, and skips the miss path for output ports with no
@@ -149,7 +219,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   trace oracle's `mwmsim_433sbh` scenario pins the seeds through
   `stream_seed` to the values its fake clock gave before; its hash is
   unchanged.
-
 - `SysExecutor.simulate()` registers its executor through the new
   `TerminationManager.attach()` instead of building a `TerminationManager`
   on every call, and no longer sets the unused `SysExecutor.tm` attribute.
@@ -461,7 +530,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `SysExecutor` with V_TIME and R_TIME execution modes, port-based
   coupling, and `dill`-backed serialization.
 
-[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.2.0...HEAD
+[Unreleased]: https://github.com/eventsim/pyjevsim/compare/v2.3.0...HEAD
+[2.3.0]: https://github.com/eventsim/pyjevsim/compare/v2.2.0...v2.3.0
 [2.2.0]: https://github.com/eventsim/pyjevsim/compare/v2.1.2...v2.2.0
 [2.1.2]: https://github.com/eventsim/pyjevsim/compare/v2.1.1...v2.1.2
 [2.1.1]: https://github.com/eventsim/pyjevsim/compare/v2.1.0...v2.1.1
