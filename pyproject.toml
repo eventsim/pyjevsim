@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pyjevsim"
-version = "2.2.0"
+version = "2.3.0"
 description = "Python DEVS modeling and simulation with journaling and pluggable HLA federate backends"
 readme = "README.md"
 license = "MIT"

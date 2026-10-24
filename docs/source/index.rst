@@ -5,11 +5,45 @@ PyJEvSim is a DEVS (Discrete Event System Specification) modeling and
 simulation environment with built-in journaling. It supports snapshot and
 restore of individual models or the full simulation engine, virtual-time
 and real-time execution, and HLA (IEEE 1516-2010) federate integration
-with pluggable RTI backends. Version 2.2.0 includes adapters for Pitch pRTI
-and the open-source Portico RTI, plus an experimental GORTI adapter.
+with pluggable RTI backends. Version 2.3.0 includes adapters for Pitch pRTI
+and the open-source Portico RTI, plus an experimental GORTI adapter, all
+unchanged from 2.2.0. It runs simulations about 1.4-2.6x faster than 2.2.0
+and adds a replication runner for multi-seed experiments.
 
   - GitHub: `eventsim/pyjevsim <https://github.com/eventsim/pyjevsim>`_
   - PyPI: `pyjevsim <https://pypi.org/project/pyjevsim/>`_
+
+Changes in 2.3
+--------------
+
+- **Faster engine.** On the standard benchmark suite (:doc:`benchmark`),
+  2.3.0 runs simulations about 1.4-1.6x faster than 2.2.0 on CPython 3.10
+  and about 1.7-2.6x faster on 3.13 and 3.14 (Windows 11; the changelog
+  gives the per-workload figures and their limits). Most of the gain comes
+  from no longer rebinding a ``SystemObject`` class attribute on every
+  object creation, plus less fixed work per simulated instant and direct
+  model dispatch.
+- **Faster import.** ``import pyjevsim`` no longer imports ``dill``; the
+  snapshot and restore code loads it when it runs.
+- **Replication runner.** ``run_replications(run, seeds, ...)`` in
+  ``pyjevsim.replication`` runs a picklable ``run(seed)`` once per seed on a
+  persistent process pool and returns the results in seed order
+  (:doc:`replication`).
+- **Snapshot and restore fixes.** ``SnapshotExecutor`` handles confluent
+  transitions, ``SnapshotCondition`` hooks receive the model's real state,
+  and models created after a restore in a new process no longer reuse
+  restored object IDs. Registering the same model twice now raises
+  ``ValueError``.
+- **Signal handling.** ``simulate()`` no longer reinstalls the SIGINT/SIGTERM
+  handlers on every call, no longer keeps finished executors alive, and can
+  run on a worker thread.
+- **Behaviour notes.** Replacing ``BehaviorExecutor`` methods on the class or
+  an instance after the executor is built is no longer seen, and an executor
+  returned by a custom ``ExecutorFactory`` must derive from
+  ``pyjevsim.executor.Executor``. The changelog lists these cases.
+- **Tooling.** A standard performance suite, a behavioural trace oracle with
+  a CI gate, and a description of the observable simulation semantics
+  (:doc:`semantics`).
 
 Changes in 2.2
 --------------
