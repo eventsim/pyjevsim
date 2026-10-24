@@ -42,6 +42,29 @@ def test_repeated_simulate_registers_executor_once():
     assert sum(1 for ex in TerminationManager._executors if ex is se) == 1
 
 
+def test_executor_registered_again_after_a_signal(fresh_handlers):
+    """The signal handler empties the registry; the next simulate() of an
+    executor that survived must register it again."""
+    se = _executor()
+    se.simulate(1)
+    TerminationManager.signal_handler(signal.SIGINT, None)
+    assert se not in TerminationManager._executors
+    assert se.is_terminated()
+
+    se.simulate(1)
+    assert se in TerminationManager._executors
+    assert not se.is_terminated()
+
+
+def test_simulate_does_not_build_a_manager_per_call():
+    se = _executor()
+    with mock.patch.object(TerminationManager, "__init__",
+                           side_effect=AssertionError("built per call")):
+        for _ in range(3):
+            se.simulate(1)
+    assert se in TerminationManager._executors
+
+
 def test_finished_executors_are_released():
     refs = []
     for _ in range(20):
