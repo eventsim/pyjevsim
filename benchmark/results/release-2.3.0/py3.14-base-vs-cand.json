@@ -1,0 +1,3890 @@
+{
+ "suite": "pyjevsim standard performance suite (INF-2)",
+ "started": "2026-10-24T12:05:07",
+ "mode": "ab",
+ "rounds": 10,
+ "warmup": 1,
+ "noise_floor": 0.05,
+ "pin": null,
+ "power_throttling": {
+  "allowed": false,
+  "parent_opted_out": true
+ },
+ "environment": {
+  "python": "3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]",
+  "executable": "<scratchpad>/phaseA/inf6b/venvs/py3.14/Scripts/python.exe",
+  "platform": "Windows-11-10.0.26300-SP0",
+  "machine": "AMD64",
+  "processor": "Intel64 Family 6 Model 151 Stepping 2, GenuineIntel",
+  "cpu_count": 20
+ },
+ "sides": {
+  "base": {
+   "path": "<scratchpad>\\phaseA\\inf6b\\base",
+   "git_head": null
+  },
+  "cand": {
+   "path": "<scratchpad>\\phaseA\\inf6b\\cand",
+   "git_head": null
+  }
+ },
+ "workloads": {
+  "W1": {
+   "title": "DEVStone HI 10x10, 100 seeds (flattened adapter)",
+   "params": {
+    "variant": "HI",
+    "depth": 10,
+    "width": 10,
+    "events": 100,
+    "period": 1.0
+   },
+   "metrics": [
+    "sim_s"
+   ],
+   "runs": {
+    "base": [
+     {
+      "build_s": 0.0012246999540366232,
+      "info": {
+       "transitions_per_s": 343860.6060095848
+      },
+      "metrics": {
+       "sim_s": 0.236142200010363
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 0
+     },
+     {
+      "build_s": 0.0008550999918952584,
+      "info": {
+       "transitions_per_s": 330803.8248198936
+      },
+      "metrics": {
+       "sim_s": 0.24546269996790215
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 1
+     },
+     {
+      "build_s": 0.000699399970471859,
+      "info": {
+       "transitions_per_s": 292470.32974334963
+      },
+      "metrics": {
+       "sim_s": 0.2776350000058301
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 0
+     },
+     {
+      "build_s": 0.000700599979609251,
+      "info": {
+       "transitions_per_s": 336319.0624254927
+      },
+      "metrics": {
+       "sim_s": 0.2414373999927193
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 1
+     },
+     {
+      "build_s": 0.0010940000065602362,
+      "info": {
+       "transitions_per_s": 313125.43139150756
+      },
+      "metrics": {
+       "sim_s": 0.25932100001955405
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 0
+     },
+     {
+      "build_s": 0.0007105999975465238,
+      "info": {
+       "transitions_per_s": 394671.9289423878
+      },
+      "metrics": {
+       "sim_s": 0.20574050000868738
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 1
+     },
+     {
+      "build_s": 0.0010370999807491899,
+      "info": {
+       "transitions_per_s": 285406.98614808946
+      },
+      "metrics": {
+       "sim_s": 0.28450599999632686
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 0
+     },
+     {
+      "build_s": 0.0009418000117875636,
+      "info": {
+       "transitions_per_s": 304049.47469376423
+      },
+      "metrics": {
+       "sim_s": 0.2670617999974638
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 1
+     },
+     {
+      "build_s": 0.0013019000180065632,
+      "info": {
+       "transitions_per_s": 305296.9012224208
+      },
+      "metrics": {
+       "sim_s": 0.26597060001222417
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 0
+     },
+     {
+      "build_s": 0.000853499979712069,
+      "info": {
+       "transitions_per_s": 270565.8358286881
+      },
+      "metrics": {
+       "sim_s": 0.3001117999665439
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 1
+     }
+    ],
+    "cand": [
+     {
+      "build_s": 0.0005440000095404685,
+      "info": {
+       "transitions_per_s": 874004.501036159
+      },
+      "metrics": {
+       "sim_s": 0.09290570003213361
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 1
+     },
+     {
+      "build_s": 0.0005052000051364303,
+      "info": {
+       "transitions_per_s": 700288.5670437736
+      },
+      "metrics": {
+       "sim_s": 0.11595220002345741
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 0
+     },
+     {
+      "build_s": 0.0005097999819554389,
+      "info": {
+       "transitions_per_s": 755276.4711570584
+      },
+      "metrics": {
+       "sim_s": 0.10751030000392348
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 1
+     },
+     {
+      "build_s": 0.0005283000064082444,
+      "info": {
+       "transitions_per_s": 811620.1618954779
+      },
+      "metrics": {
+       "sim_s": 0.10004679998382926
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 0
+     },
+     {
+      "build_s": 0.0005104999872855842,
+      "info": {
+       "transitions_per_s": 832090.8332934906
+      },
+      "metrics": {
+       "sim_s": 0.09758549998514354
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 1
+     },
+     {
+      "build_s": 0.0007958000060170889,
+      "info": {
+       "transitions_per_s": 733896.5297111946
+      },
+      "metrics": {
+       "sim_s": 0.11064229998737574
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 0
+     },
+     {
+      "build_s": 0.0006414999952539802,
+      "info": {
+       "transitions_per_s": 765008.5827302563
+      },
+      "metrics": {
+       "sim_s": 0.1061426000087522
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 1
+     },
+     {
+      "build_s": 0.0005301999626681209,
+      "info": {
+       "transitions_per_s": 722349.2362258403
+      },
+      "metrics": {
+       "sim_s": 0.11241100000916049
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 0
+     },
+     {
+      "build_s": 0.0005338999908417463,
+      "info": {
+       "transitions_per_s": 932438.406869338
+      },
+      "metrics": {
+       "sim_s": 0.08708349999506027
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 1
+     },
+     {
+      "build_s": 0.0005446000141091645,
+      "info": {
+       "transitions_per_s": 1047940.7067103239
+      },
+      "metrics": {
+       "sim_s": 0.07748529996024445
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 0
+     }
+    ]
+   },
+   "failed": null,
+   "summary": {
+    "sim_s": {
+     "base": {
+      "min": 0.20574050000868738,
+      "median": 0.2626458000158891,
+      "max": 0.3001117999665439,
+      "spread": 0.4586909235365507,
+      "n": 10
+     },
+     "cand": {
+      "min": 0.07748529996024445,
+      "median": 0.10309469999629073,
+      "max": 0.11595220002345741,
+      "spread": 0.4964412615418571,
+      "n": 10
+     },
+     "ratio_of_min": 0.3766166600983892,
+     "speedup_of_min": 2.6552197657393997,
+     "median_ratio": 0.3903336404417987,
+     "ratio_spread": [
+      0.2581881151253713,
+      0.5377759847123141
+     ],
+     "verdict": "faster"
+    }
+   },
+   "parity_ok": true,
+   "parity": {
+    "atomics": 82,
+    "events": 40600,
+    "externals": 40600,
+    "internals": 40600,
+    "transitions": 81200
+   },
+   "refused": null
+  },
+  "W2": {
+   "title": "DEVStone LI 10x10, 1000 seeds (flattened adapter)",
+   "params": {
+    "variant": "LI",
+    "depth": 10,
+    "width": 10,
+    "events": 1000,
+    "period": 1.0
+   },
+   "metrics": [
+    "sim_s"
+   ],
+   "runs": {
+    "base": [
+     {
+      "build_s": 0.0006413000519387424,
+      "info": {
+       "transitions_per_s": 266678.15769252967
+      },
+      "metrics": {
+       "sim_s": 0.6149734999635257
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 0
+     },
+     {
+      "build_s": 0.0006498000002466142,
+      "info": {
+       "transitions_per_s": 252431.34483676314
+      },
+      "metrics": {
+       "sim_s": 0.6496815999853425
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 1
+     },
+     {
+      "build_s": 0.0010788000072352588,
+      "info": {
+       "transitions_per_s": 319529.21656382486
+      },
+      "metrics": {
+       "sim_s": 0.513255099998787
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 0
+     },
+     {
+      "build_s": 0.0011751000420190394,
+      "info": {
+       "transitions_per_s": 234055.47058966072
+      },
+      "metrics": {
+       "sim_s": 0.7006885999580845
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 1
+     },
+     {
+      "build_s": 0.0006753999623470008,
+      "info": {
+       "transitions_per_s": 305541.36524489813
+      },
+      "metrics": {
+       "sim_s": 0.5367522000451572
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 0
+     },
+     {
+      "build_s": 0.0006481999880634248,
+      "info": {
+       "transitions_per_s": 319467.03548054147
+      },
+      "metrics": {
+       "sim_s": 0.5133550000027753
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 1
+     },
+     {
+      "build_s": 0.0006799999973736703,
+      "info": {
+       "transitions_per_s": 267462.83611144737
+      },
+      "metrics": {
+       "sim_s": 0.6131693000206724
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 0
+     },
+     {
+      "build_s": 0.0006703999824821949,
+      "info": {
+       "transitions_per_s": 245428.11567880958
+      },
+      "metrics": {
+       "sim_s": 0.6682200999930501
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 1
+     },
+     {
+      "build_s": 0.001202200015541166,
+      "info": {
+       "transitions_per_s": 349144.8399790371
+      },
+      "metrics": {
+       "sim_s": 0.4697190999868326
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 0
+     },
+     {
+      "build_s": 0.0006903999601490796,
+      "info": {
+       "transitions_per_s": 291383.78156730876
+      },
+      "metrics": {
+       "sim_s": 0.5628316000220366
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 1
+     }
+    ],
+    "cand": [
+     {
+      "build_s": 0.0004794999840669334,
+      "info": {
+       "transitions_per_s": 777883.076637289
+      },
+      "metrics": {
+       "sim_s": 0.21082859998568892
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 1
+     },
+     {
+      "build_s": 0.00047609995817765594,
+      "info": {
+       "transitions_per_s": 846468.2145762346
+      },
+      "metrics": {
+       "sim_s": 0.19374620000598952
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 0
+     },
+     {
+      "build_s": 0.00043559999903663993,
+      "info": {
+       "transitions_per_s": 721174.5648026969
+      },
+      "metrics": {
+       "sim_s": 0.2274067999678664
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 1
+     },
+     {
+      "build_s": 0.0005575999966822565,
+      "info": {
+       "transitions_per_s": 576903.5266173984
+      },
+      "metrics": {
+       "sim_s": 0.28427629999350756
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 0
+     },
+     {
+      "build_s": 0.0005256000440567732,
+      "info": {
+       "transitions_per_s": 728776.4955205156
+      },
+      "metrics": {
+       "sim_s": 0.22503469994990155
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 1
+     },
+     {
+      "build_s": 0.0005547000328078866,
+      "info": {
+       "transitions_per_s": 836224.0000353307
+      },
+      "metrics": {
+       "sim_s": 0.196119699976407
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 0
+     },
+     {
+      "build_s": 0.0005253999843262136,
+      "info": {
+       "transitions_per_s": 586065.925330046
+      },
+      "metrics": {
+       "sim_s": 0.27983199997106567
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 1
+     },
+     {
+      "build_s": 0.000512500002514571,
+      "info": {
+       "transitions_per_s": 603941.8993171334
+      },
+      "metrics": {
+       "sim_s": 0.27154929999960586
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 0
+     },
+     {
+      "build_s": 0.00047339999582618475,
+      "info": {
+       "transitions_per_s": 817902.0813259784
+      },
+      "metrics": {
+       "sim_s": 0.2005129999597557
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 1
+     },
+     {
+      "build_s": 0.00046149996342137456,
+      "info": {
+       "transitions_per_s": 622387.8212109748
+      },
+      "metrics": {
+       "sim_s": 0.26350130001083016
+      },
+      "params": {
+       "depth": 10,
+       "events": 1000,
+       "period": 1.0,
+       "variant": "LI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 82000,
+       "externals": 82000,
+       "internals": 82000,
+       "transitions": 164000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 0
+     }
+    ]
+   },
+   "failed": null,
+   "summary": {
+    "sim_s": {
+     "base": {
+      "min": 0.4697190999868326,
+      "median": 0.5880004500213545,
+      "max": 0.7006885999580845,
+      "spread": 0.49171834821646937,
+      "n": 10
+     },
+     "cand": {
+      "min": 0.19374620000598952,
+      "median": 0.22622074995888397,
+      "max": 0.28427629999350756,
+      "spread": 0.467261293303917,
+      "n": 10
+     },
+     "ratio_of_min": 0.41247247559535205,
+     "speedup_of_min": 2.4244041946232313,
+     "median_ratio": 0.41281476360662184,
+     "ratio_spread": [
+      0.2982171574666123,
+      0.46817076368937577
+     ],
+     "verdict": "faster"
+    }
+   },
+   "parity_ok": true,
+   "parity": {
+    "atomics": 82,
+    "events": 82000,
+    "externals": 82000,
+    "internals": 82000,
+    "transitions": 164000
+   },
+   "refused": null
+  },
+  "W3": {
+   "title": "Sparse generator->sink, count 20000, period 10",
+   "params": {
+    "count": 20000,
+    "period": 10
+   },
+   "metrics": [
+    "sim_s"
+   ],
+   "runs": {
+    "base": [
+     {
+      "build_s": 0.00011409999569877982,
+      "info": {
+       "instants_per_s": 74520.1739170874
+      },
+      "metrics": {
+       "sim_s": 0.26838369999313727
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 0
+     },
+     {
+      "build_s": 0.00011719996109604836,
+      "info": {
+       "instants_per_s": 83601.06574038914
+      },
+      "metrics": {
+       "sim_s": 0.23923140001716092
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 1
+     },
+     {
+      "build_s": 0.0001613000058569014,
+      "info": {
+       "instants_per_s": 97136.27686682696
+      },
+      "metrics": {
+       "sim_s": 0.20589629997266456
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 0
+     },
+     {
+      "build_s": 0.00015249999705702066,
+      "info": {
+       "instants_per_s": 69654.52053817298
+      },
+      "metrics": {
+       "sim_s": 0.28713140002219006
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 1
+     },
+     {
+      "build_s": 0.00012770004104822874,
+      "info": {
+       "instants_per_s": 92390.70179974225
+      },
+      "metrics": {
+       "sim_s": 0.21647200000006706
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 0
+     },
+     {
+      "build_s": 0.00012099999003112316,
+      "info": {
+       "instants_per_s": 65936.24690804287
+      },
+      "metrics": {
+       "sim_s": 0.3033232999732718
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 1
+     },
+     {
+      "build_s": 0.00019640004029497504,
+      "info": {
+       "instants_per_s": 66882.04916654323
+      },
+      "metrics": {
+       "sim_s": 0.2990338999661617
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 0
+     },
+     {
+      "build_s": 0.00013100000796839595,
+      "info": {
+       "instants_per_s": 108696.89274077053
+      },
+      "metrics": {
+       "sim_s": 0.18399789999239147
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 1
+     },
+     {
+      "build_s": 0.00013479997869580984,
+      "info": {
+       "instants_per_s": 97610.54270113954
+      },
+      "metrics": {
+       "sim_s": 0.20489590003853664
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 0
+     },
+     {
+      "build_s": 0.00011560000712051988,
+      "info": {
+       "instants_per_s": 118286.5017562111
+      },
+      "metrics": {
+       "sim_s": 0.16908099997090176
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 1
+     }
+    ],
+    "cand": [
+     {
+      "build_s": 0.00010990002192556858,
+      "info": {
+       "instants_per_s": 201712.13263305384
+      },
+      "metrics": {
+       "sim_s": 0.09915119997458532
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 1
+     },
+     {
+      "build_s": 0.0001080999500118196,
+      "info": {
+       "instants_per_s": 184607.94346499222
+      },
+      "metrics": {
+       "sim_s": 0.10833770001772791
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 0
+     },
+     {
+      "build_s": 0.00010470004053786397,
+      "info": {
+       "instants_per_s": 185401.65882544598
+      },
+      "metrics": {
+       "sim_s": 0.10787389997858554
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 1
+     },
+     {
+      "build_s": 0.00010230002226307988,
+      "info": {
+       "instants_per_s": 152928.81628583054
+      },
+      "metrics": {
+       "sim_s": 0.13077979994704947
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 0
+     },
+     {
+      "build_s": 0.0001078000059351325,
+      "info": {
+       "instants_per_s": 193254.64002215036
+      },
+      "metrics": {
+       "sim_s": 0.10349040001165122
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 1
+     },
+     {
+      "build_s": 0.00010800000745803118,
+      "info": {
+       "instants_per_s": 225407.73440743884
+      },
+      "metrics": {
+       "sim_s": 0.08872810000320897
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 0
+     },
+     {
+      "build_s": 0.0001509999856352806,
+      "info": {
+       "instants_per_s": 151291.4235753064
+      },
+      "metrics": {
+       "sim_s": 0.13219520001439378
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 1
+     },
+     {
+      "build_s": 0.0001066999975591898,
+      "info": {
+       "instants_per_s": 194721.110662491
+      },
+      "metrics": {
+       "sim_s": 0.1027110000140965
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 0
+     },
+     {
+      "build_s": 0.00011000002268701792,
+      "info": {
+       "instants_per_s": 164116.43405685268
+      },
+      "metrics": {
+       "sim_s": 0.12186469999141991
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 1
+     },
+     {
+      "build_s": 0.00010280002607032657,
+      "info": {
+       "instants_per_s": 152099.69835407715
+      },
+      "metrics": {
+       "sim_s": 0.13149269996210933
+      },
+      "params": {
+       "count": 20000,
+       "period": 10
+      },
+      "parity": {
+       "fired": 20000,
+       "global_time": 200004,
+       "received": 20000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 0
+     }
+    ]
+   },
+   "failed": null,
+   "summary": {
+    "sim_s": {
+     "base": {
+      "min": 0.16908099997090176,
+      "median": 0.227851700008614,
+      "max": 0.3033232999732718,
+      "spread": 0.793952602749408,
+      "n": 10
+     },
+     "cand": {
+      "min": 0.08872810000320897,
+      "median": 0.10810579999815673,
+      "max": 0.13219520001439378,
+      "spread": 0.4898910267391364,
+      "n": 10
+     },
+     "ratio_of_min": 0.5247668278427425,
+     "speedup_of_min": 1.90560825673926,
+     "median_ratio": 0.4667738737000605,
+     "ratio_spread": [
+      0.29251989547465523,
+      0.7776905742498492
+     ],
+     "verdict": "faster"
+    }
+   },
+   "parity_ok": true,
+   "parity": {
+    "fired": 20000,
+    "global_time": 200004,
+    "received": 20000
+   },
+   "refused": null
+  },
+  "W4": {
+   "title": "Idle-heavy: 10000 passive models + 5 ping-pong pairs, 1000 events per pair",
+   "params": {
+    "idle": 10000,
+    "pairs": 5,
+    "events": 1000
+   },
+   "metrics": [
+    "sim_s"
+   ],
+   "runs": {
+    "base": [
+     {
+      "build_s": 0.05882400000700727,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.04769570002099499
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 0
+     },
+     {
+      "build_s": 0.05934390000766143,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.04762809997191653
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 1
+     },
+     {
+      "build_s": 0.06981390004511923,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.03829179995227605
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 0
+     },
+     {
+      "build_s": 0.06882169999880716,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.053261500026565045
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 1
+     },
+     {
+      "build_s": 0.07206110004335642,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.042368799971882254
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 0
+     },
+     {
+      "build_s": 0.09371149999788031,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.054987400013487786
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 1
+     },
+     {
+      "build_s": 0.06816599995363504,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.05871800001477823
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 0
+     },
+     {
+      "build_s": 0.07363090000580996,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.06413330003852025
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 1
+     },
+     {
+      "build_s": 0.0819653999642469,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.034303100022953004
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 0
+     },
+     {
+      "build_s": 0.0792422000085935,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.04397269996115938
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 1
+     }
+    ],
+    "cand": [
+     {
+      "build_s": 0.04214899998623878,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.028816399979405105
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 1
+     },
+     {
+      "build_s": 0.03424430004088208,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.020484199980273843
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 0
+     },
+     {
+      "build_s": 0.04264240001793951,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.020649700018111616
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 1
+     },
+     {
+      "build_s": 0.04769720003241673,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.03278289997251704
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 0
+     },
+     {
+      "build_s": 0.04589969996595755,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.02329400001326576
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 1
+     },
+     {
+      "build_s": 0.04927359998691827,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.03207640000618994
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 0
+     },
+     {
+      "build_s": 0.05189109995262697,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.02742460003355518
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 1
+     },
+     {
+      "build_s": 0.03691450000042096,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.017822000023443252
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 0
+     },
+     {
+      "build_s": 0.048441699997056276,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.01972300000488758
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 1
+     },
+     {
+      "build_s": 0.038102999969851226,
+      "info": {
+       "models": 10010
+      },
+      "metrics": {
+       "sim_s": 0.017563300032634288
+      },
+      "params": {
+       "events": 1000,
+       "idle": 10000,
+       "pairs": 5
+      },
+      "parity": {
+       "global_time": 1005,
+       "received": 5000,
+       "sent": 5000
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 0
+     }
+    ]
+   },
+   "failed": null,
+   "summary": {
+    "sim_s": {
+     "base": {
+      "min": 0.034303100022953004,
+      "median": 0.04766189999645576,
+      "max": 0.06413330003852025,
+      "spread": 0.8696065368904606,
+      "n": 10
+     },
+     "cand": {
+      "min": 0.017563300032634288,
+      "median": 0.021971850015688688,
+      "max": 0.03278289997251704,
+      "spread": 0.8665569631904759,
+      "n": 10
+     },
+     "ratio_of_min": 0.512003288941299,
+     "speedup_of_min": 1.9531124537652134,
+     "median_ratio": 0.544531736713738,
+     "ratio_spread": [
+      0.27788995752189366,
+      0.6155083870369035
+     ],
+     "verdict": "faster"
+    }
+   },
+   "parity_ok": true,
+   "parity": {
+    "global_time": 1005,
+    "received": 5000,
+    "sent": 5000
+   },
+   "refused": null
+  },
+  "W5": {
+   "title": "Bank example: 20 generators, queue 10, 10 accountants, seed 1, 3000 x simulate(1)",
+   "params": {
+    "gen_num": 20,
+    "queue_size": 10,
+    "proc_num": 10,
+    "max_user": 500000,
+    "seed": 1,
+    "ticks": 3000
+   },
+   "metrics": [
+    "sim_s"
+   ],
+   "runs": {
+    "base": [
+     {
+      "build_s": 0.006251400045584887,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.3224978999933228
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 0
+     },
+     {
+      "build_s": 0.006649599992670119,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.31202779995510355
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 1
+     },
+     {
+      "build_s": 0.006447000021580607,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.309359900013078
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 0
+     },
+     {
+      "build_s": 0.0067069000215269625,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.2627492999890819
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 1
+     },
+     {
+      "build_s": 0.00797410000814125,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.34924579999642447
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 0
+     },
+     {
+      "build_s": 0.007622000004630536,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.27646649995585904
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 1
+     },
+     {
+      "build_s": 0.006845399970188737,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.27249549998668954
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 0
+     },
+     {
+      "build_s": 0.0066952999914065,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.3181343000032939
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 1
+     },
+     {
+      "build_s": 0.009246300032828003,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.2889926999923773
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 0
+     },
+     {
+      "build_s": 0.008927799994125962,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\base\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.3368983999826014
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 1
+     }
+    ],
+    "cand": [
+     {
+      "build_s": 0.008597700041718781,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.18212279997533187
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 1
+     },
+     {
+      "build_s": 0.005994200007990003,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.19509769999422133
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 0
+     },
+     {
+      "build_s": 0.011246299953199923,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.20010670000920072
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 1
+     },
+     {
+      "build_s": 0.006859400018583983,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.16709820000687614
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 0
+     },
+     {
+      "build_s": 0.0068638999946415424,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.15231960004894063
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 1
+     },
+     {
+      "build_s": 0.007678399968426675,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.1771360000129789
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 0
+     },
+     {
+      "build_s": 0.00602119998075068,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.12454180000349879
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 1
+     },
+     {
+      "build_s": 0.00708800001302734,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.13386140001239255
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 0
+     },
+     {
+      "build_s": 0.005988199962303042,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.148896099999547
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 1
+     },
+     {
+      "build_s": 0.007115499989595264,
+      "examples_file": "<scratchpad>\\phaseA\\inf6b\\cand\\examples\\__init__.py",
+      "info": {
+       "global_time": 3000.0,
+       "stdout_chars": 0
+      },
+      "metrics": {
+       "sim_s": 0.13637760002166033
+      },
+      "params": {
+       "gen_num": 20,
+       "max_user": 500000,
+       "proc_num": 10,
+       "queue_size": 10,
+       "seed": 1,
+       "ticks": 3000
+      },
+      "parity": {
+       "dropped": 5431,
+       "generated": 10859,
+       "processed": 5409,
+       "queue_len": 9,
+       "stopped_by_max_user": false
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 0
+     }
+    ]
+   },
+   "failed": null,
+   "summary": {
+    "sim_s": {
+     "base": {
+      "min": 0.2627492999890819,
+      "median": 0.3106938499840908,
+      "max": 0.34924579999642447,
+      "spread": 0.32919783234793304,
+      "n": 10
+     },
+     "cand": {
+      "min": 0.12454180000349879,
+      "median": 0.15970890002790838,
+      "max": 0.20010670000920072,
+      "spread": 0.6067432781891626,
+      "n": 10
+     },
+     "ratio_of_min": 0.47399479278793094,
+     "speedup_of_min": 2.1097278181437913,
+     "median_ratio": 0.5399749853498104,
+     "ratio_spread": [
+      0.4048033473257912,
+      0.6468411064289241
+     ],
+     "verdict": "faster"
+    }
+   },
+   "parity_ok": true,
+   "parity": {
+    "dropped": 5431,
+    "generated": 10859,
+    "processed": 5409,
+    "queue_len": 9,
+    "stopped_by_max_user": false
+   },
+   "refused": null
+  },
+  "W6": {
+   "title": "Import time and start-up (import + SysExecutor(1)), bare process",
+   "params": {},
+   "metrics": [
+    "import_s",
+    "startup_s",
+    "process_s"
+   ],
+   "runs": {
+    "base": [
+     {
+      "metrics": {
+       "import_s": 0.19105309998849407,
+       "startup_s": 0.1911650999682024,
+       "process_s": 0.264840199961327
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 0
+     },
+     {
+      "metrics": {
+       "import_s": 0.17785770003683865,
+       "startup_s": 0.1779370000003837,
+       "process_s": 0.25358680001227185
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 1
+     },
+     {
+      "metrics": {
+       "import_s": 0.1972855000058189,
+       "startup_s": 0.19739510002546012,
+       "process_s": 0.2850631999899633
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 0
+     },
+     {
+      "metrics": {
+       "import_s": 0.1641438999795355,
+       "startup_s": 0.1642285999841988,
+       "process_s": 0.23451479995856062
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 1
+     },
+     {
+      "metrics": {
+       "import_s": 0.2318544000154361,
+       "startup_s": 0.23196439997991547,
+       "process_s": 0.3088532999972813
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 0
+     },
+     {
+      "metrics": {
+       "import_s": 0.1730059999972582,
+       "startup_s": 0.17308609996689484,
+       "process_s": 0.252263700007461
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 1
+     },
+     {
+      "metrics": {
+       "import_s": 0.18486410001059994,
+       "startup_s": 0.18494050001027063,
+       "process_s": 0.2786297000129707
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 0
+     },
+     {
+      "metrics": {
+       "import_s": 0.18618429999332875,
+       "startup_s": 0.18636230000993237,
+       "process_s": 0.25612410000758246
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 1
+     },
+     {
+      "metrics": {
+       "import_s": 0.17202309996355325,
+       "startup_s": 0.1721036999952048,
+       "process_s": 0.2484180000028573
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 0
+     },
+     {
+      "metrics": {
+       "import_s": 0.16804050002247095,
+       "startup_s": 0.16813420003745705,
+       "process_s": 0.23777350003365427
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 1
+     }
+    ],
+    "cand": [
+     {
+      "metrics": {
+       "import_s": 0.038723899982869625,
+       "startup_s": 0.03880290000233799,
+       "process_s": 0.11657690000720322
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 1
+     },
+     {
+      "metrics": {
+       "import_s": 0.05072090000612661,
+       "startup_s": 0.05082609999226406,
+       "process_s": 0.13466699997661635
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 0
+     },
+     {
+      "metrics": {
+       "import_s": 0.05013129999861121,
+       "startup_s": 0.05021710001165047,
+       "process_s": 0.15622750000329688
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 1
+     },
+     {
+      "metrics": {
+       "import_s": 0.03549810004187748,
+       "startup_s": 0.03558030002750456,
+       "process_s": 0.11216900002909824
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 0
+     },
+     {
+      "metrics": {
+       "import_s": 0.0403101000119932,
+       "startup_s": 0.04041509999660775,
+       "process_s": 0.11933010001666844
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 1
+     },
+     {
+      "metrics": {
+       "import_s": 0.03778549999697134,
+       "startup_s": 0.0378659000271,
+       "process_s": 0.11635189998196438
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 0
+     },
+     {
+      "metrics": {
+       "import_s": 0.04889620002359152,
+       "startup_s": 0.04898060002597049,
+       "process_s": 0.13048709998838603
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 1
+     },
+     {
+      "metrics": {
+       "import_s": 0.039207000052556396,
+       "startup_s": 0.039310700027272105,
+       "process_s": 0.1138494000188075
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 0
+     },
+     {
+      "metrics": {
+       "import_s": 0.04078879998996854,
+       "startup_s": 0.04086720000486821,
+       "process_s": 0.1262348999734968
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 1
+     },
+     {
+      "metrics": {
+       "import_s": 0.039236399985384196,
+       "startup_s": 0.03932360000908375,
+       "process_s": 0.11813229997642338
+      },
+      "build_s": 0.0,
+      "parity": {},
+      "info": {},
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 0
+     }
+    ]
+   },
+   "failed": null,
+   "summary": {
+    "import_s": {
+     "base": {
+      "min": 0.1641438999795355,
+      "median": 0.1813609000237193,
+      "max": 0.2318544000154361,
+      "spread": 0.41250695301100054,
+      "n": 10
+     },
+     "cand": {
+      "min": 0.03549810004187748,
+      "median": 0.0397732499986887,
+      "max": 0.05072090000612661,
+      "spread": 0.4288342177832233,
+      "n": 10
+     },
+     "ratio_of_min": 0.21626207276848652,
+     "speedup_of_min": 4.624019307678248,
+     "median_ratio": 0.22594971561901522,
+     "ratio_spread": [
+      0.17385954292568734,
+      0.2851768576542994
+     ],
+     "verdict": "faster"
+    },
+    "startup_s": {
+     "base": {
+      "min": 0.1642285999841988,
+      "median": 0.18143875000532717,
+      "max": 0.23196439997991547,
+      "spread": 0.41244825811237407,
+      "n": 10
+     },
+     "cand": {
+      "min": 0.03558030002750456,
+      "median": 0.03986935000284575,
+      "max": 0.05082609999226406,
+      "spread": 0.42848992147267084,
+      "n": 10
+     },
+     "ratio_of_min": 0.2166510585301702,
+     "speedup_of_min": 4.615717120351586,
+     "median_ratio": 0.226325688201566,
+     "ratio_spread": [
+      0.17422975249696537,
+      0.2856409852484557
+     ],
+     "verdict": "faster"
+    },
+    "process_s": {
+     "base": {
+      "min": 0.23451479995856062,
+      "median": 0.25485545000992715,
+      "max": 0.3088532999972813,
+      "spread": 0.31698852290711066,
+      "n": 10
+     },
+     "cand": {
+      "min": 0.11216900002909824,
+      "median": 0.11873119999654591,
+      "max": 0.15622750000329688,
+      "spread": 0.39278677676335916,
+      "n": 10
+     },
+     "ratio_of_min": 0.4783024357052041,
+     "speedup_of_min": 2.090727383659693,
+     "median_ratio": 0.4733098520224548,
+     "ratio_spread": [
+      0.38636498304443845,
+      0.5480451352850787
+     ],
+     "verdict": "faster"
+    }
+   },
+   "parity_ok": true,
+   "parity": {},
+   "refused": null
+  },
+  "W7": {
+   "title": "W1 topology with every executor wrapped in SnapshotExecutor",
+   "params": {
+    "variant": "HI",
+    "depth": 10,
+    "width": 10,
+    "events": 100,
+    "period": 1.0
+   },
+   "metrics": [
+    "sim_s"
+   ],
+   "runs": {
+    "base": [
+     {
+      "build_s": 0.0010034000151790679,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 267601.3820699862
+      },
+      "metrics": {
+       "sim_s": 0.3034363999613561
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 0
+     },
+     {
+      "build_s": 0.0009601999772712588,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 259535.61663151864
+      },
+      "metrics": {
+       "sim_s": 0.3128664999967441
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 1
+     },
+     {
+      "build_s": 0.0009729000157676637,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 295796.017333087
+      },
+      "metrics": {
+       "sim_s": 0.2745134999859147
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 0
+     },
+     {
+      "build_s": 0.0009330000029876828,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 228186.22582005867
+      },
+      "metrics": {
+       "sim_s": 0.3558496999903582
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 1
+     },
+     {
+      "build_s": 0.0009739000233821571,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 228837.01480238762
+      },
+      "metrics": {
+       "sim_s": 0.35483769996790215
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 0
+     },
+     {
+      "build_s": 0.0010245000012218952,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 281611.69287744845
+      },
+      "metrics": {
+       "sim_s": 0.288340299972333
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 1
+     },
+     {
+      "build_s": 0.0009914000402204692,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 293069.8015146706
+      },
+      "metrics": {
+       "sim_s": 0.2770670999889262
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 0
+     },
+     {
+      "build_s": 0.0009857999975793064,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 269638.26634604495
+      },
+      "metrics": {
+       "sim_s": 0.30114419996971264
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 1
+     },
+     {
+      "build_s": 0.0013854000135324895,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 231647.49868150445
+      },
+      "metrics": {
+       "sim_s": 0.3505326000158675
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 0
+     },
+     {
+      "build_s": 0.001586899976246059,
+      "info": {
+       "con_trans_calls": 32400,
+       "con_trans_shim": true,
+       "snapshot_executors": 83,
+       "transitions_per_s": 247723.20411814546
+      },
+      "metrics": {
+       "sim_s": 0.32778519997373223
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\base\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 1
+     }
+    ],
+    "cand": [
+     {
+      "build_s": 0.0006178999901749194,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 661328.2598900096
+      },
+      "metrics": {
+       "sim_s": 0.12278320000041276
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 0,
+      "position": 1
+     },
+     {
+      "build_s": 0.0006335999933071434,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 706803.5940527298
+      },
+      "metrics": {
+       "sim_s": 0.11488339997595176
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 1,
+      "position": 0
+     },
+     {
+      "build_s": 0.0006469999789260328,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 733970.8272485326
+      },
+      "metrics": {
+       "sim_s": 0.11063110001850873
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 2,
+      "position": 1
+     },
+     {
+      "build_s": 0.000678999989759177,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 458618.9581849195
+      },
+      "metrics": {
+       "sim_s": 0.17705330002354458
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 3,
+      "position": 0
+     },
+     {
+      "build_s": 0.0006402999861165881,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 520157.04638114554
+      },
+      "metrics": {
+       "sim_s": 0.15610670001478866
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 4,
+      "position": 1
+     },
+     {
+      "build_s": 0.0006376000237651169,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 449028.36785062676
+      },
+      "metrics": {
+       "sim_s": 0.18083490000572056
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 5,
+      "position": 0
+     },
+     {
+      "build_s": 0.0009901000303216279,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 468799.9760765741
+      },
+      "metrics": {
+       "sim_s": 0.1732081999653019
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 6,
+      "position": 1
+     },
+     {
+      "build_s": 0.0006481000455096364,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 539268.6535140959
+      },
+      "metrics": {
+       "sim_s": 0.15057429997250438
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 7,
+      "position": 0
+     },
+     {
+      "build_s": 0.0006927000358700752,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 505231.19624184916
+      },
+      "metrics": {
+       "sim_s": 0.160718499973882
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 8,
+      "position": 1
+     },
+     {
+      "build_s": 0.0007785999914631248,
+      "info": {
+       "con_trans_calls": null,
+       "con_trans_shim": false,
+       "snapshot_executors": 83,
+       "transitions_per_s": 455695.15116618
+      },
+      "metrics": {
+       "sim_s": 0.17818930000066757
+      },
+      "params": {
+       "depth": 10,
+       "events": 100,
+       "period": 1.0,
+       "variant": "HI",
+       "width": 10
+      },
+      "parity": {
+       "atomics": 82,
+       "events": 40600,
+       "externals": 40600,
+       "internals": 40600,
+       "transitions": 81200
+      },
+      "power_opt_out": true,
+      "pyjevsim_file": "<scratchpad>\\phaseA\\inf6b\\cand\\pyjevsim\\__init__.py",
+      "round": 9,
+      "position": 0
+     }
+    ]
+   },
+   "failed": null,
+   "summary": {
+    "sim_s": {
+     "base": {
+      "min": 0.2745134999859147,
+      "median": 0.3081514499790501,
+      "max": 0.3558496999903582,
+      "spread": 0.2962921678118449,
+      "n": 10
+     },
+     "cand": {
+      "min": 0.11063110001850873,
+      "median": 0.15841259999433532,
+      "max": 0.18083490000572056,
+      "spread": 0.6345756299581821,
+      "n": 10
+     },
+     "ratio_of_min": 0.4030078667321834,
+     "speedup_of_min": 2.48134114132453,
+     "median_ratio": 0.47802440155266224,
+     "ratio_spread": [
+      0.36719623218576397,
+      0.6271579103686585
+     ],
+     "verdict": "faster"
+    }
+   },
+   "parity_ok": true,
+   "parity": {
+    "atomics": 82,
+    "events": 40600,
+    "externals": 40600,
+    "internals": 40600,
+    "transitions": 81200
+   },
+   "refused": null
+  }
+ },
+ "finished": "2026-10-24T12:06:16",
+ "status": 0
+}
