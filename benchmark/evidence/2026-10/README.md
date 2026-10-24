@@ -32,3 +32,9 @@ Not kept here:
   matches it in every scenario (see `tools/oracle/README.md`).
 - The trace oracle and `bank_driver.py` themselves now live in
   `tools/oracle/`.
+
+Paths inside these files were written by the measurement scripts on the
+maintainer's machine. They have been replaced with `<scratchpad>` (the
+session's scratch directory) and `<worktree:NAME>` (a temporary git
+worktree); files under those paths that are not listed above were not
+kept.

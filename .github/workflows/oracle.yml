@@ -28,4 +28,6 @@ jobs:
         env:
           ORACLE_BASE: ${{ github.event_name == 'push' && github.event.before || '' }}
           ORACLE_ARGS: --no-slow
-        run: bash tools/oracle/ci_gate.sh origin/main
+        # Compare with the branch the pull request targets (a stacked pull
+        # request is measured against its own base); pushes use ORACLE_BASE.
+        run: bash tools/oracle/ci_gate.sh "origin/${{ github.base_ref || 'main' }}"
