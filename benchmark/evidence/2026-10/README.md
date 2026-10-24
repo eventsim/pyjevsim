@@ -3,9 +3,10 @@
 Raw records behind the October 2026 engine work (#41, #42, #44) and the
 PythonPDEVS ceiling study, kept so that the figures quoted in those pull
 requests, in `CHANGELOG.md` and in `benchmark/results/COMPARE-2026-10-22.md`
-can be traced back to data. The files are copied unchanged from the working
-directories they were produced in; the drivers still name those directories
-(`D:/development/pyjevsim/.claude/worktrees/...` and a scratch `S` argument)
+can be traced back to data. The files are copied from the working
+directories they were produced in, with only their absolute paths replaced
+(see the end of this file); the drivers still name those directories
+(`<worktree:NAME>` paths and a scratch `S` argument)
 and will not run as they stand.
 
 All runs: Windows 11, CPython 3.14.0, Intel i7-12700. No other Python
@@ -32,3 +33,9 @@ Not kept here:
   matches it in every scenario (see `tools/oracle/README.md`).
 - The trace oracle and `bank_driver.py` themselves now live in
   `tools/oracle/`.
+
+Paths inside these files were written by the measurement scripts on the
+maintainer's machine. They have been replaced with `<scratchpad>` (the
+session's scratch directory) and `<worktree:NAME>` (a temporary git
+worktree); files under those paths that are not listed above were not
+kept.

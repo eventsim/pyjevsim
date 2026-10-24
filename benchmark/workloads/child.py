@@ -58,9 +58,15 @@ def main(argv=None):
     p.add_argument("--repo", required=True)
     p.add_argument("--workload", required=True)
     p.add_argument("--params", default="{}")
+    p.add_argument("--allow-throttling", action="store_true",
+                   help="stay subject to Windows power throttling (EcoQoS)")
     a = p.parse_args(argv)
 
     _load_harness()
+    # Before the timed region: EcoQoS can throttle a process a few seconds
+    # in, and a W2 or W5 run can last that long.  No-op off Windows.
+    from benchmark.power import disable_power_throttling
+    opted_out = False if a.allow_throttling else disable_power_throttling()
     repo = os.path.abspath(a.repo)
     sys.path.insert(0, repo)
 
@@ -84,6 +90,7 @@ def main(argv=None):
     if ex_file is not None:
         result["examples_file"] = ex_file
     result["params"] = params
+    result["power_opt_out"] = opted_out
     sys.stdout.write(MARKER + json.dumps(result, sort_keys=True) + "\n")
     sys.stdout.flush()
     return 0

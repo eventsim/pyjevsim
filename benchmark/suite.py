@@ -41,6 +41,11 @@ so ``5`` means CPUs 0 and 2): SetProcessAffinityMask on Windows (CPUs 0-63
 only, one processor group), ``os.sched_setaffinity`` on Linux.  There is no default mask,
 because which cores are the fast ones is machine specific (on the
 i7-12700 used for the 2026-10 records the P-core threads are 0-15).
+
+On Windows the suite opts itself and every child out of power throttling
+(EcoQoS, see ``benchmark/power.py``), which otherwise slowed a long
+sequential run 4-5x after about 3 s; ``--allow-throttling`` skips that.
+Elsewhere it is a no-op.
 """
 
 import argparse
@@ -57,6 +62,7 @@ import time
 if __package__ in (None, ""):
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from benchmark.power import disable_power_throttling  # noqa: E402
 from benchmark.workloads import DEFAULT_WORKLOADS, resolve  # noqa: E402
 from benchmark.workloads import startup as _startup  # noqa: E402
 
@@ -176,8 +182,14 @@ def set_affinity(cpus, process=None):
 # --------------------------------------------------------------------------
 
 def run_once(wid, repo, python=sys.executable, params=None, cpus=None,
-             timeout=900):
-    """Run workload ``wid`` once against ``repo`` in a fresh process."""
+             timeout=900, allow_throttling=False):
+    """Run workload ``wid`` once against ``repo`` in a fresh process.
+
+    Unless ``allow_throttling``, the child is opted out of Windows power
+    throttling twice: by the parent right after the spawn (this also
+    covers the bare W6 process) and by ``child.py`` itself before the
+    workload runs.
+    """
     wl = resolve(wid)
     params = dict(params or {})
     if wl.bare_process:
@@ -185,6 +197,8 @@ def run_once(wid, repo, python=sys.executable, params=None, cpus=None,
     else:
         argv = [python, "-E", CHILD, "--repo", repo, "--workload", wl.wid,
                 "--params", json.dumps(params)]
+        if allow_throttling:
+            argv.append("--allow-throttling")
     env = dict(os.environ)
     env.pop("PYTHONPATH", None)
     env["PYTHONIOENCODING"] = "utf-8"
@@ -199,6 +213,8 @@ def run_once(wid, repo, python=sys.executable, params=None, cpus=None,
             set_affinity(cpus, proc)
         except (OSError, ProcessLookupError):
             pass   # the child may already have exited
+    if not allow_throttling:
+        disable_power_throttling(proc)   # best effort, never raises
     try:
         out, err = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
@@ -299,12 +315,15 @@ def _log(msg, quiet):
 
 def run_suite(sides, workloads, rounds=5, warmup=1, python=sys.executable,
               params=None, cpus=None, floor=DEFAULT_NOISE_FLOOR,
-              timeout=900, quiet=False):
+              timeout=900, quiet=False, allow_throttling=False,
+              power_opt_out=None):
     """Run the suite.
 
     ``sides`` is an ordered dict ``{label: checkout}`` with one entry
     (single mode) or two (``base`` first, then ``cand``).  Returns the
-    result document written by ``--out``.
+    result document written by ``--out``.  ``power_opt_out`` is recorded
+    as is: whether the caller opted this process out of power throttling
+    (``main`` does that at start-up).
     """
     params = params or {}
     labels = list(sides)
@@ -316,6 +335,8 @@ def run_suite(sides, workloads, rounds=5, warmup=1, python=sys.executable,
         "warmup": warmup,
         "noise_floor": floor,
         "pin": cpus,
+        "power_throttling": {"allowed": allow_throttling,
+                             "parent_opted_out": power_opt_out},
         "environment": {
             "python": sys.version,
             "executable": python,
@@ -340,7 +361,7 @@ def run_suite(sides, workloads, rounds=5, warmup=1, python=sys.executable,
         """One child run; a ChildError marks ``wid`` failed, not the suite."""
         try:
             return run_once(wid, sides[lab], python, params.get(wid), cpus,
-                            timeout)
+                            timeout, allow_throttling)
         except ChildError as exc:
             doc["workloads"][wid]["failed"] = f"{lab}: {exc}"
             print(f"error: {wid} failed, skipping it: {exc}",
@@ -534,6 +555,9 @@ def parse_args(argv=None):
                    help="print the summary as a Markdown table")
     p.add_argument("--list", action="store_true",
                    help="list the workloads and exit")
+    p.add_argument("--allow-throttling", action="store_true",
+                   help="do not opt the suite and its children out of "
+                        "Windows power throttling (EcoQoS)")
     p.add_argument("--quiet", action="store_true")
     a = p.parse_args(argv)
     if (a.base is None) != (a.cand is None):
@@ -547,6 +571,10 @@ def parse_args(argv=None):
 
 def main(argv=None):
     a = parse_args(argv)
+    # Before anything long-running: EcoQoS throttles a process that has
+    # run for a few seconds, and the parent lives for the whole suite.
+    power_opt_out = (None if a.allow_throttling
+                     else disable_power_throttling())
     if a.list:
         from benchmark.workloads import WORKLOADS
         for wl in WORKLOADS.values():
@@ -578,7 +606,9 @@ def main(argv=None):
             return 2
     doc = run_suite(sides, workloads, rounds=a.rounds, warmup=a.warmup,
                     python=a.python, params=params, cpus=cpus,
-                    floor=a.noise_floor, timeout=a.timeout, quiet=a.quiet)
+                    floor=a.noise_floor, timeout=a.timeout, quiet=a.quiet,
+                    allow_throttling=a.allow_throttling,
+                    power_opt_out=power_opt_out)
     print(format_report(doc, markdown=a.markdown))
     if a.out:
         os.makedirs(os.path.dirname(os.path.abspath(a.out)) or ".",
