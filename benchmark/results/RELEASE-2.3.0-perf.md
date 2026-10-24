@@ -278,6 +278,7 @@ batch, including the superseded loaded runs, and the two load logs:
 | `py3.{10,12,14}-base-vs-fix41-rerun.json` | base vs fix41, W1/W3/W5, 5 rounds, repeat (used above) |
 | `py3.{10,12,14}-base-vs-fix41.json` | base vs fix41, loaded (superseded) |
 | `loads.tsv`, `loads-rerun.tsv` | load before and after each batch, wait and exit status |
+| `rerun/py3.{10,14}-{cand,fix41}.{json,md}`, `rerun/loads.tsv` | independent 5-round rerun of W1 and W5 on 3.10 and 3.14 (base vs cand and base vs fix41), used to check the tables |
 
 Absolute paths in these files were replaced with `<scratchpad>`, the
 session's scratch directory. The exports lived under it at

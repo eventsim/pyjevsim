@@ -55,10 +55,11 @@ so compare ratios across interpreters, not absolute times. We treat
 differences under 5% as noise and do not report them, so read these
 figures as approximate. An independent 5-round rerun of W1 and W5 on 3.10
 and 3.14 agreed with them to within 3%. `cba37cc` is the engine as of
-measurement, so changes made after it and before the 2.3.0 tag are not
-covered. Linux and macOS were not measured. The full record is in
-`benchmark/results/RELEASE-2.3.0-perf.md`, with the raw JSON in
-`benchmark/results/release-2.3.0/`.
+measurement; the changes merged after it (#51 and the release commit) do
+not touch the engine. Linux and macOS were not measured. The full record is
+in `benchmark/results/RELEASE-2.3.0-perf.md`, with the raw JSON in
+`benchmark/results/release-2.3.0/` and the rerun in its `rerun/`
+subdirectory.
 
 ### Added
 - A replication runner, `pyjevsim.replication` (SC-6).
@@ -99,7 +100,7 @@ covered. Linux and macOS were not measured. The full record is in
   (DEVStone, a 1000-model ring, the bank, HLA and mwmsim examples, and
   focused engine cases) against any checkout and reduces each to a sha256
   that ignores the order of same-time events. `tools/oracle/golden/v2.2.0.json`
-  freezes v2.2.0. `tools/oracle/golden/v2.3.0-dev.json`, the golden CI
+  freezes v2.2.0. `tools/oracle/golden/v2.3.0.json`, the golden CI
   compares with, differs from it only in `snapshot_restore`, which the
   snapshot fixes listed under Fixed change on purpose (recorded in
   `tools/oracle/LEDGER.md`). `order_check.py` reports whether the unsorted
@@ -123,6 +124,13 @@ covered. Linux and macOS were not measured. The full record is in
   `benchmark/evidence/2026-10/`.
 
 ### Changed
+- `benchmark.suite` opts itself and every child process out of Windows
+  power throttling (EcoQoS), which slowed a process that had been busy for
+  about 3 s by 4-5x and distorted long sequential measurements;
+  `--allow-throttling` turns this off. The trace-oracle CI job compares a
+  pull request with the branch it targets rather than always with `main`.
+  Absolute local paths in `benchmark/evidence/2026-10/` are replaced with
+  placeholders.
 - `SysExecutor` calls a plain `BehaviorExecutor`'s model directly for
   output and transitions instead of going through the executor's
   forwarding wrappers, and skips the miss path for output ports with no
