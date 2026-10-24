@@ -25,6 +25,19 @@ and say in the entry which checkout, Python version and platform produced it.
 
 ---
 
+## 2026-10-24 — rename the 2.3.0 golden for the release
+
+- **PR**: the 2.3.0 release-preparation pull request (branch `release/2.3.0`).
+- **Scenarios changed**: none. `golden/v2.3.0-dev.json` is renamed to
+  `golden/v2.3.0.json` with its content unchanged, and `GOLDEN` points at
+  the new name. Every hash is the one recorded by the 2026-10-23
+  snapshot entry below.
+- **Why**: the golden that entry introduced was meant to become the 2.3.0
+  golden; the release gives it its final name.
+- **Approved by**: pending maintainer review (Changbeom Choi).
+
+---
+
 ## 2026-10-23 — snapshot hooks see the real state; restore keeps IDs unique
 
 - **PR**: the pull request from branch `fix/snapshot-termination-ids`
